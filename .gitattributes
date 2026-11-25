@@ -1,0 +1,23 @@
+* text=auto eol=lf
+
+# Windows scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix scripts must stay LF so they run in CI
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ttf binary
+*.otf binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.pdf binary

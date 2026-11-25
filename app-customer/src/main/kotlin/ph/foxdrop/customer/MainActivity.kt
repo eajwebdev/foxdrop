@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installFoxSplash(isReady = { startup.startDestination.value != null })
         super.onCreate(savedInstanceState)
-        authRedirects.handle(intent)
+        authRedirects.handleLaunch(intent, savedInstanceState)
         setFoxContent {
             val start by startup.startDestination.collectAsStateWithLifecycle()
             start?.let { CustomerNavHost(startDestination = it) }

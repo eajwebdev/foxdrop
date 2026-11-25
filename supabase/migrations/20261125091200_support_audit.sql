@@ -20,12 +20,28 @@ create trigger support_tickets_updated_at before update on public.support_ticket
 create table public.ticket_messages (
   id uuid primary key default gen_random_uuid(),
   ticket_id uuid not null references public.support_tickets (id) on delete cascade,
+  province_id uuid references public.provinces (id), -- copied from the ticket by trigger; never from the client
   sender_id uuid not null references auth.users (id) on delete cascade,
   body text not null check (char_length(body) between 1 and 4000),
   attachment_path text,
   created_at timestamptz not null default now()
 );
 create index ticket_messages_ticket_idx on public.ticket_messages (ticket_id, created_at);
+create index ticket_messages_province_idx on public.ticket_messages (province_id) where province_id is not null;
+
+create or replace function private.ticket_message_province()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  select t.province_id into new.province_id from public.support_tickets t where t.id = new.ticket_id;
+  return new;
+end;
+$$;
+create trigger ticket_messages_province before insert or update of ticket_id on public.ticket_messages
+  for each row execute function private.ticket_message_province();
 
 create table public.disputes (
   id uuid primary key default gen_random_uuid(),
@@ -78,7 +94,8 @@ create index device_tokens_user_idx on public.device_tokens (user_id);
 -- Every admin/operator write (§17). Append-only; written by server functions.
 create table public.audit_logs (
   id bigint generated always as identity primary key,
-  actor_user_id uuid references auth.users (id) on delete set null,
+  -- No FK: audit rows are append-only and must outlive deleted accounts (an FK action would have to UPDATE them).
+  actor_user_id uuid,
   actor_role public.app_role,
   action text not null check (char_length(action) <= 80),
   entity_type text not null check (char_length(entity_type) <= 60),

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.collections.immutable.persistentListOf
 import ph.foxdrop.core.designsystem.component.FoxButton
 import ph.foxdrop.core.designsystem.component.FoxButtonState
@@ -82,14 +83,23 @@ fun AuthRoute(
             when (effect) {
                 AuthEffect.SignedIn -> currentOnSignedIn()
 
-                is AuthEffect.LaunchGoogleSignIn ->
+                is AuthEffect.LaunchGoogleSignIn -> {
+                    val result =
+                        try {
+                            requestGoogleIdToken(activityContext, effect.clientId, effect.hashedNonce)
+                        } catch (cancelled: CancellationException) {
+                            // Rotation or leaving the screen kills the picker; the ViewModel survives, so reset it.
+                            viewModel.onAction(AuthAction.GoogleCancelled)
+                            throw cancelled
+                        }
                     viewModel.onAction(
-                        when (val result = requestGoogleIdToken(activityContext, effect.clientId, effect.hashedNonce)) {
+                        when (result) {
                             is GoogleSignInResult.Token -> AuthAction.GoogleCredentialReceived(result.idToken)
                             GoogleSignInResult.Cancelled -> AuthAction.GoogleCancelled
                             GoogleSignInResult.Unavailable -> AuthAction.GoogleUnavailable
                         },
                     )
+                }
             }
         }
     }

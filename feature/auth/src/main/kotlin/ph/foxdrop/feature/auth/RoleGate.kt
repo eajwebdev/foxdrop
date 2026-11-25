@@ -1,5 +1,9 @@
 package ph.foxdrop.feature.auth
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -33,6 +37,7 @@ import ph.foxdrop.core.designsystem.component.SkeletonList
 import ph.foxdrop.core.designsystem.preview.FoxPreviews
 import ph.foxdrop.core.designsystem.theme.FoxDropTheme
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
+import ph.foxdrop.core.designsystem.theme.FoxTheme
 import ph.foxdrop.core.domain.startup.HomeDecision
 import ph.foxdrop.core.domain.startup.ResolveHomeUseCase
 import ph.foxdrop.core.model.FoxDropApp
@@ -44,6 +49,9 @@ sealed interface RoleGateState {
     data class Ready(val decision: HomeDecision) : RoleGateState
 
     data class Failed(val message: AuthMessage) : RoleGateState
+
+    /** The server no longer accepts the session (revoked, refresh failed): the user must sign in again. */
+    data object SessionExpired : RoleGateState
 }
 
 /** Finds out which home the signed-in user belongs on (§5 role routing). */
@@ -63,7 +71,13 @@ class RoleGateViewModel @Inject constructor(
             _state.value =
                 when (val result = resolveHome(app)) {
                     is FoxResult.Success -> RoleGateState.Ready(result.value)
-                    is FoxResult.Failure -> RoleGateState.Failed(result.error.toGateMessage())
+
+                    is FoxResult.Failure ->
+                        if (result.error == DomainError.Unauthorized) {
+                            RoleGateState.SessionExpired
+                        } else {
+                            RoleGateState.Failed(result.error.toGateMessage())
+                        }
                 }
         }
     }
@@ -98,6 +112,7 @@ fun RoleGate(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val signOut = rememberSessionSignOut(onSignedOut)
     LaunchedEffect(app) { viewModel.load(app) }
+    LaunchedEffect(state) { if (state == RoleGateState.SessionExpired) signOut() }
     RoleGateContent(
         state = state,
         onRetry = viewModel::retry,
@@ -115,29 +130,41 @@ internal fun RoleGateContent(
     modifier: Modifier = Modifier,
     content: @Composable (decision: HomeDecision, signOut: () -> Unit) -> Unit,
 ) {
-    when (state) {
-        RoleGateState.Loading ->
-            SkeletonList(
-                loadingDescription = stringResource(R.string.auth_loading),
-                modifier = modifier.fillMaxSize().safeDrawingPadding().padding(FoxSpacing.L),
-            )
-
-        is RoleGateState.Failed ->
-            Box(modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
-                ErrorState(
-                    title = stringResource(R.string.role_gate_error_title),
-                    message = stringResource(state.message.textRes()),
-                    retryLabel = stringResource(R.string.role_gate_retry),
-                    onRetry = onRetry,
+    val motion = FoxTheme.motion
+    // Crossfade by state kind only, so a Ready → Ready update does not fade the whole home.
+    AnimatedContent(
+        targetState = state,
+        contentKey = { it::class },
+        transitionSpec = { fadeIn(motion.enter()) togetherWith fadeOut(motion.exit()) },
+        label = "roleGate",
+        modifier = modifier,
+    ) { current ->
+        when (current) {
+            RoleGateState.Loading, RoleGateState.SessionExpired ->
+                SkeletonList(
+                    loadingDescription = stringResource(R.string.auth_loading),
+                    modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(FoxSpacing.L),
                 )
-            }
 
-        is RoleGateState.Ready ->
-            if (state.decision.isAccountMismatch()) {
-                AccountMismatchScreen(decision = state.decision, onSignOut = onSignOut, modifier = modifier)
-            } else {
-                content(state.decision, onSignOut)
-            }
+            is RoleGateState.Failed ->
+                Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
+                    ErrorState(
+                        title = stringResource(R.string.role_gate_error_title),
+                        message = stringResource(current.message.textRes()),
+                        retryLabel = stringResource(R.string.role_gate_retry),
+                        onRetry = onRetry,
+                        secondaryLabel = stringResource(R.string.role_sign_out),
+                        onSecondary = onSignOut,
+                    )
+                }
+
+            is RoleGateState.Ready ->
+                if (current.decision.isAccountMismatch()) {
+                    AccountMismatchScreen(decision = current.decision, onSignOut = onSignOut)
+                } else {
+                    content(current.decision, onSignOut)
+                }
+        }
     }
 }
 
@@ -178,4 +205,18 @@ fun AccountMismatchScreen(
 @Composable
 private fun AccountMismatchPreview() {
     FoxDropTheme { AccountMismatchScreen(decision = HomeDecision.AdminUseWeb, onSignOut = {}) }
+}
+
+@FoxPreviews
+@Composable
+private fun RoleGateLoadingPreview() {
+    FoxDropTheme { RoleGateContent(state = RoleGateState.Loading, onRetry = {}, onSignOut = {}) { _, _ -> } }
+}
+
+@FoxPreviews
+@Composable
+private fun RoleGateFailedPreview() {
+    FoxDropTheme {
+        RoleGateContent(state = RoleGateState.Failed(AuthMessage.Network), onRetry = {}, onSignOut = {}) { _, _ -> }
+    }
 }

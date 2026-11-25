@@ -68,6 +68,16 @@ class ResolveHomeUseCaseTest {
         assertEquals(FoxResult.Success(HomeDecision.OperatorHome("neg")), ok(FoxDropApp.Business))
     }
 
+    @Test
+    fun `the customer app opens offline but the rider and business apps wait for their role`() = runTest {
+        val offline = ResolveHomeUseCase(roleRepository(FoxResult.Failure(DomainError.Network)))
+        assertEquals(FoxResult.Success(HomeDecision.CustomerHome), offline(FoxDropApp.Customer))
+        assertEquals(FoxResult.Failure(DomainError.Network), offline(FoxDropApp.Rider))
+
+        val expired = ResolveHomeUseCase(roleRepository(FoxResult.Failure(DomainError.Unauthorized)))
+        assertEquals(FoxResult.Failure(DomainError.Unauthorized), expired(FoxDropApp.Customer))
+    }
+
     private fun roleRepository(result: FoxResult<List<RoleGrant>>) =
         object : RoleRepository {
             override suspend fun myRoles() = result

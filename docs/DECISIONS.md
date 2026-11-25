@@ -74,3 +74,35 @@ Format: **what** — why — revisit when.
     because of Hostinger hosting. Decision: keep Supabase (RLS province isolation, Auth, Realtime, Storage, Edge
     Functions are required by §3/§17 and would otherwise have to be hand-built). Hostinger (VPS preferred) hosts
     `admin-web`, which connects to the Supabase Postgres; Hostinger's MySQL is not used. MASTER_PROMPT §20.6 updated.
+
+## Phase 1 (2026-11-25)
+
+27. **`user_roles` replaces `store_staff`.** One table holds every grant (`role`, `province_id`, `store_id`), with a
+    check that each role carries the right scope. RLS helpers (`private.has_role`, `operator_province_ids`,
+    `member_store_ids`) read this table, not JWT claims, so a revoked role stops working at once. The `app_roles`
+    JWT claim (access-token hook) is only for UI hints and the admin web.
+28. **Published storefronts are public by design.** `anon` can read enabled provinces, published stores, their
+    categories/products, current rate cards and reviews (browse before sign-in, §9.1). Everything else needs a session.
+29. **PSGC province list** comes from the psgc.cloud mirror of the PSA PSGC file (82 provinces + NCR as one
+    service area, 83 rows). Codes are the 10-digit PSGC codes.
+30. **Append-only tables keep no FK to `auth.users` on actor columns** (`audit_logs.actor_user_id`,
+    `order_events.actor_user_id`, `ledger_txns.created_by`, `delivery_rate_cards.created_by`). An `on delete set null`
+    FK would have to UPDATE those rows, which the append-only triggers reject, so deleting a user would fail. The
+    history outlives the account; the id stays as a plain uuid. (Phase 1 code review.)
+31. **`ticket_messages.province_id` is copied from the ticket by a trigger**, never trusted from the client, so every
+    provincial row has `province_id` (CLAUDE.md) without a second source of truth.
+32. **Test OTPs stay in `supabase/config.jsonc`** for the 9 phone demo accounts (the admin has none; it signs in to the
+    web with email + password). The Supabase CLI has no local-only override file, so DECISIONS 25 is kept as a rule:
+    the hosted project's auth settings are managed in the dashboard and **`supabase config push` is never run**. This is
+    also on the pre-launch checklist (§19 Phase 7).
+33. **Google sign-in** uses Credential Manager (`GetSignInWithGoogleOption`) with a SHA-256 nonce, then
+    `signInWith(IDToken)`. It is enabled only when `GOOGLE_WEB_CLIENT_ID` is set in `local.properties`; otherwise the
+    button explains that Google sign-in is not set up yet. OTP autofill uses the SMS User Consent API (no SMS
+    permission).
+34. **Role routing:** admin accounts are kept out of all three Android apps ("use the web dashboard"). In the business
+    app an operator role wins over a store role. The customer app opens to the customer home even offline (RLS still
+    protects every read); the rider and business apps need their role and show error + retry + sign out. A session
+    the server rejects signs the user out instead of offering a retry.
+35. **Auth redirects** use one scheme per app (`foxdrop-customer://auth`, `foxdrop-rider://auth`,
+    `foxdrop-business://auth`). The launch intent is handled only on a fresh launch (not after process death or from
+    Recents) and its data is cleared, so a one-time code is never exchanged twice.

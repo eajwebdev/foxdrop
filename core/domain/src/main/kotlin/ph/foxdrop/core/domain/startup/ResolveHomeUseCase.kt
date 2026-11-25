@@ -1,6 +1,7 @@
 package ph.foxdrop.core.domain.startup
 
 import javax.inject.Inject
+import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.common.result.map
 import ph.foxdrop.core.domain.auth.RoleRepository
@@ -31,7 +32,15 @@ sealed interface HomeDecision {
 class ResolveHomeUseCase @Inject constructor(
     private val roles: RoleRepository,
 ) {
-    suspend operator fun invoke(app: FoxDropApp): FoxResult<HomeDecision> = roles.myRoles().map { decideHome(app, it) }
+    /**
+     * The customer app does not wait for the network: offline, a signed-in user still gets the customer home (every
+     * read is protected by RLS anyway). The rider and business apps need their role and province to show anything.
+     */
+    suspend operator fun invoke(app: FoxDropApp): FoxResult<HomeDecision> {
+        val result = roles.myRoles().map { decideHome(app, it) }
+        val offline = (result as? FoxResult.Failure)?.error == DomainError.Network
+        return if (offline && app == FoxDropApp.Customer) FoxResult.Success(HomeDecision.CustomerHome) else result
+    }
 
     companion object {
         private val ADMIN_ROLES = setOf(AppRole.SuperAdmin, AppRole.AdminStaff)

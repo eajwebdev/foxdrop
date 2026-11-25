@@ -319,7 +319,8 @@
       // Controls the minimum amount of time that must pass before sending another sms otp.
       "max_frequency": "30s",
 
-      // LOCAL DEVELOPMENT ONLY: fixed codes for the 10 demo accounts in supabase/seed.sql, no SMS is sent.
+      // LOCAL DEVELOPMENT ONLY: fixed codes for the 9 phone demo accounts in supabase/seed.sql (the admin uses
+      // email + password), no SMS is sent.
       // Never `supabase config push` this file to the hosted project (docs/DECISIONS.md 25).
       // Keys are the phone number with country code and without the + prefix.
       "test_otp": {
@@ -331,8 +332,7 @@
         "639170000006": "123456",
         "639170000007": "123456",
         "639170000008": "123456",
-        "639170000009": "123456",
-        "639170000010": "123456"
+        "639170000009": "123456"
       },
 
       // Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.

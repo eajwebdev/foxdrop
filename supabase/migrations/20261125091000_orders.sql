@@ -105,7 +105,7 @@ create table public.order_events (
   id bigint generated always as identity primary key,
   order_id uuid not null,
   province_id uuid not null,
-  actor_user_id uuid references auth.users (id) on delete set null,
+  actor_user_id uuid, -- no FK: append-only history outlives deleted accounts
   actor_role public.app_role,
   from_status public.order_status,
   to_status public.order_status not null,

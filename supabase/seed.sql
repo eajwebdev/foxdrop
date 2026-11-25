@@ -99,7 +99,7 @@ on conflict (psgc_code) do nothing;
 --   +63 917 000 0007  Mama's Kitchen      store owner
 --   +63 917 000 0008  QuickMart           store owner
 --   +63 917 000 0009  Bacolod Botika      store owner
---   +63 917 000 0010  FoxDrop Admin       super admin (web dashboard only; admin@foxdrop.local)
+--   +63 917 000 0010  FoxDrop Admin       super admin (web dashboard only; admin@foxdrop.local, no test OTP)
 
 -- Local-only key for PII encryption (§17). Production: set a strong secret in the dashboard's Vault.
 select vault.create_secret('local-dev-only-not-a-real-key-0001', 'foxdrop_pii_key', 'FoxDrop PII encryption key (local)')
@@ -141,7 +141,7 @@ on conflict (id) do nothing;
 
 insert into auth.identities (id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at)
 select
-  gen_random_uuid(), u.id, u.phone, 'phone',
+  gen_random_uuid(), u.id, u.id::text, 'phone',
   jsonb_build_object('sub', u.id::text, 'phone', u.phone, 'phone_verified', true),
   now(), now(), now()
 from auth.users u

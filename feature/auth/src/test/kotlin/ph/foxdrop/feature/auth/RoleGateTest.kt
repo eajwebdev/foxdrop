@@ -66,6 +66,14 @@ class RoleGateViewModelTest {
         runCurrent()
         assertEquals(RoleGateState.Failed(AuthMessage.NotConfigured), vm.state.value)
     }
+
+    @Test
+    fun `a rejected session asks for sign-in again instead of a retry loop`() = runTest(main.dispatcher) {
+        roles.result = FoxResult.Failure(DomainError.Unauthorized)
+        vm.load(FoxDropApp.Rider)
+        runCurrent()
+        assertEquals(RoleGateState.SessionExpired, vm.state.value)
+    }
 }
 
 @RunWith(AndroidJUnit4::class)

@@ -30,7 +30,7 @@ create table public.delivery_rate_cards (
   bad_weather_surcharge_centavos bigint not null default 0 check (bad_weather_surcharge_centavos >= 0),
   extra_stop_centavos bigint not null default 0 check (extra_stop_centavos >= 0),
   effective_from timestamptz not null default now(),
-  created_by uuid references auth.users (id) on delete set null,
+  created_by uuid, -- no FK: rate cards are append-only and outlive deleted accounts
   created_at timestamptz not null default now()
 );
 create index delivery_rate_cards_current_idx on public.delivery_rate_cards (province_id, effective_from desc);

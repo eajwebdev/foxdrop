@@ -79,7 +79,7 @@ create table public.ledger_txns (
   type text not null check (char_length(type) between 3 and 60),
   idempotency_key text not null unique check (char_length(idempotency_key) between 8 and 200),
   province_id uuid references public.provinces (id),
-  created_by uuid references auth.users (id) on delete set null,
+  created_by uuid, -- no FK: the ledger is append-only and outlives deleted accounts
   memo text check (char_length(memo) <= 500),
   created_at timestamptz not null default now()
 );

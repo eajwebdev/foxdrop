@@ -3,6 +3,7 @@ package ph.foxdrop.core.network.auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.SerialName
@@ -38,7 +39,10 @@ internal class SupabaseRolesRemoteDataSource @Inject constructor(
                 val userId = client.auth.currentUserOrNull()?.id ?: return@call null
                 // RLS returns more than our own rows to operators (their province's grants), so filter by user.
                 client.from("user_roles")
-                    .select(Columns.list("role", "province_id", "store_id")) { filter { eq("user_id", userId) } }
+                    .select(Columns.list("role", "province_id", "store_id")) {
+                        filter { eq("user_id", userId) }
+                        order("created_at", Order.ASCENDING) // oldest grant first: a stable home for multi-store owners
+                    }
                     .decodeList<UserRoleRow>()
                     .toGrants()
             }

@@ -3,6 +3,7 @@ package ph.foxdrop.core.network
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
@@ -38,6 +39,7 @@ class SupabaseClientProvider @Inject constructor(
                 // TODO(phase-1): per-app redirect schemes (foxdrop-customer://auth, …) together with the manifest
                 // intent-filters and handleDeeplinks() in MainActivity, for email confirmation and Google sign-in.
             }
+            install(Postgrest)
         }
     }
 

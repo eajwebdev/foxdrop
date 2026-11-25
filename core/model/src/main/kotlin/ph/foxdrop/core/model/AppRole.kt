@@ -17,6 +17,13 @@ enum class AppRole(val dbValue: String) {
     }
 }
 
+/** One role the user holds, optionally scoped to a province or a store (`user_roles` row, §5). */
+data class RoleGrant(
+    val role: AppRole,
+    val provinceId: String? = null,
+    val storeId: String? = null,
+)
+
 /** Which of the three Android apps is running. Super Admin uses the web dashboard only (§2). */
 enum class FoxDropApp(val allowedRoles: Set<AppRole>) {
     Customer(setOf(AppRole.Customer)),

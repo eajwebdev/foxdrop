@@ -1,0 +1,181 @@
+package ph.foxdrop.feature.auth
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.Storefront
+import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import ph.foxdrop.core.common.result.DomainError
+import ph.foxdrop.core.common.result.FoxResult
+import ph.foxdrop.core.designsystem.component.EmptyState
+import ph.foxdrop.core.designsystem.component.ErrorState
+import ph.foxdrop.core.designsystem.component.SkeletonList
+import ph.foxdrop.core.designsystem.preview.FoxPreviews
+import ph.foxdrop.core.designsystem.theme.FoxDropTheme
+import ph.foxdrop.core.designsystem.theme.FoxSpacing
+import ph.foxdrop.core.domain.startup.HomeDecision
+import ph.foxdrop.core.domain.startup.ResolveHomeUseCase
+import ph.foxdrop.core.model.FoxDropApp
+
+@Immutable
+sealed interface RoleGateState {
+    data object Loading : RoleGateState
+
+    data class Ready(val decision: HomeDecision) : RoleGateState
+
+    data class Failed(val message: AuthMessage) : RoleGateState
+}
+
+/** Finds out which home the signed-in user belongs on (§5 role routing). */
+@HiltViewModel
+class RoleGateViewModel @Inject constructor(
+    private val resolveHome: ResolveHomeUseCase,
+) : ViewModel() {
+    private val _state = MutableStateFlow<RoleGateState>(RoleGateState.Loading)
+    val state: StateFlow<RoleGateState> = _state.asStateFlow()
+    private var app: FoxDropApp? = null
+
+    fun load(app: FoxDropApp) {
+        if (this.app == app && _state.value !is RoleGateState.Failed) return
+        this.app = app
+        _state.value = RoleGateState.Loading
+        viewModelScope.launch {
+            _state.value =
+                when (val result = resolveHome(app)) {
+                    is FoxResult.Success -> RoleGateState.Ready(result.value)
+                    is FoxResult.Failure -> RoleGateState.Failed(result.error.toGateMessage())
+                }
+        }
+    }
+
+    fun retry() {
+        app?.let { current ->
+            this.app = null
+            load(current)
+        }
+    }
+
+    private fun DomainError.toGateMessage(): AuthMessage =
+        when (this) {
+            DomainError.Network -> AuthMessage.Network
+            DomainError.NotConfigured -> AuthMessage.NotConfigured
+            else -> AuthMessage.Unknown
+        }
+}
+
+/**
+ * Shows [content] for the user's home, or a friendly screen when the account does not belong in this app.
+ * Loading shows a skeleton; errors offer a retry (CLAUDE.md: every screen has loading, empty, error).
+ */
+@Composable
+fun RoleGate(
+    app: FoxDropApp,
+    onSignedOut: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: RoleGateViewModel = hiltViewModel(),
+    content: @Composable (decision: HomeDecision, signOut: () -> Unit) -> Unit,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val signOut = rememberSessionSignOut(onSignedOut)
+    LaunchedEffect(app) { viewModel.load(app) }
+    RoleGateContent(
+        state = state,
+        onRetry = viewModel::retry,
+        onSignOut = signOut,
+        modifier = modifier,
+        content = content,
+    )
+}
+
+@Composable
+internal fun RoleGateContent(
+    state: RoleGateState,
+    onRetry: () -> Unit,
+    onSignOut: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (decision: HomeDecision, signOut: () -> Unit) -> Unit,
+) {
+    when (state) {
+        RoleGateState.Loading ->
+            SkeletonList(
+                loadingDescription = stringResource(R.string.auth_loading),
+                modifier = modifier.fillMaxSize().safeDrawingPadding().padding(FoxSpacing.L),
+            )
+
+        is RoleGateState.Failed ->
+            Box(modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
+                ErrorState(
+                    title = stringResource(R.string.role_gate_error_title),
+                    message = stringResource(state.message.textRes()),
+                    retryLabel = stringResource(R.string.role_gate_retry),
+                    onRetry = onRetry,
+                )
+            }
+
+        is RoleGateState.Ready ->
+            if (state.decision.isAccountMismatch()) {
+                AccountMismatchScreen(decision = state.decision, onSignOut = onSignOut, modifier = modifier)
+            } else {
+                content(state.decision, onSignOut)
+            }
+    }
+}
+
+private fun HomeDecision.isAccountMismatch(): Boolean =
+    this == HomeDecision.AdminUseWeb ||
+        this == HomeDecision.RiderNotRegistered ||
+        this == HomeDecision.BusinessNotRegistered
+
+/** The account is valid but not for this app: explain where to go, and let the user sign out. */
+@Composable
+fun AccountMismatchScreen(
+    decision: HomeDecision,
+    onSignOut: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val (icon, title, message) =
+        when (decision) {
+            HomeDecision.AdminUseWeb ->
+                Triple(Icons.Rounded.AdminPanelSettings, R.string.role_admin_title, R.string.role_admin_message)
+
+            HomeDecision.RiderNotRegistered ->
+                Triple(Icons.Rounded.TwoWheeler, R.string.role_rider_title, R.string.role_rider_message)
+
+            else -> Triple(Icons.Rounded.Storefront, R.string.role_business_title, R.string.role_business_message)
+        }
+    Box(modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
+        EmptyState(
+            icon = icon,
+            title = stringResource(title),
+            message = stringResource(message),
+            actionLabel = stringResource(R.string.role_sign_out),
+            onAction = onSignOut,
+        )
+    }
+}
+
+@FoxPreviews
+@Composable
+private fun AccountMismatchPreview() {
+    FoxDropTheme { AccountMismatchScreen(decision = HomeDecision.AdminUseWeb, onSignOut = {}) }
+}

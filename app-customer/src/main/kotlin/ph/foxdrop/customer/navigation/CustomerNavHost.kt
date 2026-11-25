@@ -9,7 +9,8 @@ import ph.foxdrop.core.designsystem.motion.FoxNavHost
 import ph.foxdrop.core.designsystem.motion.resetTo
 import ph.foxdrop.core.domain.startup.StartDestination
 import ph.foxdrop.core.model.FoxDropApp
-import ph.foxdrop.customer.home.CustomerHomeRoute
+import ph.foxdrop.customer.home.CustomerHomeScreen
+import ph.foxdrop.feature.auth.RoleGate
 import ph.foxdrop.feature.auth.navigation.AuthDestination
 import ph.foxdrop.feature.auth.navigation.authScreen
 import ph.foxdrop.feature.onboarding.navigation.OnboardingGraph
@@ -32,7 +33,11 @@ fun CustomerNavHost(startDestination: StartDestination, modifier: Modifier = Mod
         onboardingGraph(navController, FoxDropApp.Customer, onFinished = { navController.resetTo(AuthDestination) })
         authScreen(onSignedIn = { navController.resetTo(CustomerHomeDestination) })
         composable<CustomerHomeDestination> {
-            CustomerHomeRoute(onSignedOut = { navController.resetTo(AuthDestination) })
+            RoleGate(app = FoxDropApp.Customer, onSignedOut = {
+                navController.resetTo(AuthDestination)
+            }) { _, signOut ->
+                CustomerHomeScreen(onSignOut = signOut)
+            }
         }
     }
 }

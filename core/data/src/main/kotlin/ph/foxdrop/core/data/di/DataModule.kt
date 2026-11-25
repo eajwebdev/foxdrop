@@ -10,8 +10,10 @@ import kotlinx.coroutines.Dispatchers
 import ph.foxdrop.core.common.dispatcher.Dispatcher
 import ph.foxdrop.core.common.dispatcher.FoxDispatchers
 import ph.foxdrop.core.data.auth.DefaultAuthRepository
+import ph.foxdrop.core.data.auth.DefaultRoleRepository
 import ph.foxdrop.core.data.preferences.DefaultAppPreferencesRepository
 import ph.foxdrop.core.domain.auth.AuthRepository
+import ph.foxdrop.core.domain.auth.RoleRepository
 import ph.foxdrop.core.domain.preferences.AppPreferencesRepository
 
 @Module
@@ -19,6 +21,9 @@ import ph.foxdrop.core.domain.preferences.AppPreferencesRepository
 internal abstract class DataModule {
     @Binds
     abstract fun authRepository(impl: DefaultAuthRepository): AuthRepository
+
+    @Binds
+    abstract fun roleRepository(impl: DefaultRoleRepository): RoleRepository
 
     @Binds
     abstract fun appPreferencesRepository(impl: DefaultAppPreferencesRepository): AppPreferencesRepository

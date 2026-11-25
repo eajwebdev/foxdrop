@@ -18,16 +18,7 @@ import ph.foxdrop.core.designsystem.component.ShellTab
 import ph.foxdrop.core.designsystem.preview.FoxDevicePreviews
 import ph.foxdrop.core.designsystem.preview.FoxPreviews
 import ph.foxdrop.core.designsystem.theme.FoxDropTheme
-import ph.foxdrop.feature.auth.rememberSessionSignOut
 import ph.foxdrop.rider.R
-
-@Composable
-fun RiderHomeRoute(
-    onSignedOut: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    RiderHomeScreen(onSignOut = rememberSessionSignOut(onSignedOut), modifier = modifier)
-}
 
 /** Phase 0 shell. Rider registration, Go Online and jobs arrive in Phase 4. */
 @Composable

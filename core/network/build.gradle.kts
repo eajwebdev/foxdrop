@@ -34,6 +34,7 @@ dependencies {
     implementation(projects.core.datastore)
     api(platform(libs.supabase.bom))
     api(libs.supabase.auth)
+    implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.kotlinx.serialization.json)
 }

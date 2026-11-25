@@ -9,6 +9,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
+import ph.foxdrop.core.model.AppRole
+import ph.foxdrop.core.model.RoleGrant
+import ph.foxdrop.core.network.auth.UserRoleRow
+import ph.foxdrop.core.network.auth.toGrants
 
 class SupabaseErrorsTest {
     @Test
@@ -36,6 +40,20 @@ class SupabaseErrorsTest {
     @Test(expected = CancellationException::class)
     fun `cancellation is rethrown`() = runTest {
         runCatchingSupabase { throw CancellationException("stop") }
+    }
+
+    @Test
+    fun `role rows map to grants and unknown roles are ignored`() {
+        val grants =
+            listOf(
+                UserRoleRow("operator", provinceId = "p1"),
+                UserRoleRow("store_owner", provinceId = "p1", storeId = "s1"),
+                UserRoleRow("future_role"),
+            ).toGrants()
+        assertEquals(
+            listOf(RoleGrant(AppRole.Operator, "p1"), RoleGrant(AppRole.StoreOwner, "p1", "s1")),
+            grants,
+        )
     }
 
     @Test

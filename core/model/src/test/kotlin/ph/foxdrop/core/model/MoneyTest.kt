@@ -39,7 +39,7 @@ class MoneyTest {
     fun `roles map to database labels`() {
         assertEquals(AppRole.StoreOwner, AppRole.fromDbValue("store_owner"))
         assertNull(AppRole.fromDbValue("nope"))
-        assertTrue(AppRole.Operator in FoxDropApp.Business.allowedRoles)
-        assertFalse(AppRole.SuperAdmin in FoxDropApp.Business.allowedRoles)
+        assertTrue(AppRole.Operator in AppRole.OPERATOR)
+        assertFalse(AppRole.SuperAdmin in AppRole.OPERATOR + AppRole.STORE)
     }
 }

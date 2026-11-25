@@ -6,8 +6,11 @@ import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.domain.auth.AuthRepository
 import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
+import ph.foxdrop.core.domain.auth.RoleRepository
 import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.domain.preferences.AppPreferencesRepository
+import ph.foxdrop.core.model.AppRole
+import ph.foxdrop.core.model.RoleGrant
 
 /** Scriptable [AuthRepository] for ViewModel tests. Records every call in [calls]. */
 class FakeAuthRepository : AuthRepository {
@@ -50,6 +53,13 @@ class FakeAuthRepository : AuthRepository {
         return emailError.toResult(signUpOutcome)
     }
 
+    override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> {
+        calls += "google:$idToken:$rawNonce"
+        val result = emailError.toResult(Unit)
+        if (result is FoxResult.Success) status.value = SessionStatus.SignedIn("user-google")
+        return result
+    }
+
     override suspend fun signOut(): FoxResult<Unit> {
         calls += "signout"
         status.value = SessionStatus.SignedOut
@@ -58,6 +68,19 @@ class FakeAuthRepository : AuthRepository {
 
     private fun <T> DomainError?.toResult(value: T): FoxResult<T> =
         if (this == null) FoxResult.Success(value) else FoxResult.Failure(this)
+}
+
+/** Scriptable [RoleRepository]: set [result] before the call. */
+class FakeRoleRepository(
+    var result: FoxResult<List<RoleGrant>> = FoxResult.Success(listOf(RoleGrant(AppRole.Customer))),
+) :
+    RoleRepository {
+    var calls = 0
+
+    override suspend fun myRoles(): FoxResult<List<RoleGrant>> {
+        calls++
+        return result
+    }
 }
 
 class FakeAppPreferencesRepository(onboarded: Boolean = false) : AppPreferencesRepository {

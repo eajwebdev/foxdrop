@@ -11,7 +11,10 @@ import ph.foxdrop.core.testing.screenshot.captureFoxScreenshots
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class BusinessHomeScreenshotTest {
     @Test
-    fun home() = captureFoxScreenshots("business_home") { BusinessHomeScreen(onSignOut = {}) }
+    fun home() = captureFoxScreenshots("business_store_home") { StoreHomeScreen(onSignOut = {}) }
+
+    @Test
+    fun operatorHome() = captureFoxScreenshots("business_operator_home") { OperatorHomeScreen(onSignOut = {}) }
 
     @Test
     fun account() =
@@ -19,6 +22,6 @@ class BusinessHomeScreenshotTest {
             "business_home_account",
             listOf(FoxScreenshotVariant.PhoneLight, FoxScreenshotVariant.PhoneDark),
         ) {
-            BusinessHomeScreen(onSignOut = {}, initialTab = 3)
+            StoreHomeScreen(onSignOut = {}, initialTab = 3)
         }
 }

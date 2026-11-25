@@ -5,11 +5,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.serialization.Serializable
-import ph.foxdrop.business.home.BusinessHomeRoute
+import ph.foxdrop.business.home.OperatorHomeScreen
+import ph.foxdrop.business.home.StoreHomeScreen
 import ph.foxdrop.core.designsystem.motion.FoxNavHost
 import ph.foxdrop.core.designsystem.motion.resetTo
+import ph.foxdrop.core.domain.startup.HomeDecision
 import ph.foxdrop.core.domain.startup.StartDestination
 import ph.foxdrop.core.model.FoxDropApp
+import ph.foxdrop.feature.auth.RoleGate
 import ph.foxdrop.feature.auth.navigation.AuthDestination
 import ph.foxdrop.feature.auth.navigation.authScreen
 import ph.foxdrop.feature.onboarding.navigation.OnboardingGraph
@@ -32,7 +35,16 @@ fun BusinessNavHost(startDestination: StartDestination, modifier: Modifier = Mod
         onboardingGraph(navController, FoxDropApp.Business, onFinished = { navController.resetTo(AuthDestination) })
         authScreen(onSignedIn = { navController.resetTo(BusinessHomeDestination) })
         composable<BusinessHomeDestination> {
-            BusinessHomeRoute(onSignedOut = { navController.resetTo(AuthDestination) })
+            // Role routing (§5): operators and store owners get different homes; anyone else sees an explanation.
+            RoleGate(onSignedOut = {
+                navController.resetTo(AuthDestination)
+            }) { home, signOut ->
+                when (home) {
+                    is HomeDecision.OperatorHome -> OperatorHomeScreen(onSignOut = signOut)
+                    is HomeDecision.StoreHome -> StoreHomeScreen(onSignOut = signOut)
+                    HomeDecision.CustomerHome, is HomeDecision.RiderHome -> Unit // never decided in this app
+                }
+            }
         }
     }
 }

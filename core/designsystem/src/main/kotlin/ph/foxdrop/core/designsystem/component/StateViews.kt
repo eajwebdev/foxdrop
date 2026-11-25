@@ -61,6 +61,8 @@ fun ErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Rounded.CloudOff,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     StateLayout(
         icon = icon,
@@ -72,6 +74,8 @@ fun ErrorState(
         actionLabel = retryLabel,
         onAction = onRetry,
         actionIcon = Icons.Rounded.Refresh,
+        secondaryLabel = secondaryLabel,
+        onSecondary = onSecondary,
     )
 }
 
@@ -86,6 +90,8 @@ private fun StateLayout(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     actionIcon: ImageVector? = null,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     val motion = FoxTheme.motion
     val appear = remember { Animatable(if (motion.reduceMotion) 1f else 0f) }
@@ -128,6 +134,9 @@ private fun StateLayout(
                 leadingIcon = actionIcon,
                 modifier = Modifier.fillMaxWidth(0.8f).padding(top = FoxSpacing.XS),
             )
+        }
+        if (secondaryLabel != null && onSecondary != null) {
+            FoxTextButton(text = secondaryLabel, onClick = onSecondary)
         }
     }
 }

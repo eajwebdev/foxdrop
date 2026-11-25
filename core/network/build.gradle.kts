@@ -1,4 +1,4 @@
-import java.util.Properties
+import ph.foxdrop.buildlogic.clientConfig
 
 plugins {
     alias(libs.plugins.foxdrop.android.library)
@@ -8,17 +8,6 @@ plugins {
 
 // Public client keys come from local.properties (never committed) or CI environment variables.
 // Only the Supabase anon key belongs in the app (§0 rule 9, §17).
-val localProperties =
-    Properties().apply {
-        val file = rootProject.file("local.properties")
-        if (file.exists()) file.inputStream().use { load(it) }
-    }
-
-fun clientConfig(key: String, default: String = ""): String =
-    (localProperties.getProperty(key) ?: providers.environmentVariable(key).orNull ?: default)
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-
 android {
     namespace = "ph.foxdrop.core.network"
     buildFeatures.buildConfig = true
@@ -34,6 +23,7 @@ dependencies {
     implementation(projects.core.datastore)
     api(platform(libs.supabase.bom))
     api(libs.supabase.auth)
+    implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.kotlinx.serialization.json)
 }

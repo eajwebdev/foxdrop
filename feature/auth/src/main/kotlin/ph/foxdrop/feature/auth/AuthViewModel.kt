@@ -21,6 +21,7 @@ import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.common.result.errorOrNull
 import ph.foxdrop.core.domain.auth.AuthRepository
 import ph.foxdrop.core.domain.auth.SessionStatus
+import ph.foxdrop.feature.auth.google.GoogleNonce
 
 /**
  * Runs [AuthReducer] and the work it asks for. The reducer stays pure; this class only does I/O and timers.
@@ -28,8 +29,9 @@ import ph.foxdrop.core.domain.auth.SessionStatus
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val auth: AuthRepository,
+    @param:GoogleWebClientId private val googleClientId: String,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(AuthState())
+    private val _state = MutableStateFlow(AuthState(googleEnabled = googleClientId.isNotBlank()))
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
     private val effects = Channel<AuthEffect>(Channel.BUFFERED)
@@ -37,6 +39,9 @@ class AuthViewModel @Inject constructor(
 
     private var resendTimer: Job? = null
     private var signedInSent = false
+
+    /** Raw nonce of the Google request in flight; Google signs its SHA-256, Supabase checks it against this. */
+    private var googleNonce: String? = null
 
     init {
         // On a slow cold start the stored session can finish loading after the 1.5 s splash cap already showed this
@@ -84,6 +89,20 @@ class AuthViewModel @Inject constructor(
                 }
 
             AuthCommand.StartResendTimer -> startResendTimer()
+
+            AuthCommand.LaunchGoogle -> {
+                val nonce = GoogleNonce.create()
+                googleNonce = nonce.raw
+                viewModelScope.launch { effects.send(AuthEffect.LaunchGoogleSignIn(googleClientId, nonce.sha256)) }
+            }
+
+            is AuthCommand.SignInWithGoogle -> {
+                val rawNonce = googleNonce.orEmpty()
+                googleNonce = null
+                launchResult {
+                    AuthAction.GoogleSignedIn(auth.signInWithGoogle(command.idToken, rawNonce).errorOrNull())
+                }
+            }
 
             AuthCommand.FinishSignIn ->
                 viewModelScope.launch {

@@ -48,6 +48,17 @@
     <string name="auth_message_code_not_sent">We couldn\'t send a code to this number. Check it and try again.</string>
     <string name="auth_message_confirm_email">Almost there! Open the link we emailed you, then log in.</string>
     <string name="auth_message_google_soon">Google sign-in is coming soon. Please use your mobile number for now.</string>
+    <string name="auth_message_google_failed">Google sign-in didn\'t work on this phone. Please use your mobile number.</string>
     <string name="auth_message_unknown">Something went wrong. Please try again.</string>
     <string name="auth_message_dismiss">Dismiss</string>
+
+    <string name="role_gate_error_title">We couldn\'t load your account</string>
+    <string name="role_gate_retry">Try again</string>
+    <string name="role_sign_out">Sign out</string>
+    <string name="role_admin_title">Use the FoxDrop Admin dashboard</string>
+    <string name="role_admin_message">Admin accounts manage FoxDrop from the web dashboard, not from the mobile apps.</string>
+    <string name="role_rider_title">You\'re not a FoxDrop rider yet</string>
+    <string name="role_rider_message">Rider sign-up is coming soon. You can still order with the FoxDrop app using this account.</string>
+    <string name="role_business_title">No store or province linked yet</string>
+    <string name="role_business_message">Store and operator applications open soon. If you were invited, ask the owner to add this mobile number.</string>
 </resources>

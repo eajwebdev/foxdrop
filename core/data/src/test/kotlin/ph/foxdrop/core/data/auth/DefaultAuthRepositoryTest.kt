@@ -104,6 +104,11 @@ class DefaultAuthRepositoryTest {
             return result(EmailSignUpOutcome.ConfirmationEmailSent)
         }
 
+        override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> {
+            calls += "google|$idToken"
+            return result(Unit)
+        }
+
         override suspend fun signOut(): FoxResult<Unit> {
             calls += "signout"
             return result(Unit)

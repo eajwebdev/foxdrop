@@ -2,7 +2,9 @@ package ph.foxdrop.core.network.auth
 
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.auth.status.SessionStatus as SupabaseSessionStatus
 import javax.inject.Inject
@@ -27,6 +29,8 @@ interface AuthRemoteDataSource {
     suspend fun signInWithEmail(email: String, password: String): FoxResult<Unit>
 
     suspend fun signUpWithEmail(fullName: String, email: String, password: String): FoxResult<EmailSignUpOutcome>
+
+    suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit>
 
     suspend fun signOut(): FoxResult<Unit>
 }
@@ -93,6 +97,15 @@ internal class SupabaseAuthRemoteDataSource @Inject constructor(
                 EmailSignUpOutcome.SignedIn
             } else {
                 EmailSignUpOutcome.ConfirmationEmailSent
+            }
+        }
+
+    override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> =
+        provider.call { client ->
+            client.auth.signInWith(IDToken) {
+                this.idToken = idToken
+                this.provider = Google
+                this.nonce = rawNonce
             }
         }
 

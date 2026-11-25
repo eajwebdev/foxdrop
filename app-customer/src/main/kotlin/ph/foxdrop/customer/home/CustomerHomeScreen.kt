@@ -20,15 +20,6 @@ import ph.foxdrop.core.designsystem.preview.FoxDevicePreviews
 import ph.foxdrop.core.designsystem.preview.FoxPreviews
 import ph.foxdrop.core.designsystem.theme.FoxDropTheme
 import ph.foxdrop.customer.R
-import ph.foxdrop.feature.auth.rememberSessionSignOut
-
-@Composable
-fun CustomerHomeRoute(
-    onSignedOut: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    CustomerHomeScreen(onSignOut = rememberSessionSignOut(onSignedOut), modifier = modifier)
-}
 
 /**
  * Phase 0 shell: real tabs and adaptive navigation, with friendly empty states until store browsing (Phase 3)

@@ -36,6 +36,11 @@ ktor = "3.6.1"
 coil = "3.6.3"
 lottie = "6.7.1"
 
+# Sign-in
+credentials = "1.6.0"
+googleid = "1.2.1"
+playServicesAuthApiPhone = "18.3.1"
+
 # Security
 tink = "1.24.0"
 
@@ -114,6 +119,12 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 # UI
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
+
+# Sign-in (Google via Credential Manager §11A.2, SMS User Consent for OTP autofill)
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+play-services-auth-api-phone = { module = "com.google.android.gms:play-services-auth-api-phone", version.ref = "playServicesAuthApiPhone" }
 
 # Security
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }

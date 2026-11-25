@@ -16,4 +16,15 @@
     <string name="account_title">You\'re signed in</string>
     <string name="account_message">Your business profile, staff and settings will live here.</string>
     <string name="account_sign_out">Sign out</string>
+
+    <string name="tab_stores">Stores</string>
+    <string name="tab_riders">Riders</string>
+    <string name="operator_dashboard_title">Your province at a glance</string>
+    <string name="operator_dashboard_message">Total orders, gross sales, commissions and active riders will show up here.</string>
+    <string name="operator_stores_title">Stores in your province</string>
+    <string name="operator_stores_message">Approve new stores, set the monthly store fee and manage top-up wallets here.</string>
+    <string name="operator_riders_title">Riders in your province</string>
+    <string name="operator_riders_message">Review rider documents, approve riders and see who is online.</string>
+    <string name="operator_orders_message">Live orders in your province will appear here, with manual rider assignment.</string>
+    <string name="operator_account_message">Your license, delivery rates and province settings will live here.</string>
 </resources>

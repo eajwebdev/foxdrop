@@ -276,5 +276,6 @@ internal fun AuthMessage.textRes(): Int =
         AuthMessage.CodeNotSent -> R.string.auth_message_code_not_sent
         AuthMessage.ConfirmEmail -> R.string.auth_message_confirm_email
         AuthMessage.GoogleSoon -> R.string.auth_message_google_soon
+        AuthMessage.GoogleFailed -> R.string.auth_message_google_failed
         AuthMessage.Unknown -> R.string.auth_message_unknown
     }

@@ -2,9 +2,10 @@ package ph.foxdrop.business.home
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Storefront
+import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -20,22 +21,14 @@ import ph.foxdrop.core.designsystem.component.ShellTab
 import ph.foxdrop.core.designsystem.preview.FoxDevicePreviews
 import ph.foxdrop.core.designsystem.preview.FoxPreviews
 import ph.foxdrop.core.designsystem.theme.FoxDropTheme
-import ph.foxdrop.feature.auth.rememberSessionSignOut
-
-@Composable
-fun BusinessHomeRoute(
-    onSignedOut: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    BusinessHomeScreen(onSignOut = rememberSessionSignOut(onSignedOut), modifier = modifier)
-}
 
 /**
- * Phase 0 shell. Bottom bar on phones, navigation rail on tablets (§2). Phase 1 routes store owners and
- * provincial operators to their own homes by role.
+ * Provincial operator home (§9.4, `03_Provincial_Operator_Workflow.png`): dashboard, stores, riders, orders.
+ * Bottom bar on phones, navigation rail on tablets like the dashboard in the reference image.
+ * Licensing, territory and onboarding screens arrive in Phase 2; live orders and KPIs in Phases 4–6.
  */
 @Composable
-fun BusinessHomeScreen(
+fun OperatorHomeScreen(
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
     initialTab: Int = 0,
@@ -45,8 +38,9 @@ fun BusinessHomeScreen(
         tabs =
             persistentListOf(
                 ShellTab(Icons.Rounded.Dashboard, stringResource(R.string.tab_dashboard)),
+                ShellTab(Icons.Rounded.Storefront, stringResource(R.string.tab_stores)),
+                ShellTab(Icons.Rounded.TwoWheeler, stringResource(R.string.tab_riders)),
                 ShellTab(Icons.AutoMirrored.Rounded.ReceiptLong, stringResource(R.string.tab_orders)),
-                ShellTab(Icons.Rounded.AccountBalanceWallet, stringResource(R.string.tab_wallet)),
                 ShellTab(Icons.Rounded.Person, stringResource(R.string.tab_account)),
             ),
         selectedIndex = tab,
@@ -57,29 +51,36 @@ fun BusinessHomeScreen(
             0 ->
                 EmptyState(
                     icon = Icons.Rounded.Dashboard,
-                    title = stringResource(R.string.dashboard_empty_title),
-                    message = stringResource(R.string.dashboard_empty_message),
+                    title = stringResource(R.string.operator_dashboard_title),
+                    message = stringResource(R.string.operator_dashboard_message),
                 )
 
             1 ->
                 EmptyState(
-                    icon = Icons.AutoMirrored.Rounded.ReceiptLong,
-                    title = stringResource(R.string.orders_empty_title),
-                    message = stringResource(R.string.orders_empty_message),
+                    icon = Icons.Rounded.Storefront,
+                    title = stringResource(R.string.operator_stores_title),
+                    message = stringResource(R.string.operator_stores_message),
                 )
 
             2 ->
                 EmptyState(
-                    icon = Icons.Rounded.AccountBalanceWallet,
-                    title = stringResource(R.string.wallet_empty_title),
-                    message = stringResource(R.string.wallet_empty_message),
+                    icon = Icons.Rounded.TwoWheeler,
+                    title = stringResource(R.string.operator_riders_title),
+                    message = stringResource(R.string.operator_riders_message),
+                )
+
+            3 ->
+                EmptyState(
+                    icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+                    title = stringResource(R.string.orders_empty_title),
+                    message = stringResource(R.string.operator_orders_message),
                 )
 
             else ->
                 EmptyState(
                     icon = Icons.Rounded.Person,
                     title = stringResource(R.string.account_title),
-                    message = stringResource(R.string.account_message),
+                    message = stringResource(R.string.operator_account_message),
                     actionLabel = stringResource(R.string.account_sign_out),
                     onAction = onSignOut,
                 )
@@ -90,6 +91,6 @@ fun BusinessHomeScreen(
 @FoxPreviews
 @FoxDevicePreviews
 @Composable
-private fun BusinessHomePreview() {
-    FoxDropTheme { BusinessHomeScreen(onSignOut = {}) }
+private fun OperatorHomePreview() {
+    FoxDropTheme { OperatorHomeScreen(onSignOut = {}) }
 }

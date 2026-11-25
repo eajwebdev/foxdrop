@@ -79,6 +79,8 @@ class ResolveStartDestinationUseCaseTest {
         override suspend fun signUpWithEmail(fullName: String, email: String, password: String) =
             FoxResult.Success(EmailSignUpOutcome.SignedIn)
 
+        override suspend fun signInWithGoogle(idToken: String, rawNonce: String) = FoxResult.Success(Unit)
+
         override suspend fun signOut() = FoxResult.Success(Unit)
     }
 }

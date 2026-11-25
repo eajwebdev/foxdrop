@@ -64,3 +64,6 @@ Format: **what** — why — revisit when.
 24. **Google button shows the official four-colour "G"** (`feature/auth/.../ic_google_logo.xml`), untinted, left of
     "Continue with Google" (owner request; Google Sign-In branding guidelines). Facebook (feature flag, §3) will
     follow the same rule.
+25. **Test OTPs are local-only.** `supabase/config.jsonc` `auth.sms.test_otp` (`+63 917 000 0001…0005` → `123456`) is for the
+    local stack. **Never run `supabase config push` with this file against the hosted project**; Phase 1 moves these
+    codes to a local-only override before a hosted project is linked. (From the Phase 0 security review.)

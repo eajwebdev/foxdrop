@@ -2,28 +2,18 @@
 
 A new session reads this first and continues from **Next**. Never restart a finished phase.
 
-## Current phase: 0 — Foundation (Quality Gate in progress)
+## Current phase: 1 — Database, auth, roles (not started)
 
-Branch: `phase-0` (no GitHub remote yet; commits stay local until the owner creates a repository).
+## Done
+- **Phase 0 — Foundation** ✅ (2026-11-25). Report: `docs/PHASE_0_REPORT.md`. Merged into `main` locally.
 
-### Done
-- Gradle multi-module project, `build-logic` convention plugins, pinned version catalog (toolchain: docs/DECISIONS.md 1–4).
-- 3 apps with animated splash, first-run intro, onboarding, location explainer, animated Log In ⇄ Sign Up + phone OTP UI,
-  adaptive home shells. Installed and walked through on the emulator.
-- Design system (theme, tokens, FoxMotion with "Remove animations", components, previews).
-- Encrypted session storage (DataStore + Tink + Keystore) behind supabase-kt; app runs without a backend configured.
-- Icons and splash vector generated from `reference/logos`.
-- `supabase init` (CLI 3.4 → `supabase/config.jsonc`) with test OTPs.
-- CI workflows written (android, backend, security) — not run yet (no remote).
-- `./gradlew check` green; `verifyRoborazziDebug` green; 77 tests; merged domain/data coverage 90.8 %.
-- Feature → feature dependency rule proven to fail the build.
+## Next
+1. Phase 1 plan → `docs/plans/phase-1.md` (MASTER_PROMPT §13 Phase 1, §5, §8, §17).
+2. Migrations from §8 with RLS + pgTAP; JWT role claims; PSGC + demo seed; move test OTPs to a local-only override
+   (DECISIONS 25).
+3. Real auth flows in the apps: phone OTP (+ SMS User Consent), email, Google via Credential Manager with per-app
+   redirect schemes and `handleDeeplinks`; role routing in the business app.
 
-### Next
-1. Finish the Phase 0 Quality Gate: apply `/simplify` fixes, `/code-review high`, `/security-review`, re-run checks,
-   write `docs/PHASE_0_REPORT.md`, commit on `phase-0`, merge to `main`.
-2. Phase 1 — Database, auth, roles (needs Docker + Supabase CLI from docs/OWNER_TODO.md to verify locally; migrations
-   and pgTAP tests can be written before that).
-
-### Blocked / waiting for owner
-- Docker Desktop + Supabase CLI + Deno not installed → cannot run `supabase start` / pgTAP locally.
+## Blocked / waiting for owner (docs/OWNER_TODO.md)
+- Docker Desktop + Supabase CLI + Deno not installed → migrations and pgTAP can be written but not run locally.
 - No GitHub repository → CI not run.

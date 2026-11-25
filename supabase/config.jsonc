@@ -315,14 +315,20 @@
       // Controls the minimum amount of time that must pass before sending another sms otp.
       "max_frequency": "30s",
 
-      // Local development only: fixed codes for the demo accounts (seeded in Phase 1), no SMS is sent.
+      // LOCAL DEVELOPMENT ONLY: fixed codes for the 10 demo accounts in supabase/seed.sql, no SMS is sent.
+      // Never `supabase config push` this file to the hosted project (docs/DECISIONS.md 25).
       // Keys are the phone number with country code and without the + prefix.
       "test_otp": {
         "639170000001": "123456",
         "639170000002": "123456",
         "639170000003": "123456",
         "639170000004": "123456",
-        "639170000005": "123456"
+        "639170000005": "123456",
+        "639170000006": "123456",
+        "639170000007": "123456",
+        "639170000008": "123456",
+        "639170000009": "123456",
+        "639170000010": "123456"
       },
 
       // Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
@@ -343,18 +349,15 @@
     //   "inactivity_timeout": "8h"
     // },
 
-    // This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-    // "hook": {
-    //   "before_user_created": {
-    //     "enabled": true,
-    //     "uri": "pg-functions://postgres/auth/before-user-created-hook"
-    //   },
-    //   // This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
-    //   "custom_access_token": {
-    //     "enabled": true,
-    //     "uri": "pg-functions://<database>/<schema>/<hook_name>"
-    //   }
-    // },
+    // Adds the user's FoxDrop roles ("app_roles") to every access token so the apps can route to the right home
+    // (§5). Defined in migration 20261125090500_auth_helpers.sql. Enable the same hook in the hosted project's
+    // dashboard (Authentication › Hooks).
+    "hook": {
+      "custom_access_token": {
+        "enabled": true,
+        "uri": "pg-functions://postgres/public/custom_access_token_hook"
+      }
+    },
 
     // Multi-factor-authentication is available to Supabase Pro plan.
     "mfa": {

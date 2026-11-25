@@ -51,7 +51,7 @@ You do not need all of these on day one. The agent builds with a local backend a
 | Firebase | Push notifications, crash reports | Phase 3 |
 | SMS provider (for example Twilio) | Login codes sent to real phones | Before real users test |
 | Email (SMTP) provider | License reminders, report emails | Phase 6 |
-| Server with HTTPS (Laravel Cloud, Forge or a VPS) | Hosting the admin web | Phase 7 |
+| Hostinger (a VPS is best; shared hosting works with limits) | Hosting the admin web only. The database stays on Supabase; Hostinger's MySQL is not used | Phase W1 / 7 |
 | Google Play Console | Publishing the 3 apps | Phase 7 |
 
 **Never paste secret keys into the chat or into app code.** Put them only where the agent tells you: `local.properties`, `admin-web/.env`, Supabase secrets and GitHub secrets. None of these files are committed.

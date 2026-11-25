@@ -24,7 +24,8 @@ Tick an item (`[x]`) when done and tell the agent in your next message.
 
 ## Accounts (when the agent asks; keys go only where it says, never in the chat)
 
-- [ ] Supabase project (Phase 1, free tier is fine) → put URL + anon key in `local.properties`.
+- [ ] Supabase project (Phase 1, free tier is fine) → put URL + anon key in `local.properties`. Choose region **Southeast Asia (Singapore)**, closest to the Philippines.
+- [ ] Hostinger plan for the admin website (Phase W1/7). A **VPS** (KVM 1 or 2) is best; with shared hosting, check hPanel › PHP extensions has `pdo_pgsql`. No MySQL database is needed.
 - [ ] Google Cloud project with Maps SDK for Android + Routes API (Phase 2).
 - [ ] PayMongo account in test mode (Phase 2).
 - [ ] Firebase project (Phase 3).

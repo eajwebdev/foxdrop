@@ -672,7 +672,8 @@ Rules: controllers ≤ ~30 lines; business logic in Actions/DB functions; TypeSc
 - Re-authenticate (password confirm + 2FA) before dangerous actions: refunds above a threshold, license changes, settings changes, admin role changes.
 - Audit everything; alerts on suspicious activity (many failed logins, bulk exports).
 - `composer audit` + `npm audit` in CI, Dependabot/Renovate, gitleaks.
-- Deploy: HTTPS only (Laravel Cloud / Forge / Ploi on a VPS), `APP_DEBUG=false`, queue worker + Horizon protected by permission, daily backups of the `admin` schema (Supabase PITR covers the DB).
+- Deploy: HTTPS only, `APP_DEBUG=false`, queue worker + Horizon protected by permission, daily backups of the `admin` schema (Supabase PITR covers the DB).
+- **Hosting (owner's choice): Hostinger.** Preferred: a **Hostinger VPS** (Ubuntu, Nginx, PHP 8.3+ with `pdo_pgsql`, Redis, Supervisor running `queue:work`/Horizon, Let's Encrypt HTTPS). Fallback: Hostinger shared/Business/Cloud web hosting if `pdo_pgsql` is available in hPanel; there is no Redis or long-running worker there, so use the `database` queue driven by cron (`schedule:run` every minute) and keep exports small. **Hostinger's MySQL is not used**: the only database is the Supabase Postgres (§3); never create FoxDrop tables in MySQL.
 
 ### 20.7 Admin web quality gate (added to §19 for Phases W1/W2)
 - [ ] `./vendor/bin/pest` green (feature tests for every page + permission 403 tests), `phpstan` level 8+ clean, `pint --test` clean

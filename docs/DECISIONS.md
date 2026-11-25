@@ -67,3 +67,10 @@ Format: **what** — why — revisit when.
 25. **Test OTPs are local-only.** `supabase/config.jsonc` `auth.sms.test_otp` (`+63 917 000 0001…0005` → `123456`) is for the
     local stack. **Never run `supabase config push` with this file against the hosted project**; Phase 1 moves these
     codes to a local-only override before a hosted project is linked. (From the Phase 0 security review.)
+
+## Before Phase 1 (2026-11-25)
+
+26. **Database stays Supabase Postgres; hosting is Hostinger for the admin web only.** The owner considered MySQL
+    because of Hostinger hosting. Decision: keep Supabase (RLS province isolation, Auth, Realtime, Storage, Edge
+    Functions are required by §3/§17 and would otherwise have to be hand-built). Hostinger (VPS preferred) hosts
+    `admin-web`, which connects to the Supabase Postgres; Hostinger's MySQL is not used. MASTER_PROMPT §20.6 updated.

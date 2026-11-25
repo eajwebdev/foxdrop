@@ -1,0 +1,72 @@
+# Builds on detekt's default config (buildUponDefaultConfig = true); only overrides are listed.
+config:
+  validation: true
+  warningsAsErrors: true
+  # Rule options that only exist in the Compose-rules plugin, not in detekt's default config.
+  excludes: 'Compose>CompositionLocalAllowlist>allowedCompositionLocals'
+
+complexity:
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    threshold: 80
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    ignorePrivate: true
+    ignoreAnnotatedFunctions: ['Composable', 'Preview']
+  CyclomaticComplexMethod:
+    ignoreAnnotated: ['Composable']
+    # MVI reducers are one flat `when` over actions; each one-line branch counts once.
+    ignoreSimpleWhenEntries: true
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable', 'Test']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9_]*'
+  MatchingDeclarationName:
+    active: false
+
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotated: ['Composable', 'Preview']
+    ignoreNamedArgument: true
+    excludes: ['**/test/**', '**/androidTest/**', '**/designsystem/**/theme/**', '**/designsystem/**/token/**']
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview', 'PreviewLightDark', 'PreviewScreenSizes', 'PreviewFontScale', 'FoxPreviews']
+  UnusedPrivateProperty:
+    active: true
+  ForbiddenComment:
+    # TODO without an issue/ticket reference is not allowed (§16). Use: TODO(FD-123) or TODO(phase-3).
+    comments:
+      - value: 'TODO:'
+        reason: 'Use TODO(ticket-or-phase): …'
+      - value: 'FIXME:'
+        reason: 'Fix it or open an issue and use TODO(ticket): …'
+  ReturnCount:
+    max: 3
+  UnnecessaryAbstractClass:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - Error
+      - Throwable
+      - NullPointerException
+      - IndexOutOfBoundsException
+
+# Compose rules (io.nlopez.compose.rules): all rules from the plugin's own defaults are active.
+# Only overrides go here.
+Compose:
+  CompositionLocalAllowlist:
+    active: true
+    allowedCompositionLocals: LocalFoxColors,LocalFoxMotion

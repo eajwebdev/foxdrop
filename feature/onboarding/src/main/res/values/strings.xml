@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="intro_logo_description">FoxDrop</string>
+    <string name="intro_tagline">Delivering near you</string>
+    <string name="intro_skip">Skip intro</string>
+
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Get started</string>
+    <string name="onboarding_page_indicator">Page %1$d of %2$d</string>
+
+    <string name="onboarding_customer_1_title">Stores near you</string>
+    <string name="onboarding_customer_1_body">Food, groceries, medicine and more from shops in your own province.</string>
+    <string name="onboarding_customer_2_title">Pay your way</string>
+    <string name="onboarding_customer_2_body">GCash, Maya, card, or cash on delivery. Pick up at the store if you prefer.</string>
+    <string name="onboarding_customer_3_title">Track every step</string>
+    <string name="onboarding_customer_3_body">See your rider on the map from the store to your door.</string>
+
+    <string name="onboarding_rider_1_title">Deliver and earn</string>
+    <string name="onboarding_rider_1_body">Get delivery requests near you and see your earnings before you accept.</string>
+    <string name="onboarding_rider_2_title">Easy navigation</string>
+    <string name="onboarding_rider_2_body">Go from store to customer with Google Maps or Waze in one tap.</string>
+    <string name="onboarding_rider_3_title">Track your earnings</string>
+    <string name="onboarding_rider_3_body">Today\'s earnings, cash on hand and remittances, all in one place.</string>
+
+    <string name="onboarding_business_1_title">Grow your store</string>
+    <string name="onboarding_business_1_body">Reach customers in your province and manage orders as they come in.</string>
+    <string name="onboarding_business_2_title">Run your province</string>
+    <string name="onboarding_business_2_body">Operators onboard stores and riders, set delivery rates, and watch every order.</string>
+    <string name="onboarding_business_3_title">Clear money, every day</string>
+    <string name="onboarding_business_3_body">Wallets, fees, remittances and reports you can trust.</string>
+
+    <string name="location_title">Find stores near you</string>
+    <string name="location_body_customer">FoxDrop uses your location to show stores in your province and to deliver to the right place. You can change your address any time.</string>
+    <string name="location_body_rider">FoxDrop uses your location to send you nearby delivery requests and to show customers where their order is while you are on a delivery.</string>
+    <string name="location_allow">Allow location</string>
+    <string name="location_not_now">Not now</string>
+</resources>

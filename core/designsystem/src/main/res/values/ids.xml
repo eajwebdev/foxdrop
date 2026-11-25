@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- View tag: how many SecureScreen() composables are showing in a window. -->
+    <item name="foxdrop_secure_screen_count" type="id" />
+</resources>

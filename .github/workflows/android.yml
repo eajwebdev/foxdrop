@@ -1,0 +1,49 @@
+name: Android
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # Spotless (ktlint), detekt + Compose rules, Android Lint, unit tests, Kover ≥ 80 % (MASTER_PROMPT.md §16)
+      - name: Check
+        run: ./gradlew check --continue
+
+      - name: Screenshot tests (Roborazzi)
+        run: ./gradlew verifyRoborazziDebug
+
+      - name: Assemble debug APKs
+        run: ./gradlew assembleDebug
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            **/build/reports/**
+            **/build/outputs/roborazzi/**
+          retention-days: 14

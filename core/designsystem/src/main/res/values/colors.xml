@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand (§11). Compose code uses FoxBrand in theme/Color.kt; these are for XML themes and icons. -->
+    <color name="foxdrop_navy">#05153C</color>
+    <color name="foxdrop_window_background">#F7F7FA</color>
+</resources>

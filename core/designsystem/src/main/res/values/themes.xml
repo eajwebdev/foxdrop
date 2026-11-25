@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch theme for all three apps (§11A.1): navy background + animated fox mark.
+         core-splashscreen backports it to API 23+. -->
+    <style name="Theme.FoxDrop.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/foxdrop_navy</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/foxdrop_splash_animated</item>
+        <item name="windowSplashScreenAnimationDuration">700</item>
+        <item name="postSplashScreenTheme">@style/Theme.FoxDrop</item>
+    </style>
+
+    <!-- Window theme behind Compose. Compose draws everything; this only sets the window background so there is
+         no white flash in dark mode. -->
+    <style name="Theme.FoxDrop" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/foxdrop_window_background</item>
+    </style>
+</resources>

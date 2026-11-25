@@ -331,6 +331,11 @@ Colors (sampled from the logos):
 - Provide light + dark themes (dark: navy background, pink accents). Dynamic color OFF (brand first).
 - Typography: bold, rounded geometric sans (e.g., **Poppins** or **Montserrat** via downloadable fonts) — headings ExtraBold Italic feel like the logo; body Regular.
 - Shapes: rounded 16dp cards, pill buttons (like the image buttons "Sign Up", "Place Order", "Go Online").
+- **Cards are flat** (owner's rule): no shadow and no tonal elevation; every card has a soft rounded 1dp border
+  (`outlineVariant`). Always use the design-system `FoxCard`, never Material `ElevatedCard` or a `Surface` with
+  `shadowElevation`.
+- **Social sign-in buttons show the provider's official logo** in its own colours, left of the label (e.g. the
+  four-colour Google "G" on "Continue with Google"), following each provider's branding guidelines.
 - Logos in `/reference/logos`:
   - `foxdrop_swift_fox_delivery_logo.png` (fox + parcel + wordmark) → **customer app icon & splash** (crop the fox+parcel mark for the adaptive icon foreground, pink/white on navy background).
   - `foxdrop_delivery_logo_with_fox_emblem.png` (FD monogram) → **Business app icon**.

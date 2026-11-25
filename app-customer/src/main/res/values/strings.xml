@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FoxDrop</string>
+
+    <string name="tab_home">Home</string>
+    <string name="tab_orders">Orders</string>
+    <string name="tab_account">Account</string>
+
+    <string name="home_empty_title">Stores near you are on the way</string>
+    <string name="home_empty_message">Food, groceries and medicine from your province will show up here soon.</string>
+    <string name="orders_empty_title">No orders yet</string>
+    <string name="orders_empty_message">When you place an order, you can track it here.</string>
+    <string name="account_title">You\'re signed in</string>
+    <string name="account_message">Your profile, addresses and settings will live here.</string>
+    <string name="account_sign_out">Sign out</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FoxDrop Business</string>
+
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_orders">Orders</string>
+    <string name="tab_wallet">Wallet</string>
+    <string name="tab_account">Account</string>
+
+    <string name="dashboard_empty_title">Your dashboard is being set up</string>
+    <string name="dashboard_empty_message">Stores see today\'s orders and sales here. Provincial operators see their whole province.</string>
+    <string name="orders_empty_title">No orders yet</string>
+    <string name="orders_empty_message">New orders will ring here so you never miss one.</string>
+    <string name="wallet_empty_title">Top-up wallet</string>
+    <string name="wallet_empty_message">Your balance, top-ups and monthly store fee will show up here.</string>
+    <string name="account_title">You\'re signed in</string>
+    <string name="account_message">Your business profile, staff and settings will live here.</string>
+    <string name="account_sign_out">Sign out</string>
+</resources>

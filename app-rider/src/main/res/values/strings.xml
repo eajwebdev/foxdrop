@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FoxDrop Rider</string>
+
+    <string name="tab_jobs">Jobs</string>
+    <string name="tab_earnings">Earnings</string>
+    <string name="tab_account">Account</string>
+
+    <string name="jobs_empty_title">Rider sign-up opens soon</string>
+    <string name="jobs_empty_message">You\'ll submit your ID, license and vehicle here, then go online to get delivery requests.</string>
+    <string name="earnings_empty_title">No earnings yet</string>
+    <string name="earnings_empty_message">Your daily earnings, cash on hand and remittances will show up here.</string>
+    <string name="account_title">You\'re signed in</string>
+    <string name="account_message">Your profile, documents and vehicle details will live here.</string>
+    <string name="account_sign_out">Sign out</string>
+</resources>

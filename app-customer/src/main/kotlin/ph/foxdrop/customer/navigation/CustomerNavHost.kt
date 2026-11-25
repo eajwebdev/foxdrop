@@ -33,7 +33,7 @@ fun CustomerNavHost(startDestination: StartDestination, modifier: Modifier = Mod
         onboardingGraph(navController, FoxDropApp.Customer, onFinished = { navController.resetTo(AuthDestination) })
         authScreen(onSignedIn = { navController.resetTo(CustomerHomeDestination) })
         composable<CustomerHomeDestination> {
-            RoleGate(app = FoxDropApp.Customer, onSignedOut = {
+            RoleGate(onSignedOut = {
                 navController.resetTo(AuthDestination)
             }) { _, signOut ->
                 CustomerHomeScreen(onSignOut = signOut)

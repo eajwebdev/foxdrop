@@ -33,7 +33,7 @@ fun RiderNavHost(startDestination: StartDestination, modifier: Modifier = Modifi
         onboardingGraph(navController, FoxDropApp.Rider, onFinished = { navController.resetTo(AuthDestination) })
         authScreen(onSignedIn = { navController.resetTo(RiderHomeDestination) })
         composable<RiderHomeDestination> {
-            RoleGate(app = FoxDropApp.Rider, onSignedOut = { navController.resetTo(AuthDestination) }) { _, signOut ->
+            RoleGate(onSignedOut = { navController.resetTo(AuthDestination) }) { _, signOut ->
                 RiderHomeScreen(onSignOut = signOut)
             }
         }

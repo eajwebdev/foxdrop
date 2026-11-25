@@ -24,18 +24,15 @@ create table public.user_roles (
   granted_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now(),
   constraint user_roles_scope check (
-    case role
-      when 'operator' then province_id is not null and store_id is null
-      when 'operator_staff' then province_id is not null and store_id is null
-      when 'store_owner' then province_id is not null and store_id is not null
-      when 'store_staff' then province_id is not null and store_id is not null
-      when 'rider' then province_id is not null and store_id is null
+    case
+      when role in ('operator', 'operator_staff', 'rider') then province_id is not null and store_id is null
+      when role in ('store_owner', 'store_staff') then province_id is not null and store_id is not null
       else province_id is null and store_id is null -- customer, super_admin, admin_staff are global
     end
   ),
   constraint user_roles_unique unique nulls not distinct (user_id, role, province_id, store_id)
 );
-create index user_roles_user_idx on public.user_roles (user_id);
+-- Lookups by user_id use user_roles_unique (user_id is its leading column).
 create index user_roles_province_idx on public.user_roles (province_id) where province_id is not null;
 create index user_roles_store_idx on public.user_roles (store_id) where store_id is not null;
 

@@ -72,7 +72,7 @@ create policy delivery_zones_read on public.delivery_zones for select to authent
 -- ---------------------------------------------------------------- stores & catalog
 -- Public storefront: active/paused stores in a serviceable province. Members, operators and admins see all.
 create policy stores_public_read on public.stores for select to anon, authenticated using (
-  status in ('ACTIVE', 'PAUSED') and private.province_is_serviceable(province_id)
+  status in ('ACTIVE', 'PAUSED') and province_id in (select private.serviceable_province_ids())
 );
 create policy stores_staff_read on public.stores for select to authenticated using (
   id in (select private.member_store_ids())
@@ -155,9 +155,11 @@ create policy payments_read on public.payments for select to authenticated using
 create policy webhook_events_read on public.webhook_events for select to authenticated using (
   (select private.is_platform_admin())
 );
-create policy wallets_read on public.wallets for select to authenticated using (private.can_see_wallet(id));
+create policy wallets_read on public.wallets for select to authenticated using (
+  id in (select private.visible_wallet_ids())
+);
 create policy ledger_entries_read on public.ledger_entries for select to authenticated using (
-  private.can_see_wallet(wallet_id)
+  wallet_id in (select private.visible_wallet_ids())
 );
 create policy ledger_txns_read on public.ledger_txns for select to authenticated using (
   (select private.is_platform_admin())

@@ -13,6 +13,7 @@ dependencies {
     implementation(projects.core.common)
     implementation(projects.core.datastore)
     implementation(projects.core.network)
+    implementation(libs.androidx.core.ktx)
 
     testImplementation(projects.core.testing)
 }

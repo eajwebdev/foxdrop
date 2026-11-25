@@ -1,13 +1,14 @@
 package ph.foxdrop.core.network.auth
 
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.Order
+import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.model.AppRole
@@ -29,28 +30,33 @@ internal data class UserRoleRow(
 internal fun List<UserRoleRow>.toGrants(): List<RoleGrant> =
     mapNotNull { row -> AppRole.fromDbValue(row.role)?.let { RoleGrant(it, row.provinceId, row.storeId) } }
 
+private val claimsJson = Json { ignoreUnknownKeys = true }
+
+/**
+ * Reads the `app_roles` claim that `custom_access_token_hook` puts in every access token (§5). The signature is not
+ * checked: this only picks which home to show, and RLS decides every read. Returns null for a malformed token.
+ */
+internal fun appRolesFromAccessToken(token: String): List<RoleGrant>? =
+    runCatching {
+        val payload = String(Base64.getUrlDecoder().decode(token.split('.')[1]))
+        val roles = claimsJson.parseToJsonElement(payload).jsonObject["app_roles"] ?: return@runCatching emptyList()
+        claimsJson.decodeFromJsonElement<List<UserRoleRow>>(roles).toGrants()
+    }.getOrNull()
+
+/**
+ * Roles come from the stored session, so routing works offline and costs no request. A role change shows after the
+ * next token refresh (at most one token lifetime); flows that grant a role refresh the session themselves.
+ */
 @Singleton
 internal class SupabaseRolesRemoteDataSource @Inject constructor(
     private val provider: SupabaseClientProvider,
 ) : RolesRemoteDataSource {
-    override suspend fun myRoles(): FoxResult<List<RoleGrant>> {
-        val result =
-            provider.call { client ->
-                val userId = client.auth.currentUserOrNull()?.id ?: return@call null
-                // RLS returns more than our own rows to operators (their province's grants), so filter by user.
-                client.from("user_roles")
-                    .select(Columns.list("role", "province_id", "store_id")) {
-                        filter { eq("user_id", userId) }
-                        order("created_at", Order.ASCENDING) // oldest grant first: a stable home for multi-store owners
-                    }
-                    .decodeList<UserRoleRow>()
-                    .toGrants()
-            }
-        return when (result) {
-            is FoxResult.Success -> result.value?.let { FoxResult.Success(it) }
-                ?: FoxResult.Failure(DomainError.Unauthorized)
+    override suspend fun myRoles(): FoxResult<List<RoleGrant>> =
+        when (val token = provider.call { it.auth.currentAccessTokenOrNull() }) {
+            is FoxResult.Failure -> token
 
-            is FoxResult.Failure -> result
+            is FoxResult.Success ->
+                token.value?.let(::appRolesFromAccessToken)?.let { FoxResult.Success(it) }
+                    ?: FoxResult.Failure(DomainError.Unauthorized)
         }
-    }
 }

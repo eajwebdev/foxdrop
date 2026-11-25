@@ -9,10 +9,13 @@ import io.github.jan.supabase.postgrest.Postgrest
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ph.foxdrop.core.common.dispatcher.Dispatcher
 import ph.foxdrop.core.common.dispatcher.FoxDispatchers
@@ -22,13 +25,15 @@ import ph.foxdrop.core.model.FoxDropApp
 import ph.foxdrop.core.network.auth.EncryptedSessionManager
 
 /** Where Supabase Auth sends the user back after email confirmation / OAuth: `foxdrop-customer://auth` etc. */
-data class AuthRedirect(val scheme: String, val host: String = "auth") {
+data class AuthRedirect(val scheme: String) {
     fun matches(intent: Intent?): Boolean {
         val uri = intent?.data ?: return false
-        return intent.action == Intent.ACTION_VIEW && uri.scheme == scheme && uri.host == host
+        return intent.action == Intent.ACTION_VIEW && uri.scheme == scheme && uri.host == HOST
     }
 
     companion object {
+        const val HOST = "auth"
+
         /** One scheme per app, so a link opens the right app without a chooser. Must match the app's manifest. */
         fun forApp(app: FoxDropApp) = AuthRedirect(scheme = "foxdrop-" + app.name.lowercase())
     }
@@ -46,6 +51,9 @@ class SupabaseClientProvider @Inject constructor(
     private val redirect: AuthRedirect,
     @param:Dispatcher(FoxDispatchers.IO) private val io: CoroutineDispatcher,
 ) {
+    /** App-lifetime scope for work that must outlive the screen that started it (auth redirects). */
+    private val redirectScope = CoroutineScope(SupervisorJob() + io)
+
     private val client: SupabaseClient? by lazy {
         if (!config.isConfigured) return@lazy null
         createSupabaseClient(supabaseUrl = config.url, supabaseKey = config.anonKey) {
@@ -54,7 +62,7 @@ class SupabaseClientProvider @Inject constructor(
                 autoLoadFromStorage = true
                 alwaysAutoRefresh = true
                 scheme = redirect.scheme
-                host = redirect.host
+                host = AuthRedirect.HOST
             }
             install(Postgrest)
         }
@@ -76,10 +84,13 @@ class SupabaseClientProvider @Inject constructor(
 
     /**
      * Imports the session from an auth redirect (email confirmation link). Only `foxdrop-<app>://auth` links are
-     * touched; every other intent is ignored (§17: deep-link parameters are validated).
+     * touched; every other intent is ignored (§17: deep-link parameters are validated). The client is created on the
+     * IO dispatcher, never on the main thread. Returns whether the intent was an auth redirect.
      */
-    fun handleAuthRedirect(intent: Intent?) {
-        if (!redirect.matches(intent)) return
-        client?.handleDeeplinks(checkNotNull(intent))
+    fun handleAuthRedirect(intent: Intent?): Boolean {
+        if (!redirect.matches(intent)) return false
+        val redirectIntent = Intent(intent) // a copy: the caller may clear the original's data
+        redirectScope.launch { client?.handleDeeplinks(redirectIntent) }
+        return true
     }
 }

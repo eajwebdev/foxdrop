@@ -50,22 +50,21 @@ create trigger province_licenses_updated_at before update on public.province_lic
   for each row execute function private.set_updated_at();
 
 -- Customers only see provinces with an ACTIVE or GRACE license (§5.1). Readable without exposing license rows.
-create or replace function private.province_is_serviceable(target_province uuid)
-returns boolean
+-- A set, so policies evaluate it once per query (`province_id in (select ...)`), not once per storefront row.
+create or replace function private.serviceable_province_ids()
+returns setof uuid
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select exists (
-    select 1
-    from public.province_licenses pl
-    join public.provinces p on p.id = pl.province_id
-    where pl.province_id = target_province and pl.status in ('ACTIVE', 'GRACE') and p.is_enabled
-  );
+  select pl.province_id
+  from public.province_licenses pl
+  join public.provinces p on p.id = pl.province_id
+  where pl.status in ('ACTIVE', 'GRACE') and p.is_enabled;
 $$;
-revoke all on function private.province_is_serviceable(uuid) from public;
-grant execute on function private.province_is_serviceable(uuid) to anon, authenticated, service_role;
+revoke all on function private.serviceable_province_ids() from public;
+grant execute on function private.serviceable_province_ids() to anon, authenticated, service_role;
 
 -- Public province list for the apps: "FoxDrop is coming soon to your province" when not serviceable (§9.1).
 create view public.province_directory
@@ -77,5 +76,5 @@ select
   p.name,
   p.region_name,
   p.center,
-  private.province_is_serviceable(p.id) as is_serviceable
+  p.id in (select private.serviceable_province_ids()) as is_serviceable
 from public.provinces p;

@@ -30,25 +30,23 @@ class RoleGateViewModelTest {
     val main = MainDispatcherRule(StandardTestDispatcher())
 
     private val roles = FakeRoleRepository()
-    private val vm = RoleGateViewModel(ResolveHomeUseCase(roles))
+
+    private fun gate(app: FoxDropApp) = RoleGateViewModel(ResolveHomeUseCase(roles), app)
 
     @Test
-    fun `resolves the home for the app`() = runTest(main.dispatcher) {
+    fun `resolves the home for the app once`() = runTest(main.dispatcher) {
         roles.result = FoxResult.Success(listOf(RoleGrant(AppRole.Operator, provinceId = "neg")))
-        vm.load(FoxDropApp.Business)
+        val vm = gate(FoxDropApp.Business)
         assertEquals(RoleGateState.Loading, vm.state.value)
         runCurrent()
         assertEquals(RoleGateState.Ready(HomeDecision.OperatorHome("neg")), vm.state.value)
-
-        vm.load(FoxDropApp.Business) // same app again: no second request
-        runCurrent()
         assertEquals(1, roles.calls)
     }
 
     @Test
     fun `errors can be retried`() = runTest(main.dispatcher) {
         roles.result = FoxResult.Failure(DomainError.Network)
-        vm.load(FoxDropApp.Rider)
+        val vm = gate(FoxDropApp.Rider)
         runCurrent()
         assertEquals(RoleGateState.Failed(AuthMessage.Network), vm.state.value)
 
@@ -62,15 +60,15 @@ class RoleGateViewModelTest {
     @Test
     fun `an unconfigured backend is reported as such`() = runTest(main.dispatcher) {
         roles.result = FoxResult.Failure(DomainError.NotConfigured)
-        vm.load(FoxDropApp.Customer)
+        val vm = gate(FoxDropApp.Customer)
         runCurrent()
         assertEquals(RoleGateState.Failed(AuthMessage.NotConfigured), vm.state.value)
     }
 
     @Test
-    fun `a rejected session asks for sign-in again instead of a retry loop`() = runTest(main.dispatcher) {
+    fun `a missing or rejected session asks for sign-in again instead of a retry loop`() = runTest(main.dispatcher) {
         roles.result = FoxResult.Failure(DomainError.Unauthorized)
-        vm.load(FoxDropApp.Rider)
+        val vm = gate(FoxDropApp.Rider)
         runCurrent()
         assertEquals(RoleGateState.SessionExpired, vm.state.value)
     }

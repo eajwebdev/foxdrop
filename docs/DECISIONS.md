@@ -99,10 +99,12 @@ Format: **what** — why — revisit when.
     `signInWith(IDToken)`. It is enabled only when `GOOGLE_WEB_CLIENT_ID` is set in `local.properties`; otherwise the
     button explains that Google sign-in is not set up yet. OTP autofill uses the SMS User Consent API (no SMS
     permission).
-34. **Role routing:** admin accounts are kept out of all three Android apps ("use the web dashboard"). In the business
-    app an operator role wins over a store role. The customer app opens to the customer home even offline (RLS still
-    protects every read); the rider and business apps need their role and show error + retry + sign out. A session
-    the server rejects signs the user out instead of offering a retry.
+34. **Role routing reads the `app_roles` JWT claim from the stored session** (no request, works offline in all three
+    apps). Admin accounts are kept out of every Android app ("use the web dashboard"); in the business app an
+    operator role wins over a store role; grants come oldest first. A role change shows after the next token refresh
+    (≤ 1 token lifetime) — flows that grant a role (Phase 2 approvals, Phase 4 rider approval) refresh the session.
+    RLS, which reads `user_roles` directly, decides every read, so a stale claim never exposes data. No session →
+    sign out. (Phase 1 /simplify: replaced a second, network-only roles query.)
 35. **Auth redirects** use one scheme per app (`foxdrop-customer://auth`, `foxdrop-rider://auth`,
     `foxdrop-business://auth`). The launch intent is handled only on a fresh launch (not after process death or from
     Recents) and its data is cleared, so a one-time code is never exchanged twice.

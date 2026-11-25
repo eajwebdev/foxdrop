@@ -167,6 +167,7 @@ create table public.topups (
   constraint topups_cash_has_receipt check (method <> 'CASH' or receipt_path is not null)
 );
 create index topups_store_idx on public.topups (store_id, created_at desc);
+create index topups_province_idx on public.topups (province_id, created_at desc);
 create trigger topups_updated_at before update on public.topups
   for each row execute function private.set_updated_at();
 
@@ -234,6 +235,9 @@ create table public.settlement_lines (
   )
 );
 create index settlement_lines_batch_idx on public.settlement_lines (batch_id);
+create index settlement_lines_province_idx on public.settlement_lines (province_id);
+create index settlement_lines_store_idx on public.settlement_lines (store_id) where store_id is not null;
+create index settlement_lines_rider_idx on public.settlement_lines (rider_id) where rider_id is not null;
 
 create table public.payouts (
   id uuid primary key default gen_random_uuid(),
@@ -247,24 +251,20 @@ create table public.payouts (
   ledger_txn_id uuid references public.ledger_txns (id)
 );
 
--- Which wallets the current user may see (owner of the wallet, its province operator, or platform admin).
-create or replace function private.can_see_wallet(target_wallet uuid)
-returns boolean
+-- Wallets the current user may see (owner of the wallet, its province operator, or platform admin). A set, so RLS
+-- evaluates it once per query (`id in (select ...)`) instead of once per ledger row.
+create or replace function private.visible_wallet_ids()
+returns setof uuid
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select exists (
-    select 1 from public.wallets w
-    where w.id = target_wallet
-      and (
-        (select private.is_platform_admin())
-        or (w.province_id is not null and w.province_id in (select private.operator_province_ids()))
-        or (w.owner_type = 'STORE' and w.owner_id in (select private.member_store_ids()))
-        or (w.owner_type = 'RIDER' and w.owner_id = (select private.current_rider_id()))
-      )
-  );
+  select w.id from public.wallets w
+  where (select private.is_platform_admin())
+     or (w.province_id is not null and w.province_id in (select private.operator_province_ids()))
+     or (w.owner_type = 'STORE' and w.owner_id in (select private.member_store_ids()))
+     or (w.owner_type = 'RIDER' and w.owner_id = (select private.current_rider_id()));
 $$;
-revoke all on function private.can_see_wallet(uuid) from public;
-grant execute on function private.can_see_wallet(uuid) to authenticated, service_role;
+revoke all on function private.visible_wallet_ids() from public;
+grant execute on function private.visible_wallet_ids() to authenticated, service_role;

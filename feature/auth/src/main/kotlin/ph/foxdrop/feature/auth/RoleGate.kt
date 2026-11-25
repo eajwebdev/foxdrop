@@ -58,14 +58,16 @@ sealed interface RoleGateState {
 @HiltViewModel
 class RoleGateViewModel @Inject constructor(
     private val resolveHome: ResolveHomeUseCase,
+    private val app: FoxDropApp,
 ) : ViewModel() {
     private val _state = MutableStateFlow<RoleGateState>(RoleGateState.Loading)
     val state: StateFlow<RoleGateState> = _state.asStateFlow()
-    private var app: FoxDropApp? = null
 
-    fun load(app: FoxDropApp) {
-        if (this.app == app && _state.value !is RoleGateState.Failed) return
-        this.app = app
+    init {
+        retry()
+    }
+
+    fun retry() {
         _state.value = RoleGateState.Loading
         viewModelScope.launch {
             _state.value =
@@ -76,25 +78,11 @@ class RoleGateViewModel @Inject constructor(
                         if (result.error == DomainError.Unauthorized) {
                             RoleGateState.SessionExpired
                         } else {
-                            RoleGateState.Failed(result.error.toGateMessage())
+                            RoleGateState.Failed(result.error.toMessage())
                         }
                 }
         }
     }
-
-    fun retry() {
-        app?.let { current ->
-            this.app = null
-            load(current)
-        }
-    }
-
-    private fun DomainError.toGateMessage(): AuthMessage =
-        when (this) {
-            DomainError.Network -> AuthMessage.Network
-            DomainError.NotConfigured -> AuthMessage.NotConfigured
-            else -> AuthMessage.Unknown
-        }
 }
 
 /**
@@ -103,15 +91,13 @@ class RoleGateViewModel @Inject constructor(
  */
 @Composable
 fun RoleGate(
-    app: FoxDropApp,
     onSignedOut: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RoleGateViewModel = hiltViewModel(),
-    content: @Composable (decision: HomeDecision, signOut: () -> Unit) -> Unit,
+    content: @Composable (home: HomeDecision.Home, signOut: () -> Unit) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val signOut = rememberSessionSignOut(onSignedOut)
-    LaunchedEffect(app) { viewModel.load(app) }
     LaunchedEffect(state) { if (state == RoleGateState.SessionExpired) signOut() }
     RoleGateContent(
         state = state,
@@ -128,7 +114,7 @@ internal fun RoleGateContent(
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable (decision: HomeDecision, signOut: () -> Unit) -> Unit,
+    content: @Composable (home: HomeDecision.Home, signOut: () -> Unit) -> Unit,
 ) {
     val motion = FoxTheme.motion
     // Crossfade by state kind only, so a Ready → Ready update does not fade the whole home.
@@ -159,24 +145,18 @@ internal fun RoleGateContent(
                 }
 
             is RoleGateState.Ready ->
-                if (current.decision.isAccountMismatch()) {
-                    AccountMismatchScreen(decision = current.decision, onSignOut = onSignOut)
-                } else {
-                    content(current.decision, onSignOut)
+                when (val decision = current.decision) {
+                    is HomeDecision.Mismatch -> AccountMismatchScreen(decision = decision, onSignOut = onSignOut)
+                    is HomeDecision.Home -> content(decision, onSignOut)
                 }
         }
     }
 }
 
-private fun HomeDecision.isAccountMismatch(): Boolean =
-    this == HomeDecision.AdminUseWeb ||
-        this == HomeDecision.RiderNotRegistered ||
-        this == HomeDecision.BusinessNotRegistered
-
 /** The account is valid but not for this app: explain where to go, and let the user sign out. */
 @Composable
 fun AccountMismatchScreen(
-    decision: HomeDecision,
+    decision: HomeDecision.Mismatch,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -188,7 +168,8 @@ fun AccountMismatchScreen(
             HomeDecision.RiderNotRegistered ->
                 Triple(Icons.Rounded.TwoWheeler, R.string.role_rider_title, R.string.role_rider_message)
 
-            else -> Triple(Icons.Rounded.Storefront, R.string.role_business_title, R.string.role_business_message)
+            HomeDecision.BusinessNotRegistered ->
+                Triple(Icons.Rounded.Storefront, R.string.role_business_title, R.string.role_business_message)
         }
     Box(modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
         EmptyState(

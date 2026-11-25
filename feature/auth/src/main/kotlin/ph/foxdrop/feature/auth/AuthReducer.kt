@@ -261,13 +261,14 @@ object AuthReducer {
 
             else -> AuthNext(state.copy(submit = SubmitStatus.Success), AuthCommand.FinishSignIn)
         }
-
-    private fun DomainError.toMessage(): AuthMessage =
-        when (this) {
-            DomainError.NotConfigured -> AuthMessage.NotConfigured
-            DomainError.Network -> AuthMessage.Network
-            DomainError.RateLimited -> AuthMessage.RateLimited
-            DomainError.Unauthorized, is DomainError.Validation -> AuthMessage.InvalidCredentials
-            else -> AuthMessage.Unknown
-        }
 }
+
+/** The one mapping from domain errors to auth/role-gate messages. */
+internal fun DomainError.toMessage(): AuthMessage =
+    when (this) {
+        DomainError.NotConfigured -> AuthMessage.NotConfigured
+        DomainError.Network -> AuthMessage.Network
+        DomainError.RateLimited -> AuthMessage.RateLimited
+        DomainError.Unauthorized, is DomainError.Validation -> AuthMessage.InvalidCredentials
+        else -> AuthMessage.Unknown
+    }

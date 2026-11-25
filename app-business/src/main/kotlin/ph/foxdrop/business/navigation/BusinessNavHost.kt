@@ -36,13 +36,13 @@ fun BusinessNavHost(startDestination: StartDestination, modifier: Modifier = Mod
         authScreen(onSignedIn = { navController.resetTo(BusinessHomeDestination) })
         composable<BusinessHomeDestination> {
             // Role routing (§5): operators and store owners get different homes; anyone else sees an explanation.
-            RoleGate(app = FoxDropApp.Business, onSignedOut = {
+            RoleGate(onSignedOut = {
                 navController.resetTo(AuthDestination)
-            }) { decision, signOut ->
-                when (decision) {
+            }) { home, signOut ->
+                when (home) {
                     is HomeDecision.OperatorHome -> OperatorHomeScreen(onSignOut = signOut)
                     is HomeDecision.StoreHome -> StoreHomeScreen(onSignOut = signOut)
-                    else -> Unit // RoleGate shows the account-mismatch screen for every other decision
+                    HomeDecision.CustomerHome, is HomeDecision.RiderHome -> Unit // never decided in this app
                 }
             }
         }

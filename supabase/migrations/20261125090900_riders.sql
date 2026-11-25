@@ -44,6 +44,7 @@ create table public.rider_documents (
     foreign key (rider_id, province_id) references public.riders (id, province_id) on delete cascade
 );
 create index rider_documents_rider_idx on public.rider_documents (rider_id);
+create index rider_documents_province_idx on public.rider_documents (province_id, status);
 
 -- Throttled points (one every ~30 s) kept 30 days (§10, §17 retention). Mock locations are stored and flagged.
 create table public.rider_locations (
@@ -62,6 +63,7 @@ create table public.rider_locations (
 );
 create index rider_locations_rider_time_idx on public.rider_locations (rider_id, recorded_at desc);
 create index rider_locations_recorded_idx on public.rider_locations (recorded_at);
+create index rider_locations_province_time_idx on public.rider_locations (province_id, recorded_at desc);
 create index rider_locations_location_gix on public.rider_locations using gist (location);
 
 -- The current user's rider id, if they are a rider.
@@ -78,9 +80,10 @@ revoke all on function private.current_rider_id() from public;
 grant execute on function private.current_rider_id() to authenticated, service_role;
 
 -- PII encryption with a key from Supabase Vault (secret name 'foxdrop_pii_key'). Server-side only.
-create or replace function private.encrypt_pii(plain text)
-returns bytea
+create or replace function private.pii_key()
+returns text
 language plpgsql
+stable
 security definer
 set search_path = ''
 as $$
@@ -91,28 +94,27 @@ begin
   if key is null then
     raise exception 'Vault secret foxdrop_pii_key is missing';
   end if;
-  return extensions.pgp_sym_encrypt(plain, key);
+  return key;
 end;
 $$;
 
-create or replace function private.decrypt_pii(cipher bytea)
-returns text
-language plpgsql
+create or replace function private.encrypt_pii(plain text)
+returns bytea
+language sql
 security definer
 set search_path = ''
-as $$
-declare
-  key text;
-begin
-  select ds.decrypted_secret into key from vault.decrypted_secrets ds where ds.name = 'foxdrop_pii_key';
-  if key is null then
-    raise exception 'Vault secret foxdrop_pii_key is missing';
-  end if;
-  return extensions.pgp_sym_decrypt(cipher, key);
-end;
-$$;
+as $$ select extensions.pgp_sym_encrypt(plain, private.pii_key()); $$;
+
+create or replace function private.decrypt_pii(cipher bytea)
+returns text
+language sql
+security definer
+set search_path = ''
+as $$ select extensions.pgp_sym_decrypt(cipher, private.pii_key()); $$;
 -- Not callable by app users at all; Edge Functions use service_role.
+revoke all on function private.pii_key() from public, anon, authenticated;
 revoke all on function private.encrypt_pii(text) from public, anon, authenticated;
 revoke all on function private.decrypt_pii(bytea) from public, anon, authenticated;
+grant execute on function private.pii_key() to service_role;
 grant execute on function private.encrypt_pii(text) to service_role;
 grant execute on function private.decrypt_pii(bytea) to service_role;

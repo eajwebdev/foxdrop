@@ -1,6 +1,5 @@
 package ph.foxdrop.rider
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
@@ -23,15 +22,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installFoxSplash(isReady = { startup.startDestination.value != null })
         super.onCreate(savedInstanceState)
-        authRedirects.handleLaunch(intent, savedInstanceState)
+        authRedirects.attach(this, savedInstanceState)
         setFoxContent {
             val start by startup.startDestination.collectAsStateWithLifecycle()
             start?.let { RiderNavHost(startDestination = it) }
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        authRedirects.handle(intent)
     }
 }

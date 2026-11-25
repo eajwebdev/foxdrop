@@ -139,6 +139,7 @@ create table public.order_offers (
   constraint order_offers_unique unique (order_id, rider_id, round)
 );
 create index order_offers_rider_idx on public.order_offers (rider_id, status, expires_at);
+create index order_offers_province_idx on public.order_offers (province_id, status, expires_at);
 -- Only one accepted offer per order (two riders can never both win, §5.5).
 create unique index order_offers_one_accepted on public.order_offers (order_id) where status = 'ACCEPTED';
 
@@ -195,5 +196,4 @@ as $$
   from public.orders o
   where o.id = target_order and o.customer_id = (select auth.uid());
 $$;
-revoke all on function public.my_order_codes(uuid) from public, anon;
-grant execute on function public.my_order_codes(uuid) to authenticated;
+-- Execute privilege: grants migration.

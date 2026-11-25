@@ -82,10 +82,7 @@ class GoogleAndSmsReducerTest {
         val a = GoogleNonce.create()
         val b = GoogleNonce.create()
         assertNotEquals(a.raw, b.raw)
-        val expected = MessageDigest.getInstance("SHA-256").digest(a.raw.toByteArray()).joinToString("") {
-            "%02x".format(it)
-        }
-        assertEquals(expected, a.sha256)
+        assertEquals(sha256Hex(a.raw), a.sha256)
         assertTrue(a.raw.length >= 40)
     }
 }
@@ -112,11 +109,12 @@ class GoogleViewModelTest {
             val call = auth.calls.last()
             assertTrue(call.startsWith("google:id-token:"))
             val rawNonce = call.removePrefix("google:id-token:")
-            val hash = MessageDigest.getInstance("SHA-256").digest(rawNonce.toByteArray()).joinToString("") {
-                "%02x".format(it)
-            }
-            assertEquals(launch.hashedNonce, hash)
+            assertEquals(launch.hashedNonce, sha256Hex(rawNonce))
             assertEquals(AuthEffect.SignedIn, awaitItem())
         }
     }
 }
+
+/** Independent of GoogleNonce, so the test checks the production hashing rather than reusing it. */
+private fun sha256Hex(text: String): String =
+    MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }

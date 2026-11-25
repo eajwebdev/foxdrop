@@ -17,7 +17,7 @@ Source: MASTER_PROMPT.md §13 Phase 1, §5, §7, §8, §17 (backend), §3 (auth)
 | 05 | `auth_helpers` | `custom_access_token_hook` (adds `app_roles` claim), RLS helpers: `has_role`, `is_platform_admin`, `operator_province_ids`, … all `SECURITY DEFINER SET search_path = ''` |
 | 06 | `licensing` | `operator_applications`, `province_licenses` + unique partial index (one live license per province) |
 | 07 | `zones_rates` | `delivery_zones` (geography polygon), `delivery_rate_cards` (versioned) |
-| 08 | `stores_catalog` | `stores`, `store_staff`, `product_categories`, `products`, `promos`, `favorites` |
+| 08 | `stores_catalog` | `stores` (staff are `user_roles` grants, DECISIONS 27), `product_categories`, `products`, `promos`, `favorites` |
 | 09 | `riders` | `riders`, `rider_documents`, `rider_locations` |
 | 10 | `orders` | `quotes`, `orders`, `order_items`, `order_events`, `order_offers`, `proof_of_delivery`, `reviews` |
 | 11 | `money` | `payments`, `webhook_events`, `wallets`, `ledger_txns`, `ledger_entries` (append-only + zero-sum deferred trigger), `topups`, `remittances`, `settlement_batches`, `settlement_lines`, `payouts` |
@@ -31,7 +31,7 @@ Indexes: GIST on every geography column, `(province_id, status, created_at)` on 
 ## Seed (supabase/seed.sql)
 All 82 provinces + NCR (PSGC codes), `platform_settings` defaults (§14), demo data: Negros Occidental ACTIVE license,
 1 operator, 3 stores with products, 3 riders, 2 customers, 1 super admin (fixed UUIDs, phone `+63 917 000 000x`).
-Test OTPs move from `config.jsonc` into a **local-only** `[auth.sms.test_otp]` override (DECISIONS 25).
+Test OTPs stay in `config.jsonc` (the CLI has no local-only override); `supabase config push` is never run (DECISIONS 32).
 
 ## pgTAP (supabase/tests/database)
 - operator of Province A reads 0 rows of Province B: orders, stores, riders, wallets (+ ledger, licenses)
@@ -41,7 +41,7 @@ Test OTPs move from `config.jsonc` into a **local-only** `[auth.sms.test_otp]` o
 - custom access token hook adds the user's roles; customers see only their own orders/addresses
 
 ## Android
-- `RoleRepository` (domain) reading the signed-in user's roles from `user_roles` (RLS: own rows).
+- `RoleRepository` (domain) reading the signed-in user's roles from the `app_roles` JWT claim (DECISIONS 34).
 - Role routing: business app → Store home / Operator home / "Apply" placeholder; rider app → rider home or
   "register as rider" (Phase 4); Super Admin → "use the web dashboard".
 - Per-app auth redirect schemes (`foxdrop-customer://auth` …) + intent-filters + `handleDeeplinks`.

@@ -3,6 +3,7 @@ package ph.foxdrop.core.network
 import android.content.Intent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -61,6 +62,10 @@ class SupabaseClientProvider @Inject constructor(
                 sessionManager = this@SupabaseClientProvider.sessionManager
                 autoLoadFromStorage = true
                 alwaysAutoRefresh = true
+                // PKCE: a redirect carries a one-time code that works only with the verifier stored on this
+                // device, so a crafted foxdrop-<app>://auth link cannot sign the app into someone else's account,
+                // and no tokens travel in the URL. (The default implicit flow imports any tokens in the link.)
+                flowType = FlowType.PKCE
                 scheme = redirect.scheme
                 host = AuthRedirect.HOST
             }

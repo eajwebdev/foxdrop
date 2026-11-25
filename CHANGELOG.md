@@ -2,7 +2,23 @@
 
 All notable changes, per phase. Format: Keep a Changelog; commits follow Conventional Commits.
 
-## [Unreleased] — Phase 0: Foundation
+## [Unreleased] — Phase 1: Database, auth, roles
+
+### Added
+- Supabase schema for every §8 table (15 migrations): RLS enabled and forced on every table, province isolation,
+  client writes limited to personal data, append-only zero-sum ledger, one live license per province, hidden
+  secret columns, Vault-encrypted PII, storage buckets.
+- `app_roles` JWT claim (access-token hook); PSGC province seed and Negros Occidental demo data; 43 pgTAP assertions
+  (written, not yet run — no Docker).
+- Role routing in all three apps (customer / rider / store / operator homes, "use the web dashboard" for admins),
+  working offline from the token claim.
+- Google sign-in via Credential Manager (nonce-checked), SMS code autofill (SMS User Consent), per-app auth
+  redirects with PKCE.
+
+### Changed
+- `ErrorState` takes an optional secondary action (used for "Sign out").
+
+## Phase 0: Foundation
 
 ### Added
 - Gradle multi-module project with `build-logic` convention plugins and a pinned version catalog.

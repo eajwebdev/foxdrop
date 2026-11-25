@@ -107,4 +107,7 @@ Format: **what** — why — revisit when.
     sign out. (Phase 1 /simplify: replaced a second, network-only roles query.)
 35. **Auth redirects** use one scheme per app (`foxdrop-customer://auth`, `foxdrop-rider://auth`,
     `foxdrop-business://auth`). The launch intent is handled only on a fresh launch (not after process death or from
-    Recents) and its data is cleared, so a one-time code is never exchanged twice.
+    Recents) and its data is cleared, so a one-time code is never exchanged twice. Supabase Auth uses the **PKCE**
+    flow: the implicit default would import any tokens in a crafted `foxdrop-<app>://auth#access_token=…` link and
+    silently sign the victim into an attacker's account (Phase 1 security review). Verified App Links (`https://`)
+    replace the custom schemes once the production domain exists (Phase 7).

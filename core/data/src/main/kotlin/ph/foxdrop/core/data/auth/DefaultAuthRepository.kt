@@ -32,5 +32,8 @@ internal class DefaultAuthRepository @Inject constructor(
         password: String,
     ): FoxResult<EmailSignUpOutcome> = remote.signUpWithEmail(fullName.trim(), email.trim().lowercase(), password)
 
+    override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> =
+        remote.signInWithGoogle(idToken, rawNonce)
+
     override suspend fun signOut(): FoxResult<Unit> = remote.signOut()
 }

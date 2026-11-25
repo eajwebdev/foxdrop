@@ -35,5 +35,8 @@ interface AuthRepository {
 
     suspend fun signUpWithEmail(fullName: String, email: String, password: String): FoxResult<EmailSignUpOutcome>
 
+    /** Google ID token from Credential Manager; [rawNonce] is the unhashed nonce Google signed (replay protection). */
+    suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit>
+
     suspend fun signOut(): FoxResult<Unit>
 }

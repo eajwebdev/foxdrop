@@ -8,5 +8,8 @@
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 
+# Google sign-in: OAuth "Web application" client ID (public). Empty = the Google button says "coming soon".
+GOOGLE_WEB_CLIENT_ID=
+
 # Google Maps (from Phase 2): key restricted to the apps' package names + SHA-1.
 MAPS_API_KEY=

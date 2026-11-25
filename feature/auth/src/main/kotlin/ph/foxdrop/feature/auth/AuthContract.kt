@@ -28,6 +28,7 @@ enum class AuthMessage {
     CodeNotSent,
     ConfirmEmail,
     GoogleSoon,
+    GoogleFailed,
     Unknown,
 }
 
@@ -51,6 +52,8 @@ data class AuthState(
     val submit: SubmitStatus = SubmitStatus.Idle,
     val errors: PersistentMap<AuthField, FieldError> = persistentMapOf(),
     val message: AuthMessage? = null,
+    /** False until a Google OAuth client ID is configured (GOOGLE_WEB_CLIENT_ID). */
+    val googleEnabled: Boolean = false,
 ) {
     val isBusy: Boolean get() = submit != SubmitStatus.Idle
 }
@@ -82,6 +85,16 @@ sealed interface AuthAction {
 
     data object GoogleClicked : AuthAction
 
+    // Google Credential Manager outcome (reported by the screen, which owns the activity).
+    data class GoogleCredentialReceived(val idToken: String) : AuthAction
+
+    data object GoogleCancelled : AuthAction
+
+    data object GoogleUnavailable : AuthAction
+
+    /** A code read from the SMS with the user's consent (SMS User Consent API). */
+    data class SmsCodeReceived(val code: String) : AuthAction
+
     data object DismissMessage : AuthAction
 
     // Results from the ViewModel (not sent by the UI).
@@ -92,6 +105,8 @@ sealed interface AuthAction {
     data class EmailSignedIn(val error: DomainError?) : AuthAction
 
     data class EmailSignedUp(val error: DomainError?, val outcome: EmailSignUpOutcome?) : AuthAction
+
+    data class GoogleSignedIn(val error: DomainError?) : AuthAction
 
     data object ResendTick : AuthAction
 }
@@ -108,9 +123,16 @@ sealed interface AuthCommand {
 
     data object StartResendTimer : AuthCommand
 
+    data object LaunchGoogle : AuthCommand
+
+    data class SignInWithGoogle(val idToken: String) : AuthCommand
+
     data object FinishSignIn : AuthCommand
 }
 
 sealed interface AuthEffect {
     data object SignedIn : AuthEffect
+
+    /** Show Google's account picker; [hashedNonce] is SHA-256 of the nonce the ViewModel keeps. */
+    data class LaunchGoogleSignIn(val clientId: String, val hashedNonce: String) : AuthEffect
 }

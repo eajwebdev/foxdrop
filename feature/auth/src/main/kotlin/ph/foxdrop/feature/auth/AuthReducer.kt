@@ -56,7 +56,29 @@ object AuthReducer {
             // The resend countdown keeps running: going back must not become a way around the SMS cooldown.
             AuthAction.ChangeNumber -> AuthNext(state.copy(step = AuthStep.Form, otp = "", otpError = false))
 
-            AuthAction.GoogleClicked -> AuthNext(state.copy(message = AuthMessage.GoogleSoon))
+            AuthAction.GoogleClicked -> google(state)
+
+            is AuthAction.GoogleCredentialReceived ->
+                if (state.submit == SubmitStatus.Loading) {
+                    AuthNext(state, AuthCommand.SignInWithGoogle(action.idToken))
+                } else {
+                    AuthNext(state)
+                }
+
+            AuthAction.GoogleCancelled -> AuthNext(state.copy(submit = SubmitStatus.Idle))
+
+            AuthAction.GoogleUnavailable -> AuthNext(
+                state.copy(submit = SubmitStatus.Idle, message = AuthMessage.GoogleFailed),
+            )
+
+            is AuthAction.GoogleSignedIn -> signedIn(state, action.error)
+
+            is AuthAction.SmsCodeReceived ->
+                if (state.step == AuthStep.Otp) {
+                    otpChanged(state, action.code).let { reduce(it.state, AuthAction.VerifyOtp) }
+                } else {
+                    AuthNext(state)
+                }
 
             AuthAction.DismissMessage -> AuthNext(state.copy(message = null))
 
@@ -64,12 +86,7 @@ object AuthReducer {
 
             is AuthAction.OtpVerified -> otpVerified(state, action.error)
 
-            is AuthAction.EmailSignedIn ->
-                if (action.error == null) {
-                    AuthNext(state.copy(submit = SubmitStatus.Success), AuthCommand.FinishSignIn)
-                } else {
-                    AuthNext(state.copy(submit = SubmitStatus.Idle, message = action.error.toMessage()))
-                }
+            is AuthAction.EmailSignedIn -> signedIn(state, action.error)
 
             is AuthAction.EmailSignedUp -> emailSignedUp(state, action)
 
@@ -83,6 +100,20 @@ object AuthReducer {
         if (state.isBusy) AuthNext(state) else AuthNext(state.change().copy(message = null))
 
     private fun AuthState.clear(field: AuthField) = copy(errors = errors.removing(field))
+
+    private fun google(state: AuthState): AuthNext =
+        when {
+            !state.googleEnabled -> AuthNext(state.copy(message = AuthMessage.GoogleSoon))
+            state.isBusy -> AuthNext(state)
+            else -> AuthNext(state.copy(submit = SubmitStatus.Loading, message = null), AuthCommand.LaunchGoogle)
+        }
+
+    private fun signedIn(state: AuthState, error: DomainError?): AuthNext =
+        if (error == null) {
+            AuthNext(state.copy(submit = SubmitStatus.Success), AuthCommand.FinishSignIn)
+        } else {
+            AuthNext(state.copy(submit = SubmitStatus.Idle, message = error.toMessage()))
+        }
 
     private fun submit(state: AuthState): AuthNext {
         val errors = validate(state)

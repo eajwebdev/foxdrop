@@ -53,6 +53,13 @@ class FakeAuthRepository : AuthRepository {
         return emailError.toResult(signUpOutcome)
     }
 
+    override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> {
+        calls += "google:$idToken:$rawNonce"
+        val result = emailError.toResult(Unit)
+        if (result is FoxResult.Success) status.value = SessionStatus.SignedIn("user-google")
+        return result
+    }
+
     override suspend fun signOut(): FoxResult<Unit> {
         calls += "signout"
         status.value = SessionStatus.SignedOut

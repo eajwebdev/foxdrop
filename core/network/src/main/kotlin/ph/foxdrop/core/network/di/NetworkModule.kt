@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import ph.foxdrop.core.model.FoxDropApp
+import ph.foxdrop.core.network.AuthRedirect
 import ph.foxdrop.core.network.SupabaseConfig
 import ph.foxdrop.core.network.auth.AuthRemoteDataSource
 import ph.foxdrop.core.network.auth.RolesRemoteDataSource
@@ -25,5 +27,10 @@ internal abstract class NetworkModule {
         @Provides
         @Singleton
         fun supabaseConfig(): SupabaseConfig = SupabaseConfig.fromBuildConfig()
+
+        /** Each app module binds its own [FoxDropApp] (AppIdentityModule). */
+        @Provides
+        @Singleton
+        fun authRedirect(app: FoxDropApp): AuthRedirect = AuthRedirect.forApp(app)
     }
 }

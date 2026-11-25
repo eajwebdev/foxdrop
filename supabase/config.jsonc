@@ -190,9 +190,13 @@
     // The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
     // "external_url": "",
     // A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-    // Phase 1 adds the apps' per-app callback schemes (foxdrop-customer://auth, …) here, together with the
-    // Android intent-filters that receive them.
-    "additional_redirect_urls": ["https://127.0.0.1:3000"],
+    // The Android apps' auth callbacks (AuthRedirect.forApp + each app's manifest intent-filter).
+    "additional_redirect_urls": [
+      "https://127.0.0.1:3000",
+      "foxdrop-customer://auth",
+      "foxdrop-rider://auth",
+      "foxdrop-business://auth"
+    ],
     // How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
     "jwt_expiry": 3600,
     // JWT issuer URL. If not set, defaults to auth.external_url.
@@ -390,6 +394,14 @@
     // `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
     // `twitter`, `x`, `slack_oidc`, `spotify`, `workos`, `zoom`.
     "external": {
+      // Google sign-in for the Android apps (Credential Manager ID token → signInWith(IDToken)).
+      // Turn on after creating the OAuth clients (docs/OWNER_TODO.md). The nonce check stays ON.
+      "google": {
+        "enabled": false,
+        "client_id": "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)",
+        "secret": "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)",
+        "skip_nonce_check": false
+      },
       "apple": {
         "enabled": false,
         "client_id": "",

@@ -48,6 +48,7 @@
     <string name="auth_message_code_not_sent">We couldn\'t send a code to this number. Check it and try again.</string>
     <string name="auth_message_confirm_email">Almost there! Open the link we emailed you, then log in.</string>
     <string name="auth_message_google_soon">Google sign-in is coming soon. Please use your mobile number for now.</string>
+    <string name="auth_message_google_failed">Google sign-in didn\'t work on this phone. Please use your mobile number.</string>
     <string name="auth_message_unknown">Something went wrong. Please try again.</string>
     <string name="auth_message_dismiss">Dismiss</string>
 

@@ -36,6 +36,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -59,8 +60,14 @@ import ph.foxdrop.core.designsystem.theme.FoxMotion
 import ph.foxdrop.core.designsystem.theme.FoxShapes
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
 import ph.foxdrop.core.designsystem.theme.FoxTheme
+import ph.foxdrop.feature.auth.google.GoogleSignInResult
+import ph.foxdrop.feature.auth.google.requestGoogleIdToken
+import ph.foxdrop.feature.auth.sms.SmsCodeAutofill
 
-/** Route entry: gets the ViewModel and forwards the one-time "signed in" effect. */
+/**
+ * Route entry: gets the ViewModel, runs the platform parts the ViewModel cannot (Google account picker, SMS consent),
+ * and forwards the one-time "signed in" effect.
+ */
 @Composable
 fun AuthRoute(
     onSignedIn: () -> Unit,
@@ -69,12 +76,25 @@ fun AuthRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentOnSignedIn by rememberUpdatedState(onSignedIn)
+    val activityContext = LocalContext.current
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 AuthEffect.SignedIn -> currentOnSignedIn()
+
+                is AuthEffect.LaunchGoogleSignIn ->
+                    viewModel.onAction(
+                        when (val result = requestGoogleIdToken(activityContext, effect.clientId, effect.hashedNonce)) {
+                            is GoogleSignInResult.Token -> AuthAction.GoogleCredentialReceived(result.idToken)
+                            GoogleSignInResult.Cancelled -> AuthAction.GoogleCancelled
+                            GoogleSignInResult.Unavailable -> AuthAction.GoogleUnavailable
+                        },
+                    )
             }
         }
+    }
+    if (state.step == AuthStep.Otp) {
+        SmsCodeAutofill(onCode = { viewModel.onAction(AuthAction.SmsCodeReceived(it)) })
     }
     AuthScreen(state = state, onAction = viewModel::onAction, modifier = modifier)
 }

@@ -24,7 +24,7 @@ class AuthViewModelTest {
 
     @Test
     fun `phone flow sends code, counts down, verifies and signs in`() = runTest(main.dispatcher) {
-        val vm = AuthViewModel(auth)
+        val vm = AuthViewModel(auth, googleClientId = "")
         vm.effect.test {
             vm.onAction(AuthAction.PhoneChanged("9171234567"))
             vm.onAction(AuthAction.Submit)
@@ -48,7 +48,7 @@ class AuthViewModelTest {
     @Test
     fun `wrong code shakes and allows retry`() = runTest(main.dispatcher) {
         auth.verifyError = DomainError.Validation("request", "invalid")
-        val vm = AuthViewModel(auth)
+        val vm = AuthViewModel(auth, googleClientId = "")
         vm.onAction(AuthAction.PhoneChanged("9171234567"))
         vm.onAction(AuthAction.Submit)
         runCurrent()
@@ -63,7 +63,7 @@ class AuthViewModelTest {
     @Test
     fun `email sign up with confirmation and email sign in`() = runTest(main.dispatcher) {
         auth.signUpOutcome = ph.foxdrop.core.domain.auth.EmailSignUpOutcome.ConfirmationEmailSent
-        val vm = AuthViewModel(auth)
+        val vm = AuthViewModel(auth, googleClientId = "")
         vm.onAction(AuthAction.ModeChanged(AuthMode.SignUp))
         vm.onAction(AuthAction.MethodChanged(AuthMethod.Email))
         vm.onAction(AuthAction.NameChanged("Juan"))
@@ -87,7 +87,7 @@ class AuthViewModelTest {
     @Test
     fun `a session that loads late moves on from the auth screen`() = runTest(main.dispatcher) {
         auth.status.value = SessionStatus.Unknown
-        val vm = AuthViewModel(auth)
+        val vm = AuthViewModel(auth, googleClientId = "")
         vm.effect.test {
             auth.status.value = SessionStatus.SignedIn("restored")
             runCurrent()

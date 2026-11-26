@@ -119,7 +119,8 @@ it('rejects a rider with a reason and accepts a corrected registration', functio
     expect(DB::table('rider_documents')->where('rider_id', $rider->id)->count())->toBe(5);
 });
 
-it('lets an admin approve a rider in any province', function () {
-    $this->withHeaders(bearer(demoUser(10)))->postJson(route('api.v1.operator.riders.approve', DemoSeeder::riderId(12)))
-        ->assertOk()->assertJsonPath('data.status', 'APPROVED');
+it('lets an admin approve a rider in any province (admin web; admins have no API access)', function () {
+    $this->actingAs(superAdmin(), 'web')->post(route('admin.riders.approve', DemoSeeder::riderId(12)))->assertRedirect();
+
+    expect(Rider::query()->findOrFail(DemoSeeder::riderId(12))->status)->toBe('APPROVED');
 });

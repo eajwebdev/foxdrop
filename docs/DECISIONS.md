@@ -278,3 +278,11 @@ Format: **what** — why — revisit when.
       the thousands (Phase 6 load test).
     - The province page reads its current license with one extra query.
     - The dashboard shows each admin only the numbers their permissions cover (franchises, partners, users).
+82. **Admin accounts have no access to the app API** (Phase W1 security review). The API has no 2FA. So it refuses to
+    give an admin account a token, and refuses any token one already holds, with "Admin accounts sign in on the
+    FoxDrop Admin website". The admin override for stores and riders now lives only in the 2FA-protected web.
+    The apps already sent admins away (DECISIONS 20, 34).
+    - A password change, a password reset or a 2FA reset signs the account out everywhere: web sessions and API
+      tokens.
+    - `foxdrop:super-admin` refuses to promote an existing non-admin account (anyone can register an email through the
+      app) unless run with `--promote-existing`.

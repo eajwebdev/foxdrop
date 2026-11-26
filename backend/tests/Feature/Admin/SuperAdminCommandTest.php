@@ -38,3 +38,19 @@ it('refuses a weak password', function () {
 
     expect(User::query()->where('email', 'owner@foxdrop.ph')->exists())->toBeFalse();
 });
+
+it('will not promote an account someone registered through the app, unless told to', function () {
+    $squatter = User::factory()->withEmail('Squatter-pass-2026')->create(['email' => 'owner@foxdrop.ph']);
+    $squatter->createToken('phone');
+
+    $this->artisan('foxdrop:super-admin', ['email' => 'owner@foxdrop.ph'])
+        ->expectsQuestion('New password (at least 12 characters, upper and lower case and a number)', 'Owner-pass-2026')
+        ->assertFailed();
+    expect($squatter->fresh()?->isSuperAdmin())->toBeFalse();
+
+    $this->artisan('foxdrop:super-admin', ['email' => 'owner@foxdrop.ph', '--promote-existing' => true])
+        ->expectsQuestion('New password (at least 12 characters, upper and lower case and a number)', 'Owner-pass-2026')
+        ->assertSuccessful();
+    expect($squatter->fresh()?->isSuperAdmin())->toBeTrue()
+        ->and($squatter->tokens()->count())->toBe(0); // whatever was signed in before is signed out
+});

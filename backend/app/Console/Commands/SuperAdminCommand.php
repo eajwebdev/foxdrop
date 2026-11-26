@@ -17,7 +17,7 @@ use Illuminate\Validation\Rules\Password;
  * The server-side way in to the admin web (DECISIONS 74): creates the first super admin on a fresh server, or resets
  * a super admin's password / authenticator when nobody else can. Runs on the VPS only (SSH), so it is the system.
  */
-#[Signature('foxdrop:super-admin {email : The super admin\'s email} {--name= : Full name for a new account} {--reset-2fa : Make them set up 2FA again at the next sign-in}')]
+#[Signature('foxdrop:super-admin {email : The super admin\'s email} {--name= : Full name for a new account} {--reset-2fa : Make them set up 2FA again at the next sign-in} {--promote-existing : Allow turning an existing non-admin account into the super admin}')]
 #[Description('Create a super admin, or reset a super admin\'s password or 2FA')]
 class SuperAdminCommand extends Command
 {
@@ -37,6 +37,15 @@ class SuperAdminCommand extends Command
             return self::FAILURE;
         }
 
+        // Anyone can register an email through the app API: never promote such an account by accident.
+        $existing = User::query()->where('email', $email)->first();
+        if ($existing !== null && ! $existing->isSuperAdmin() && ! $this->option('promote-existing')) {
+            $this->error("{$email} already belongs to a non-admin account (it may have been registered by someone else). "
+                .'Use another email, or add --promote-existing after checking who owns it.');
+
+            return self::FAILURE;
+        }
+
         DB::transaction(function () use ($email, $password, $grantRole, $audit): void {
             $user = User::query()->where('email', $email)->first();
             $created = $user === null;
@@ -50,7 +59,7 @@ class SuperAdminCommand extends Command
                 $user->resetTwoFactor();
             }
             $grantRole($user->id, AppRole::SuperAdmin);
-            $user->endWebSessions();
+            $user->endAllSessions();
 
             $audit(null, $created ? 'admin.super_admin_created' : 'admin.super_admin_reset', 'user', $user->id,
                 after: ['reset_2fa' => (bool) $this->option('reset-2fa')]);

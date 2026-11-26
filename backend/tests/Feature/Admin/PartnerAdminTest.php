@@ -1,9 +1,11 @@
 <?php
 
+use App\Actions\Partners\ReviewStore;
 use App\Enums\AdminPermission;
 use App\Models\Rider;
 use App\Models\Store;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -89,9 +91,19 @@ it('approves a waiting rider and suspends a working one, who goes offline at onc
         ->and(DB::table('audit_logs')->where('action', 'rider.suspended')->where('entity_id', $working->id)->exists())->toBeTrue();
 });
 
-it('stops admin staff without the partners permission from reviewing through the operator API too', function () {
+it('keeps admin accounts out of the app API, where there is no 2FA (DECISIONS 82)', function () {
+    $admin = superAdmin();
+
+    $this->postJson('/api/v1/auth/email/login', ['email' => $admin->email, 'password' => ADMIN_PASSWORD, 'device_name' => 'Pixel'])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Admin accounts sign in on the FoxDrop Admin website, not in the apps.');
+    $this->postJson('/api/v1/operator/stores/'.DemoSeeder::storeId(11).'/approve', [], bearer($admin))->assertForbidden();
+    expect(Store::query()->findOrFail(DemoSeeder::storeId(11))->status)->toBe('SUBMITTED');
+});
+
+it('stops admin staff without the partners permission in the shared Action too', function () {
     $viewer = adminUser(permissions: [AdminPermission::PartnersView]);
 
-    $this->postJson('/api/v1/operator/stores/'.DemoSeeder::storeId(11).'/approve', [], bearer($viewer))->assertForbidden();
-    expect(Store::query()->findOrFail(DemoSeeder::storeId(11))->status)->toBe('SUBMITTED');
+    expect(fn () => app(ReviewStore::class)($viewer, Store::query()->findOrFail(DemoSeeder::storeId(11)), true))
+        ->toThrow(AuthorizationException::class);
 });

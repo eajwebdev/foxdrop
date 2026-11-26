@@ -17,6 +17,7 @@ class EnsureAccountIsActive
         $user = $request->user();
         if ($user instanceof User) {
             $user->ensureActive();
+            $user->ensureNotAdminOnApi();
         }
 
         return $next($request);

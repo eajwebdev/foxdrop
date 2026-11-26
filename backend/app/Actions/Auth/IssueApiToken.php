@@ -15,6 +15,7 @@ final class IssueApiToken
     public function __invoke(User $user, string $deviceName, int $status = 200): JsonResponse
     {
         $user->ensureActive();
+        $user->ensureNotAdminOnApi();
 
         $expiresAt = now()->addMinutes((int) config('foxdrop.auth.token_ttl_minutes'));
         $token = $user->createToken($deviceName, ['*'], $expiresAt);

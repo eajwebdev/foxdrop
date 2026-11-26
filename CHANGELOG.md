@@ -4,6 +4,24 @@ All notable changes, per phase. Format: Keep a Changelog; commits follow Convent
 
 ## [Unreleased]
 
+## Phase W1: Super Admin web foundation
+
+### Added
+- Admin web at `/admin` inside `backend/` (Inertia v3, React 19, TypeScript, Tailwind v4, shadcn/ui):
+  - sign-in for admin accounts with required TOTP 2FA and recovery codes, and "confirm it's you" for dangerous actions
+  - admin-staff permissions and the audit log viewer
+  - franchises: provinces, license assign, offline payment, suspend / lift, operator applications
+  - stores and riders across provinces, with the admin override
+  - users (search, suspend / reactivate) and admin staff management
+- Shared Actions and Laravel policies behind every admin change, a CSP with nonces and security headers, schema 13–15,
+  and the `foxdrop:super-admin` command.
+- The operator application status screen in the business app re-checks while waiting for the admin.
+- Tests: 218 backend, Vitest, a Playwright E2E, and generated access tests (2FA required, 403 without permission).
+
+### Security
+- Admin accounts cannot use the app API. A password or 2FA change signs the account out everywhere.
+- The super-admin command will not promote an account registered through the app.
+
 ## Phase 2: Operator licensing & partner onboarding
 
 ### Added

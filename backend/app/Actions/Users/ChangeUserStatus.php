@@ -20,8 +20,7 @@ final class ChangeUserStatus
         Gate::forUser($admin)->authorize('changeStatus', $user);
 
         return $this->change($admin, $user, User::STATUS_SUSPENDED, 'user.suspended', $reason, function (User $user): void {
-            $user->tokens()->delete();
-            $user->endWebSessions();
+            $user->endAllSessions();
         });
     }
 

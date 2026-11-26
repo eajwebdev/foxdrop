@@ -18,7 +18,7 @@ final class ManageOwnSession
     {
         DB::transaction(function () use ($user, $password, $currentSessionId): void {
             $user->forceFill(['password' => $password])->save();
-            $user->endWebSessions($currentSessionId);
+            $user->endAllSessions($currentSessionId);
             ($this->audit)($user, 'admin.password_changed', 'user', $user->id);
         });
     }
@@ -29,7 +29,7 @@ final class ManageOwnSession
     public function endOtherSessions(User $user, string $currentSessionId): int
     {
         return DB::transaction(function () use ($user, $currentSessionId): int {
-            $ended = $user->endWebSessions($currentSessionId);
+            $ended = $user->endAllSessions($currentSessionId);
             ($this->audit)($user, 'admin.other_sessions_ended', 'user', $user->id, after: ['sessions' => $ended]);
 
             return $ended;

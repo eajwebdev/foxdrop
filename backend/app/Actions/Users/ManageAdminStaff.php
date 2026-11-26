@@ -65,7 +65,7 @@ final class ManageAdminStaff
 
         DB::transaction(function () use ($superAdmin, $staff, $password): void {
             $staff->forceFill(['password' => $password])->save();
-            $staff->endWebSessions();
+            $staff->endAllSessions();
             ($this->audit)($superAdmin, 'admin_staff.password_reset', 'user', $staff->id);
         });
     }
@@ -79,7 +79,7 @@ final class ManageAdminStaff
 
         DB::transaction(function () use ($superAdmin, $staff): void {
             $staff->resetTwoFactor();
-            $staff->endWebSessions();
+            $staff->endAllSessions();
             ($this->audit)($superAdmin, 'admin_staff.two_factor_reset', 'user', $staff->id);
         });
     }
@@ -95,7 +95,7 @@ final class ManageAdminStaff
             $before = $staff->adminPermissions();
             DB::table('admin_permissions')->where('user_id', $staff->id)->delete();
             DB::table('user_roles')->where('user_id', $staff->id)->where('role', AppRole::AdminStaff->value)->delete();
-            $staff->endWebSessions();
+            $staff->endAllSessions();
 
             ($this->audit)($superAdmin, 'admin_staff.removed', 'user', $staff->id, before: ['permissions' => $before]);
         });

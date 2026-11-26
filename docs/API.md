@@ -13,7 +13,7 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
   | Status | Meaning |
   |---|---|
   | 401 | token missing, expired or revoked |
-  | 403 | not allowed (also a suspended account) |
+  | 403 | not allowed (also a suspended account, or an admin account: admins use the web, DECISIONS 82) |
   | 404 | not found or not visible to you |
   | 409 | conflict with current state, e.g. province already taken |
   | 422 | validation |
@@ -128,8 +128,8 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
 
 ### Who may review
 - The operator team of the store's or rider's province reviews.
-- Platform admins may review any province (override), if they hold the `partners.manage` admin permission; listing
-  needs `partners.view` (DECISIONS 72). The admin web uses the same Actions.
+- Platform admins review any province (override) in the admin web, which uses the same Actions. Admin accounts get
+  403 from every API route and from API sign-in (DECISIONS 82).
 - Every review writes an `audit_logs` row.
 - Approval grants the role (`store_owner` with the store, `rider` with the province) and creates the wallets.
 - The apps pick up the new role from `/me`.

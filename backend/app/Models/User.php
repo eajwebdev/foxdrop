@@ -132,6 +132,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Admin accounts use only the admin web, where 2FA is required (DECISIONS 74, 82): the mobile API gives them no
+     * token, and refuses any token they already hold.
+     */
+    public function ensureNotAdminOnApi(): void
+    {
+        abort_if($this->isPlatformAdmin(), 403, 'Admin accounts sign in on the FoxDrop Admin website, not in the apps.');
+    }
+
+    /**
      * Stops a suspended account at sign-in and on every API call (403 with a message the apps show).
      */
     public function ensureActive(): void
@@ -175,13 +184,15 @@ class User extends Authenticatable
     }
 
     /**
-     * Signs this account out of the admin web everywhere (database sessions), except [exceptSessionId]. Password
-     * changes are also caught on the next request by the AuthenticateSession middleware.
+     * Signs this account out everywhere: every API token and every admin web session (database sessions) except
+     * [exceptSessionId]. Password changes are also caught on the next request by the AuthenticateSession middleware.
      *
      * @return int how many sessions ended
      */
-    public function endWebSessions(?string $exceptSessionId = null): int
+    public function endAllSessions(?string $exceptSessionId = null): int
     {
+        $this->tokens()->delete(); // and any API token, so no other way in outlives a password or 2FA change
+
         return DB::table('sessions')
             ->where('user_id', $this->id)
             ->when($exceptSessionId !== null, fn ($query) => $query->where('id', '<>', $exceptSessionId))

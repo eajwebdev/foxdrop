@@ -37,7 +37,7 @@ browser = "1.8.0"
 exifinterface = "1.4.1"
 
 # Location
-playServicesLocation = "21.3.0"
+playServicesLocation = "21.4.0"
 lottie = "6.7.1"
 
 # Sign-in

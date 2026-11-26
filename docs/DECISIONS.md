@@ -174,3 +174,34 @@ Format: **what** — why — revisit when.
     cache store: `database` locally, **Redis on the VPS** (§20.6).
 54. **Sanctum does not track `last_used_at`** (it would write the token row on every API call); expired tokens and
     old OTP codes are pruned daily by the scheduler.
+
+## Phase 2 (2026-11-26)
+
+55. **License flow: apply → admin approves → pay → ACTIVE.** Applying creates the license as `APPLIED` (the unique
+    index then blocks the province for others); an admin approval moves it to `PENDING_PAYMENT`; payment activates it
+    for 365 days and grants the operator role. Until the admin web (Phase W1) the admin step is the Artisan command
+    `foxdrop:operator-application approve|reject <id>`, running the same Action the web will call.
+56. **Renewal extends the same license** (`end_at = max(now, end_at) + 365 days`) instead of a new row, because the
+    one-live-license index forbids a second live row; each term is a `payments` row. `renewal_of` stays unused.
+57. **Payments go through a `PaymentProvider`**: `paymongo` (Checkout Sessions API; secret key and webhook secret in
+    `backend/.env`) and `fake` (local/testing only: `/dev/checkout/{payment}` web page with Pay/Cancel that runs the
+    same success handler as the webhook). Production refuses to boot with the fake driver. This lets the whole flow
+    run on the emulator before the owner has PayMongo keys.
+58. **Zones are circles in the apps for now** (centre = province centre or the operator's current location, radius
+    0.5–30 km, stored as a PostGIS polygon). The API also accepts polygons; the drawn-polygon map editor comes with
+    Google Maps in Phase 3 (needs `MAPS_API_KEY`).
+59. **An approved store goes straight to `ACTIVE`** (visible to customers); `APPROVED` is skipped because nothing
+    happens between the two in v1. A rejected store is `REJECTED` (new enum value) with a reason and can be
+    resubmitted.
+60. **Partner documents** live on a private disk, images only (≤ 8 MB), re-encoded by the server (drops EXIF/GPS),
+    and are shown to reviewers through 10-minute signed URLs (no bearer header needed by the image loader).
+61. **Rider registration is one multipart request** (details + all photos), matching the single Submit button in
+    `04_Rider_Workflow.png`; documents are reviewed as a set.
+62. **Feature modules for Phase 2**: `operator-license`, `operator-zones-rates`, `operator-partners` (store + rider
+    approvals in one module: same list/detail/approve pattern), `store-onboarding`, `rider-onboarding`, plus core
+    `payments`, `media`, `location`. Other §4 names arrive with their phases.
+63. **Applicants learn about approvals by checking status** (status screens refresh on open, pull and a button);
+    push notifications arrive with FCM in Phase 3/6.
+64. **"Not registered" business and rider accounts get onboarding homes** instead of the mismatch screen: they are
+    now `HomeDecision.Home` cases (`BusinessOnboarding`, `RiderOnboarding`). Admin accounts still get the mismatch
+    screen.

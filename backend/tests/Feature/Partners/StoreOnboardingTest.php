@@ -206,3 +206,12 @@ it('stops a former operator from reviewing once the province is licensed to some
     $this->withHeaders(bearer($current))->getJson(route('api.v1.operator.stores.index', ['status' => 'SUBMITTED']))
         ->assertOk()->assertJsonFragment(['id' => $store->id]);
 });
+
+it('does not let an operator approve their own store', function () {
+    $store = submittedStore(demoUser(6));
+
+    $this->withHeaders(bearer(demoUser(6)))->postJson(route('api.v1.operator.stores.approve', $store))
+        ->assertForbidden()
+        ->assertJsonPath('message', 'You cannot review your own application.');
+    expect($store->refresh()->status)->toBe(Store::SUBMITTED);
+});

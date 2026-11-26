@@ -219,3 +219,8 @@ Format: **what** — why — revisit when.
     three onboarding screens; cursor pagination for the review lists (Phase 6, when lists grow).
 68. **Partner document photos are never cached on disk** on the reviewer's phone (memory only), as personal data
     under the Data Privacy Act.
+69. **Nobody reviews their own application** (Phase 2 security review): an operator cannot approve or reject a store or
+    rider application they submitted themselves; a platform admin can (override).
+70. **Zones are not yet clipped to the province boundary** (Phase 2 security review, low risk now): coverage decides
+    nothing until ordering. Phase 3 checks that a delivery address lies in a zone *of the store's province*, and
+    province boundaries (PSGC shapes) are added if zones must be clipped.

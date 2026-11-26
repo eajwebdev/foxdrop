@@ -28,6 +28,7 @@ final class ReviewStore
     {
         // An operator whose license expired is read-only (§5.1); admins may override anywhere.
         OperatorContext::ensureCanReview($reviewer, $store->province_id);
+        abort_if($store->owner_user_id === $reviewer->id && ! $reviewer->isPlatformAdmin(), 403, 'You cannot review your own application.');
 
         return DB::transaction(function () use ($reviewer, $store, $approve, $reason): Store {
             $store = Store::query()->lockForUpdate()->findOrFail($store->id);

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="zones_title">Delivery zones</string>
+    <string name="zones_error_title">We couldn\'t load your zones</string>
+    <string name="zones_intro">Customers can order only to addresses inside an active zone.</string>
+    <string name="zones_empty_title">No delivery zones yet</string>
+    <string name="zones_empty_message">Add a zone so customers in your province can start ordering.</string>
+    <string name="zones_add">Add a zone</string>
+    <string name="zones_radius">%1$s km radius</string>
+    <string name="zones_area">About %1$s km²</string>
+    <string name="zones_delete">Delete %1$s</string>
+    <string name="zones_editor_title">New zone</string>
+    <string name="zones_name">Zone name</string>
+    <string name="zones_name_hint">e.g. Metro Bacolod</string>
+    <string name="zones_center">Centre</string>
+    <string name="zones_center_province">Province centre</string>
+    <string name="zones_center_mine">My location</string>
+    <string name="zones_center_value">%1$s, %2$s</string>
+    <string name="zones_locating">Finding your location…</string>
+    <string name="zones_location_denied">Allow location access to use your current position.</string>
+    <string name="zones_location_disabled">Turn on location in your phone\'s settings.</string>
+    <string name="zones_location_unavailable">We couldn\'t get a position. Try again outdoors, or use the province centre.</string>
+    <string name="zones_radius_label">Radius: %1$s km</string>
+    <string name="zones_save">Save zone</string>
+    <string name="zones_saving">Saving zone</string>
+    <string name="zones_cancel">Cancel</string>
+
+    <string name="rates_title">Delivery rates</string>
+    <string name="rates_error_title">We couldn\'t load your rates</string>
+    <string name="rates_intro">Delivery fee = base fare for the first km, then a rate per km, never below the minimum fee.</string>
+    <string name="rates_base_fare">Base fare (₱)</string>
+    <string name="rates_base_km">Covers first (km)</string>
+    <string name="rates_rate_per_km">Rate per km (₱)</string>
+    <string name="rates_min_fee">Minimum fee (₱)</string>
+    <string name="rates_max_km">Maximum distance (km)</string>
+    <string name="rates_rider_share">Rider share (%)</string>
+    <string name="rates_preview_title">Fee preview</string>
+    <string name="rates_preview_distance">Distance</string>
+    <string name="rates_preview_fee">Customer pays</string>
+    <string name="rates_preview_rider">Rider</string>
+    <string name="rates_preview_operator">You</string>
+    <string name="rates_preview_km">%1$s km</string>
+    <string name="rates_preview_beyond">Too far</string>
+    <string name="rates_preview_error">Preview unavailable</string>
+    <string name="rates_publish">Publish new rates</string>
+    <string name="rates_publishing">Publishing rates</string>
+    <string name="rates_published">New rates are live. Orders already placed keep their old fee.</string>
+    <string name="rates_effective">In effect since %1$s</string>
+    <string name="store_fee_title">Monthly store fee</string>
+    <string name="store_fee_message">Charged to every store\'s top-up wallet on the 1st of each month.</string>
+    <string name="store_fee_amount">Store fee (₱ / month)</string>
+    <string name="store_fee_save">Save store fee</string>
+    <string name="store_fee_saving">Saving store fee</string>
+    <string name="store_fee_saved">Store fee saved.</string>
+</resources>

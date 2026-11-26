@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="license_title">Provincial operator</string>
+    <string name="license_error_title">We couldn\'t load your application</string>
+    <string name="license_apply_title">Apply for a province</string>
+    <string name="license_apply_intro">Run FoxDrop in one province: approve local stores and riders and set your own delivery rates. One operator per province, ₱15,000 a year.</string>
+    <string name="license_apply_again_note">Your last application was not approved: %1$s</string>
+    <string name="license_province">Province</string>
+    <string name="license_province_hint">Choose a province</string>
+    <string name="license_no_provinces_title">No provinces available</string>
+    <string name="license_no_provinces_message">Every province already has an operator. Check again later.</string>
+    <string name="license_business_name">Business name</string>
+    <string name="license_registration_number">DTI or SEC number (optional)</string>
+    <string name="license_contact_phone">Contact mobile number</string>
+    <string name="license_contact_email">Contact email (optional)</string>
+    <string name="license_documents">Documents</string>
+    <string name="license_valid_id">Valid ID</string>
+    <string name="license_business_permit">Business permit (optional)</string>
+    <string name="license_submit">Submit application</string>
+    <string name="license_submitting">Submitting application</string>
+
+    <string name="license_status_submitted">Under review</string>
+    <string name="license_status_approved">Approved</string>
+    <string name="license_status_rejected">Not approved</string>
+    <string name="license_status_withdrawn">Withdrawn</string>
+    <string name="license_submitted_message">FoxDrop is reviewing your application for %1$s. This usually takes 1–2 working days.</string>
+    <string name="license_approved_message">Your application for %1$s is approved. Pay the yearly license fee to start operating.</string>
+    <string name="license_rejected_message">Your application for %1$s was not approved.</string>
+    <string name="license_rejected_reason">Reason: %1$s</string>
+    <string name="license_apply_again">Apply again</string>
+    <string name="license_check_status">Check status</string>
+    <string name="license_pay">Pay %1$s</string>
+    <string name="license_renew">Renew for %1$s</string>
+    <string name="license_paying">Waiting for your payment</string>
+    <string name="license_paying_message">Finish paying in the page that opened. We\'ll update this screen as soon as the payment arrives.</string>
+    <string name="license_not_paid">The payment did not go through. You were not charged; please try again.</string>
+    <string name="license_still_pending">We haven\'t received the payment yet. If you already paid, tap Check status in a minute.</string>
+    <string name="license_fee_per_year">%1$s / year</string>
+
+    <string name="license_card_title">License · %1$s</string>
+    <string name="license_state_applied">Applied</string>
+    <string name="license_state_pending_payment">Waiting for payment</string>
+    <string name="license_state_active">Active</string>
+    <string name="license_state_grace">Grace period</string>
+    <string name="license_state_expired">Expired</string>
+    <string name="license_state_suspended">Suspended</string>
+    <string name="license_state_rejected">Rejected</string>
+    <string name="license_state_unknown">Unknown</string>
+    <plurals name="license_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <string name="license_valid_until">Valid until %1$s</string>
+    <string name="license_grace_banner">Your license has ended. Renew within the grace period to keep your province.</string>
+    <string name="license_expired_banner">Your license has expired. Renew to reopen your province to customers.</string>
+    <string name="license_none_title">No license yet</string>
+    <string name="license_none_message">Your province license will show here.</string>
+</resources>

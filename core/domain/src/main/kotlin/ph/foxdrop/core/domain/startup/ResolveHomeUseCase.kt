@@ -27,11 +27,11 @@ sealed interface HomeDecision {
 
     data class OperatorHome(val provinceId: String) : Home
 
-    /** Signed in to the rider app without a rider account yet (registration arrives in Phase 4). */
-    data object RiderNotRegistered : Mismatch
+    /** Signed in to the rider app without a rider role yet: rider registration and its status (DECISIONS 64). */
+    data object RiderOnboarding : Home
 
-    /** Signed in to the business app without a store or operator role (applications arrive in Phase 2). */
-    data object BusinessNotRegistered : Mismatch
+    /** Signed in to the business app without a store or operator role: open a store or apply as an operator. */
+    data object BusinessOnboarding : Home
 
     /** Super Admin and admin staff use the web dashboard only (§2). */
     data object AdminUseWeb : Mismatch
@@ -57,12 +57,12 @@ class ResolveHomeUseCase @Inject constructor(
 
                 FoxDropApp.Rider ->
                     grants.scope(setOf(AppRole.Rider)) { it.provinceId }?.let(HomeDecision::RiderHome)
-                        ?: HomeDecision.RiderNotRegistered
+                        ?: HomeDecision.RiderOnboarding
 
                 FoxDropApp.Business ->
                     grants.scope(AppRole.OPERATOR) { it.provinceId }?.let(HomeDecision::OperatorHome)
                         ?: grants.scope(AppRole.STORE) { it.storeId }?.let(HomeDecision::StoreHome)
-                        ?: HomeDecision.BusinessNotRegistered
+                        ?: HomeDecision.BusinessOnboarding
             }
         }
 

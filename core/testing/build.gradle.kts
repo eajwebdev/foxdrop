@@ -12,6 +12,8 @@ dependencies {
     api(projects.core.common)
     api(projects.core.domain)
     api(projects.core.designsystem)
+    api(projects.core.media)
+    api(projects.core.location)
     api(libs.junit4)
     api(libs.kotlinx.coroutines.test)
     api(libs.turbine)

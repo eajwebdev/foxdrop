@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="rider_title">Become a rider</string>
+    <string name="rider_error_title">We couldn\'t load your registration</string>
+    <string name="rider_apply_title">Registration</string>
+    <string name="rider_apply_intro">Complete all four parts. The FoxDrop operator in your province checks every rider before the first delivery.</string>
+    <string name="rider_apply_again_note">Your last registration was not approved: %1$s\nFix it below and send it again.</string>
+    <string name="rider_no_provinces_title">FoxDrop isn\'t open near you yet</string>
+    <string name="rider_no_provinces_message">Riders can join once a provincial operator runs FoxDrop in their province.</string>
+
+    <string name="rider_step_personal">Personal details</string>
+    <string name="rider_step_valid_id">Valid ID</string>
+    <string name="rider_step_license">Driver\'s license</string>
+    <string name="rider_step_vehicle">Vehicle details</string>
+    <string name="rider_step_done">%1$s, done</string>
+    <string name="rider_step_todo">%1$s, to do</string>
+
+    <string name="rider_province">Province</string>
+    <string name="rider_province_hint">Where will you deliver?</string>
+    <string name="rider_full_name">Full name (as on your ID)</string>
+    <string name="rider_selfie">Selfie</string>
+    <string name="rider_valid_id">Government-issued ID</string>
+    <string name="rider_license_no">License number</string>
+    <string name="rider_license_expiry">License valid until</string>
+    <string name="rider_license_expiry_pick">Choose the expiry date</string>
+    <string name="rider_license_expiry_value">Valid until %1$s</string>
+    <string name="rider_license_photo">Photo of your license</string>
+    <string name="rider_vehicle">Vehicle</string>
+    <string name="rider_plate">Plate number</string>
+    <string name="rider_or_cr">OR/CR</string>
+    <string name="rider_vehicle_photo">Photo of your vehicle</string>
+    <string name="rider_bicycle_note">Bicycles don\'t need a plate number or OR/CR.</string>
+    <string name="rider_date_ok">OK</string>
+    <string name="rider_date_cancel">Cancel</string>
+    <string name="rider_submit">Send for review</string>
+    <string name="rider_submitting">Sending your registration</string>
+    <string name="rider_sign_out">Sign out</string>
+
+    <string name="rider_status_pending_title">Your documents are under review</string>
+    <string name="rider_status_pending_message">The operator in %1$s will check your documents. This usually takes a day.</string>
+    <string name="rider_status_approved_title">You\'re approved</string>
+    <string name="rider_status_approved_message">Welcome to FoxDrop %1$s. You can go online and take deliveries.</string>
+    <string name="rider_status_rejected_title">Your registration was not approved</string>
+    <string name="rider_status_rejected_reason">Reason: %1$s</string>
+    <string name="rider_status_inactive_title">Your rider account is not active</string>
+    <string name="rider_status_inactive_message">Contact the FoxDrop operator in %1$s for help.</string>
+    <string name="rider_license_summary">License •••• %1$s, valid until %2$s</string>
+    <string name="rider_check_status">Check status</string>
+    <string name="rider_checking">Checking status</string>
+    <string name="rider_start">Start delivering</string>
+    <string name="rider_fix">Fix and send again</string>
+</resources>

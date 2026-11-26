@@ -10,8 +10,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import java.io.IOException
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -31,29 +29,6 @@ import ph.foxdrop.core.network.session.SessionState
 import ph.foxdrop.core.network.session.SessionStore
 import ph.foxdrop.core.network.session.StoredSession
 import ph.foxdrop.core.network.session.UserRoleRow
-
-private class InMemorySessionStore(initial: StoredSession? = null) : SessionStore {
-    private val _state = MutableStateFlow<SessionState>(initial?.let(SessionState::Present) ?: SessionState.Absent)
-    override val state: StateFlow<SessionState> = _state
-
-    override suspend fun load(): StoredSession? = (_state.value as? SessionState.Present)?.session
-
-    override suspend fun save(session: StoredSession) {
-        _state.value = SessionState.Present(session)
-    }
-
-    override suspend fun updateUser(token: String, user: ApiUser) {
-        load()?.takeIf { it.token == token }?.let { save(it.copy(user = user)) }
-    }
-
-    override suspend fun clear() {
-        _state.value = SessionState.Absent
-    }
-
-    override suspend fun clearIfToken(token: String) {
-        if (load()?.token == token) clear()
-    }
-}
 
 private const val USER_JSON =
     """{"id":"u1","full_name":"Liza Gonzaga","phone":"+639170000006","email":null,"avatar_url":null,""" +

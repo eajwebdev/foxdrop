@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AdminPanelSettings
-import androidx.compose.material.icons.rounded.Storefront
-import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,6 +92,8 @@ class RoleGateViewModel @Inject constructor(
 
 /**
  * Shows [content] for the user's home, or a friendly screen when the account does not belong in this app.
+ * [content] also gets [refreshRoles]: onboarding flows call it when a role may have been granted (license paid, store
+ * or rider approved), so the gate re-reads /me and moves to the new home.
  * Loading shows a skeleton; errors offer a retry (CLAUDE.md: every screen has loading, empty, error).
  */
 @Composable
@@ -101,7 +101,7 @@ fun RoleGate(
     onSignedOut: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RoleGateViewModel = hiltViewModel(),
-    content: @Composable (home: HomeDecision.Home, signOut: () -> Unit) -> Unit,
+    content: @Composable (home: HomeDecision.Home, signOut: () -> Unit, refreshRoles: () -> Unit) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val signOut = rememberSessionSignOut(onSignedOut)
@@ -111,7 +111,7 @@ fun RoleGate(
         onRetry = viewModel::retry,
         onSignOut = signOut,
         modifier = modifier,
-        content = content,
+        content = { home, signOutNow -> content(home, signOutNow, viewModel::retry) },
     )
 }
 
@@ -171,12 +171,6 @@ fun AccountMismatchScreen(
         when (decision) {
             HomeDecision.AdminUseWeb ->
                 Triple(Icons.Rounded.AdminPanelSettings, R.string.role_admin_title, R.string.role_admin_message)
-
-            HomeDecision.RiderNotRegistered ->
-                Triple(Icons.Rounded.TwoWheeler, R.string.role_rider_title, R.string.role_rider_message)
-
-            HomeDecision.BusinessNotRegistered ->
-                Triple(Icons.Rounded.Storefront, R.string.role_business_title, R.string.role_business_message)
         }
     Box(modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
         EmptyState(

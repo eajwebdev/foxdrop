@@ -2,7 +2,6 @@ package ph.foxdrop.core.network.auth
 
 import io.ktor.client.call.body
 import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +15,7 @@ import ph.foxdrop.core.common.result.map
 import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.network.FoxApiClient
 import ph.foxdrop.core.network.di.DeviceName
+import ph.foxdrop.core.network.jsonBody
 import ph.foxdrop.core.network.session.ApiUser
 import ph.foxdrop.core.network.session.SessionState
 import ph.foxdrop.core.network.session.SessionStore
@@ -67,7 +67,7 @@ internal class ApiAuthRemoteDataSource @Inject constructor(
         }
 
     override suspend fun requestPhoneOtp(phoneE164: String): FoxResult<Unit> =
-        api.call { http -> http.post("auth/otp/send") { setBody(mapOf("phone" to phoneE164)) } }.map { }
+        api.call { http -> http.post("auth/otp/send") { jsonBody(mapOf("phone" to phoneE164)) } }.map { }
 
     override suspend fun verifyPhoneOtp(phoneE164: String, code: String, fullName: String?): FoxResult<Unit> {
         val fields = mapOf("phone" to phoneE164, "code" to code)
@@ -95,7 +95,7 @@ internal class ApiAuthRemoteDataSource @Inject constructor(
 
     private suspend fun signIn(path: String, fields: Map<String, String>): FoxResult<Unit> =
         api.call { http ->
-            val response = http.post(path) { setBody(fields + ("device_name" to deviceName)) }.body<SignedInResponse>()
+            val response = http.post(path) { jsonBody(fields + ("device_name" to deviceName)) }.body<SignedInResponse>()
             sessionStore.save(StoredSession(response.token, response.expiresAt, response.data))
         }
 }

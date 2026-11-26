@@ -174,3 +174,53 @@ Format: **what** — why — revisit when.
     cache store: `database` locally, **Redis on the VPS** (§20.6).
 54. **Sanctum does not track `last_used_at`** (it would write the token row on every API call); expired tokens and
     old OTP codes are pruned daily by the scheduler.
+
+## Phase 2 (2026-11-26)
+
+55. **License flow: apply → admin approves → pay → ACTIVE.** Applying creates the license as `APPLIED` (the unique
+    index then blocks the province for others); an admin approval moves it to `PENDING_PAYMENT`; payment activates it
+    for 365 days and grants the operator role. Until the admin web (Phase W1) the admin step is the Artisan command
+    `foxdrop:operator-application approve|reject <id>`, running the same Action the web will call.
+56. **Renewal extends the same license** (`end_at = max(now, end_at) + 365 days`) instead of a new row, because the
+    one-live-license index forbids a second live row; each term is a `payments` row. `renewal_of` stays unused.
+57. **Payments go through a `PaymentProvider`**: `paymongo` (Checkout Sessions API; secret key and webhook secret in
+    `backend/.env`) and `fake` (local/testing only: `/dev/checkout/{payment}` web page with Pay/Cancel that runs the
+    same success handler as the webhook). Production refuses to boot with the fake driver. This lets the whole flow
+    run on the emulator before the owner has PayMongo keys.
+58. **Zones are circles in the apps for now** (centre = province centre or the operator's current location, radius
+    0.5–30 km, stored as a PostGIS polygon). The API also accepts polygons; the drawn-polygon map editor comes with
+    Google Maps in Phase 3 (needs `MAPS_API_KEY`).
+59. **An approved store goes straight to `ACTIVE`** (visible to customers); `APPROVED` is skipped because nothing
+    happens between the two in v1. A rejected store is `REJECTED` (new enum value) with a reason and can be
+    resubmitted.
+60. **Partner documents** live on a private disk, images only (≤ 8 MB), re-encoded by the server (drops EXIF/GPS),
+    and are shown to reviewers through 10-minute signed URLs (no bearer header needed by the image loader).
+61. **Rider registration is one multipart request** (details + all photos), matching the single Submit button in
+    `04_Rider_Workflow.png`; documents are reviewed as a set.
+62. **Feature modules for Phase 2**: `operator-license`, `operator-zones-rates`, `operator-partners` (store + rider
+    approvals in one module: same list/detail/approve pattern), `store-onboarding`, `rider-onboarding`, plus core
+    `payments`, `media`, `location`. Other §4 names arrive with their phases.
+63. **Applicants learn about approvals by checking status** (status screens refresh on open, pull and a button);
+    push notifications arrive with FCM in Phase 3/6.
+64. **"Not registered" business and rider accounts get onboarding homes** instead of the mismatch screen: they are
+    now `HomeDecision.Home` cases (`BusinessOnboarding`, `RiderOnboarding`). Admin accounts still get the mismatch
+    screen.
+65. **An operator role counts only while its province's current license is theirs** (Phase 2 code review): when a
+    license expires and the province is licensed to someone else, the former operator keeps the role row (history)
+    but no longer reaches the province. Reviews, zones, rates and the store fee all need that license ACTIVE or in
+    GRACE; platform admins may review anywhere.
+66. **Phase 2 models have no factories yet** (Payment, OperatorApplication, DeliveryZone, DeliveryRateCard,
+    StoreDocument, RiderDocument, WebhookEvent): their tests create rows through the very Actions under test, which
+    is what the app does. Factories are added when a test needs such a row without its Action.
+67. **Deferred Phase 2 refactors** (from /simplify; working and end-to-end tested as they are): move the payment flow
+    (models, poller, start → checkout → poll) into `core:payments` when the second payment type arrives (store top-up,
+    Phase 5); replace the role-refresh plumbing through the NavHosts with `RoleRepository.refresh()`; a shared
+    onboarding ViewModel helper and one photo-slot model for the three application flows; `LoadableContent` in the
+    three onboarding screens; cursor pagination for the review lists (Phase 6, when lists grow).
+68. **Partner document photos are never cached on disk** on the reviewer's phone (memory only), as personal data
+    under the Data Privacy Act.
+69. **Nobody reviews their own application** (Phase 2 security review): an operator cannot approve or reject a store or
+    rider application they submitted themselves; a platform admin can (override).
+70. **Zones are not yet clipped to the province boundary** (Phase 2 security review, low risk now): coverage decides
+    nothing until ordering. Phase 3 checks that a delivery address lies in a zone *of the store's province*, and
+    province boundaries (PSGC shapes) are added if zones must be clipped.

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="store_title">Open a store</string>
+    <string name="store_error_title">We couldn\'t load your store</string>
+    <string name="store_apply_title">Tell us about your store</string>
+    <string name="store_apply_intro">The FoxDrop operator in your province reviews every store before it goes live.</string>
+    <string name="store_apply_again_note">Your last application was not approved: %1$s\nFix it below and send it again.</string>
+    <string name="store_no_provinces_title">FoxDrop isn\'t open near you yet</string>
+    <string name="store_no_provinces_message">Stores can join once a provincial operator runs FoxDrop in their province.</string>
+    <string name="store_province">Province</string>
+    <string name="store_province_hint">Where is the store?</string>
+    <string name="store_name">Store name</string>
+    <string name="store_category">Category</string>
+    <string name="store_description">Short description (optional)</string>
+    <string name="store_address">Street address</string>
+    <string name="store_barangay">Barangay (optional)</string>
+    <string name="store_city">City or municipality</string>
+    <string name="store_phone">Store phone (optional)</string>
+    <string name="store_location">Store location</string>
+    <string name="store_location_help">Stand at the store and use your current location so riders find it.</string>
+    <string name="store_location_use">Use my current location</string>
+    <string name="store_location_update">Update location</string>
+    <string name="store_location_locating">Finding your location…</string>
+    <string name="store_location_value">Pinned at %1$s, %2$s</string>
+    <string name="store_location_denied">Allow location access to pin the store.</string>
+    <string name="store_location_disabled">Turn on location in your phone\'s settings.</string>
+    <string name="store_location_unavailable">We couldn\'t find your location. Try again outside or near a window.</string>
+    <string name="store_documents">Documents</string>
+    <string name="store_business_permit">Business permit</string>
+    <string name="store_valid_id">Owner\'s valid ID</string>
+    <string name="store_submit">Send for review</string>
+    <string name="store_submitting">Sending your application</string>
+
+    <string name="store_status_submitted_title">Your store is under review</string>
+    <string name="store_status_submitted_message">The operator in %1$s will check your documents. This usually takes a day.</string>
+    <string name="store_status_active_title">Your store is approved</string>
+    <string name="store_status_active_message">%1$s is live in %2$s. Open your store to add your menu.</string>
+    <string name="store_status_rejected_title">Your application was not approved</string>
+    <string name="store_status_rejected_reason">Reason: %1$s</string>
+    <string name="store_status_other_title">Store status: %1$s</string>
+    <string name="store_check_status">Check status</string>
+    <string name="store_checking">Checking status</string>
+    <string name="store_open">Open my store</string>
+    <string name="store_fix">Fix and send again</string>
+</resources>

@@ -38,6 +38,23 @@ return [
         'jwks_url' => 'https://www.googleapis.com/oauth2/v3/certs',
     ],
 
+    'payments' => [
+        // `fake` = local checkout page (local/testing only), `paymongo` = PayMongo Checkout Sessions.
+        'driver' => env('PAYMENT_DRIVER', 'fake'),
+        'checkout_ttl_minutes' => 30,
+    ],
+
+    'documents' => [
+        // Signed document links for reviewers stay valid this long.
+        'url_ttl_minutes' => 10,
+        // The apps send ~1600 px JPEGs (well under 1 MB); 4 MB leaves room for other clients.
+        'max_kilobytes' => 4096,
+        // Photos wider or higher than this are refused before decoding (memory).
+        'max_source_pixels' => 6000,
+        // Uploaded photos are re-encoded to JPEG no larger than this (drops EXIF/GPS).
+        'max_pixels' => 2000,
+    ],
+
     'sms' => [
         // `log` writes the message to the log (local only). A real provider is added before real users test.
         'driver' => env('SMS_DRIVER', 'log'),

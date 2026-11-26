@@ -20,11 +20,27 @@
     <string name="tab_stores">Stores</string>
     <string name="tab_riders">Riders</string>
     <string name="operator_dashboard_title">Your province at a glance</string>
-    <string name="operator_dashboard_message">Total orders, gross sales, commissions and active riders will show up here.</string>
-    <string name="operator_stores_title">Stores in your province</string>
-    <string name="operator_stores_message">Approve new stores, set the monthly store fee and manage top-up wallets here.</string>
-    <string name="operator_riders_title">Riders in your province</string>
-    <string name="operator_riders_message">Review rider documents, approve riders and see who is online.</string>
+    <string name="operator_dashboard_message">Total orders, gross sales, commissions and active riders will show up here once orders start.</string>
     <string name="operator_orders_message">Live orders in your province will appear here, with manual rider assignment.</string>
-    <string name="operator_account_message">Your license, delivery rates and province settings will live here.</string>
+    <string name="operator_account_title">Account</string>
+    <string name="operator_province_settings">Province settings</string>
+    <string name="operator_province_settings_message">Where FoxDrop delivers in your province, what customers pay and the monthly store fee.</string>
+    <string name="operator_zones">Delivery zones</string>
+    <string name="operator_rates">Delivery rates and store fee</string>
+
+    <string name="start_title">Welcome to FoxDrop Business</string>
+    <string name="start_message">How do you want to work with FoxDrop?</string>
+    <string name="start_error_title">We couldn\'t load your applications</string>
+    <string name="start_store_title">Open a store</string>
+    <string name="start_store_message">Sell food, groceries or medicine to customers in your province. The local operator reviews your store.</string>
+    <string name="start_store_action">Open a store</string>
+    <string name="start_operator_title">Become a provincial operator</string>
+    <string name="start_operator_message">Run FoxDrop in a whole province: approve stores and riders and set delivery rates. Yearly license.</string>
+    <string name="start_operator_action">Apply for a province</string>
+    <string name="start_view_status">View status</string>
+    <string name="start_status_review">Under review</string>
+    <string name="start_status_approved">Approved</string>
+    <string name="start_status_rejected">Rejected</string>
+    <string name="start_status_withdrawn">Withdrawn</string>
+    <string name="start_status_pay">Pay license</string>
 </resources>

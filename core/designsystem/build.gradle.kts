@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(projects.core.model)
     implementation(projects.core.common)
+    implementation(projects.core.domain) // field-problem messages for forms
     implementation(libs.kotlinx.collections.immutable)
 
     testImplementation(projects.core.testing)

@@ -1,12 +1,16 @@
 package ph.foxdrop.core.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -15,6 +19,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import ph.foxdrop.core.common.dispatcher.Dispatcher
 import ph.foxdrop.core.common.dispatcher.FoxDispatchers
@@ -46,7 +51,6 @@ class FoxApiClient @Inject constructor(
             }
             defaultRequest {
                 url(config.baseUrl)
-                contentType(ContentType.Application.Json)
                 headers.append("Accept", "application/json")
                 (sessionStore.state.value as? SessionState.Present)?.let { bearerAuth(it.session.token) }
             }
@@ -75,6 +79,22 @@ class FoxApiClient @Inject constructor(
         const val REQUEST_TIMEOUT_MS = 20_000L
     }
 }
+
+/**
+ * A JSON request body. The content type is set per request, not by default, because uploads send multipart bodies
+ * that carry their own content type.
+ */
+internal inline fun <reified T> HttpRequestBuilder.jsonBody(value: T) {
+    contentType(ContentType.Application.Json)
+    setBody(value)
+}
+
+/** {"data": ...}: the envelope of every API resource. */
+@Serializable
+internal data class DataEnvelope<T>(val data: T)
+
+/** The `data` of a `{"data": ...}` response. */
+internal suspend inline fun <reified T> HttpResponse.data(): T = body<DataEnvelope<T>>().data
 
 /** JSON for API bodies: tolerant of fields a newer server adds. */
 internal val ApiJson = Json {

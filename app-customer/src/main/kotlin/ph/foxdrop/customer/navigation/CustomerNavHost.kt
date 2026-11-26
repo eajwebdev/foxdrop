@@ -35,7 +35,7 @@ fun CustomerNavHost(startDestination: StartDestination, modifier: Modifier = Mod
         composable<CustomerHomeDestination> {
             RoleGate(onSignedOut = {
                 navController.resetTo(AuthDestination)
-            }) { _, signOut ->
+            }) { _, signOut, _ ->
                 CustomerHomeScreen(onSignOut = signOut)
             }
         }

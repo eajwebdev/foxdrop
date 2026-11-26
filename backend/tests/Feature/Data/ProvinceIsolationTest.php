@@ -46,7 +46,7 @@ it('shows operator A nothing from province B', function () {
     expect(Order::query()->visibleTo($operatorA)->pluck('code')->all())->toBe(['FD-NEG-000001'])
         ->and(Store::query()->visibleTo($operatorA)->whereKey($this->storeB)->exists())->toBeFalse()
         ->and(Rider::query()->visibleTo($operatorA)->where('province_id', $this->ilo)->exists())->toBeFalse()
-        ->and(Rider::query()->visibleTo($operatorA)->count())->toBe(3)
+        ->and(Rider::query()->visibleTo($operatorA)->count())->toBe(4) // 3 approved + 1 waiting for review
         ->and(Wallet::query()->visibleTo($operatorA)->where('province_id', $this->ilo)->exists())->toBeFalse()
         ->and(ProvinceLicense::query()->visibleTo($operatorA)->where('province_id', $this->ilo)->exists())->toBeFalse()
         ->and(UserRole::query()->visibleTo($operatorA)->where('province_id', $this->ilo)->exists())->toBeFalse();

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared request errors (component/ErrorMessages.kt). -->
+    <string name="error_network">No connection. Check your signal and try again.</string>
+    <string name="error_not_configured">The app is not connected to its server yet.</string>
+    <string name="error_rate_limited">Too many tries. Please wait a moment and try again.</string>
+    <string name="error_unauthorized">You are not allowed to do this, or your session has ended.</string>
+    <string name="error_not_found">We could not find that. It may have been removed.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_back">Back</string>
+    <string name="loading">Loading</string>
+    <!-- Form field problems (component/FormMessages.kt). -->
+    <string name="field_required">Required</string>
+    <string name="field_too_short">Too short</string>
+    <string name="field_too_long">Too long</string>
+    <string name="field_invalid">Please check this</string>
+    <string name="field_not_future">Must be a future date</string>
+    <string name="field_out_of_range">Out of range</string>
+    <!-- Store and rider values (PartnerLabels.kt), shared by applicants and operators -->
+    <string name="fox_category_food">Food</string>
+    <string name="fox_category_groceries">Groceries</string>
+    <string name="fox_category_medicine">Medicine</string>
+    <string name="fox_category_more">More</string>
+    <string name="fox_vehicle_motorcycle">Motorcycle</string>
+    <string name="fox_vehicle_bicycle">Bicycle</string>
+    <string name="fox_vehicle_tricycle">Tricycle</string>
+    <string name="fox_vehicle_car">Car</string>
+    <string name="fox_status_pending">Pending review</string>
+    <string name="fox_status_approved">Approved</string>
+    <string name="fox_status_active">Active</string>
+    <string name="fox_status_paused">Paused</string>
+    <string name="fox_status_rejected">Rejected</string>
+    <string name="fox_status_inactive">Inactive</string>
+</resources>

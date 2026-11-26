@@ -2,7 +2,26 @@
 
 All notable changes, per phase. Format: Keep a Changelog; commits follow Conventional Commits.
 
-## [Unreleased] — Phase 1b: backend on Laravel + PostgreSQL
+## [Unreleased]
+
+## Phase 2: Operator licensing & partner onboarding
+
+### Added
+- Provincial operator license: apply for an available province (409 when taken), admin approval (Artisan command
+  until the admin web), ₱15,000 checkout (PayMongo or local fake), ACTIVE for 365 days, renewal extends a year,
+  daily ACTIVE → GRACE → EXPIRED job, license fee posted to the ledger.
+- Operator home: license card, store and rider approval lists and review screens (documents, approve, reject with a
+  reason), delivery zones (circles), rate card editor with a server-side fee preview, monthly store fee.
+- Store application (business app) and rider registration (rider app) with KYC photos, status screens and
+  fix-and-resend.
+- Private KYC storage (re-encoded, size-capped, 10-minute signed links), signed idempotent PayMongo webhook,
+  delivery fee calculator, audited Actions; 170 backend tests, 252 Android tests.
+
+### Security
+- An operator role counts only while the province's current license is theirs; reviews need an operating license;
+  nobody reviews their own application; KYC photos are never cached on the device's disk.
+
+## Phase 1b: backend on Laravel + PostgreSQL
 
 ### Changed
 - Backend is `backend/`: Laravel 13 API (Sanctum tokens, rate limits) on PostgreSQL 17 + PostGIS, replacing Supabase.

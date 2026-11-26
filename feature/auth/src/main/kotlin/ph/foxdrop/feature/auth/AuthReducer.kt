@@ -16,7 +16,9 @@ data class AuthNext(val state: AuthState, val command: AuthCommand? = null)
  */
 object AuthReducer {
     const val OTP_LENGTH = 6
-    const val RESEND_SECONDS = 30
+
+    /** Matches the server's wait between codes (backend config foxdrop.auth.otp.resend_after_seconds). */
+    const val RESEND_SECONDS = 60
     private const val MIN_NAME_LENGTH = 2
 
     fun reduce(state: AuthState, action: AuthAction): AuthNext =

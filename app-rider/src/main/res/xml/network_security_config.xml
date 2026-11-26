@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- §17: HTTPS only, system CAs only (no user-installed CAs). Certificate pinning for the Supabase domain is
+<!-- §17: HTTPS only, system CAs only (no user-installed CAs). Certificate pinning for the API domain is
      added with a remote kill switch once the production domain exists (Phase 7). -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">

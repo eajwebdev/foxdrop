@@ -43,7 +43,7 @@ object EmailAddress {
 object Password {
     const val MIN_LENGTH = 8
 
-    /** At least 8 characters with a letter and a digit. Supabase leaked-password protection runs server-side. */
+    /** At least 8 characters with a letter and a digit. The server checks the same rule. */
     fun isStrongEnough(input: String): Boolean =
         input.length >= MIN_LENGTH && input.any(Char::isLetter) && input.any(Char::isDigit)
 }

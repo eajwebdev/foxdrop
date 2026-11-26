@@ -40,7 +40,7 @@ class AuthViewModel @Inject constructor(
     private var resendTimer: Job? = null
     private var signedInSent = false
 
-    /** Raw nonce of the Google request in flight; Google signs its SHA-256, Supabase checks it against this. */
+    /** Raw nonce of the Google request in flight; Google signs its SHA-256, the API checks it against this. */
     private var googleNonce: String? = null
 
     init {

@@ -7,8 +7,8 @@ import ph.foxdrop.core.model.RoleGrant
 import ph.foxdrop.core.network.auth.RolesRemoteDataSource
 
 /**
- * Roles always come from the server: they decide which home and data a user gets, so a stale cached copy must never
- * outlive a suspension. (Offline caching of the last decision can come with Room in Phase 3.)
+ * Roles from the server when reachable, else the copy saved at the last sign-in (offline routing). They only pick a
+ * home; the server authorises every request.
  */
 internal class DefaultRoleRepository @Inject constructor(
     private val remote: RolesRemoteDataSource,

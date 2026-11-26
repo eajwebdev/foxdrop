@@ -11,7 +11,10 @@ import ph.foxdrop.core.model.AppRole
 import ph.foxdrop.core.model.FoxDropApp
 import ph.foxdrop.core.model.RoleGrant
 
-/** Phase 1 acceptance: each demo user lands on the correct home. Mirrors the demo accounts in supabase/seed.sql. */
+/**
+ * Phase 1 acceptance: each demo user lands on the correct home. Mirrors the demo accounts in
+ * backend/database/seeders/DemoSeeder.php.
+ */
 class ResolveHomeUseCaseTest {
     private val customer = RoleGrant(AppRole.Customer)
     private val rider = listOf(customer, RoleGrant(AppRole.Rider, provinceId = "neg"))

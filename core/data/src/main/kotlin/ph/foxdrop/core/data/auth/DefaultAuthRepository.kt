@@ -10,7 +10,7 @@ import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.network.auth.AuthRemoteDataSource
 
 /**
- * Auth backed by Supabase. Phase 1 adds the profile + role lookup here so the business app can route by role.
+ * Sign-in through the FoxDrop API (Laravel + Sanctum). Inputs are normalised here; the server validates everything.
  */
 internal class DefaultAuthRepository @Inject constructor(
     private val remote: AuthRemoteDataSource,

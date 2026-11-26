@@ -22,7 +22,7 @@ sealed interface GoogleSignInResult {
     data object Unavailable : GoogleSignInResult
 }
 
-/** One-time nonce: Google signs [sha256] into the ID token; Supabase verifies it against [raw] (replay protection). */
+/** One-time nonce: Google signs [sha256] into the ID token; the API verifies it against [raw] (replay protection). */
 data class GoogleNonce(val raw: String, val sha256: String) {
     companion object {
         private const val BYTES = 32

@@ -1,62 +1,53 @@
 package ph.foxdrop.core.network.auth
 
-import io.github.jan.supabase.auth.auth
-import java.util.Base64
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.jsonObject
 import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
-import ph.foxdrop.core.model.AppRole
 import ph.foxdrop.core.model.RoleGrant
-import ph.foxdrop.core.network.SupabaseClientProvider
+import ph.foxdrop.core.network.FoxApiClient
+import ph.foxdrop.core.network.session.ApiUser
+import ph.foxdrop.core.network.session.SessionStore
+import ph.foxdrop.core.network.session.toGrants
 
 interface RolesRemoteDataSource {
     suspend fun myRoles(): FoxResult<List<RoleGrant>>
 }
 
 @Serializable
-internal data class UserRoleRow(
-    val role: String,
-    @SerialName("province_id") val provinceId: String? = null,
-    @SerialName("store_id") val storeId: String? = null,
-)
-
-/** Maps rows to grants; unknown role labels (a newer server) are ignored rather than crashing old apps. */
-internal fun List<UserRoleRow>.toGrants(): List<RoleGrant> =
-    mapNotNull { row -> AppRole.fromDbValue(row.role)?.let { RoleGrant(it, row.provinceId, row.storeId) } }
-
-private val claimsJson = Json { ignoreUnknownKeys = true }
+internal data class MeResponse(val data: ApiUser)
 
 /**
- * Reads the `app_roles` claim that `custom_access_token_hook` puts in every access token (§5). The signature is not
- * checked: this only picks which home to show, and RLS decides every read. Returns null for a malformed token.
- */
-internal fun appRolesFromAccessToken(token: String): List<RoleGrant>? =
-    runCatching {
-        val payload = String(Base64.getUrlDecoder().decode(token.split('.')[1]))
-        val roles = claimsJson.parseToJsonElement(payload).jsonObject["app_roles"] ?: return@runCatching emptyList()
-        claimsJson.decodeFromJsonElement<List<UserRoleRow>>(roles).toGrants()
-    }.getOrNull()
-
-/**
- * Roles come from the stored session, so routing works offline and costs no request. A role change shows after the
- * next token refresh (at most one token lifetime); flows that grant a role refresh the session themselves.
+ * Roles come from `/me` whenever the server is reachable, so a granted or revoked role shows on the next launch.
+ * Offline (no signal in the province), the roles saved at the last sign-in or refresh pick the home; the server still
+ * checks every request.
  */
 @Singleton
-internal class SupabaseRolesRemoteDataSource @Inject constructor(
-    private val provider: SupabaseClientProvider,
+internal class ApiRolesRemoteDataSource @Inject constructor(
+    private val api: FoxApiClient,
+    private val sessionStore: SessionStore,
 ) : RolesRemoteDataSource {
-    override suspend fun myRoles(): FoxResult<List<RoleGrant>> =
-        when (val token = provider.call { it.auth.currentAccessTokenOrNull() }) {
-            is FoxResult.Failure -> token
+    override suspend fun myRoles(): FoxResult<List<RoleGrant>> {
+        if (sessionStore.load() == null) return FoxResult.Failure(DomainError.Unauthorized)
+        return when (val me = api.call { http -> http.get("me").body<MeResponse>().data }) {
+            is FoxResult.Success -> {
+                sessionStore.updateUser(me.value)
+                FoxResult.Success(me.value.roles.toGrants())
+            }
 
-            is FoxResult.Success ->
-                token.value?.let(::appRolesFromAccessToken)?.let { FoxResult.Success(it) }
-                    ?: FoxResult.Failure(DomainError.Unauthorized)
+            is FoxResult.Failure -> {
+                val cached = sessionStore.load()
+                if (me.error == DomainError.Network &&
+                    cached != null
+                ) {
+                    FoxResult.Success(cached.user.roles.toGrants())
+                } else {
+                    me
+                }
+            }
         }
+    }
 }

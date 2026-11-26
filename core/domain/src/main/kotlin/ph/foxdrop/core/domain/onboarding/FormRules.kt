@@ -4,7 +4,6 @@ import java.time.LocalDate
 import ph.foxdrop.core.common.validation.EmailAddress
 import ph.foxdrop.core.common.validation.PhMobileNumber
 import ph.foxdrop.core.domain.partner.VehicleType
-import ph.foxdrop.core.domain.territory.RateCard
 
 /** Why a form field is not accepted yet. The server checks the same rules again (§17). */
 enum class Problem { Required, TooShort, TooLong, Invalid, NotInFuture, OutOfRange }
@@ -158,25 +157,6 @@ object RateCardRules {
 
     private fun Double.isTenthOfKm(): Boolean =
         kotlin.math.abs(this * KM_STEPS - kotlin.math.round(this * KM_STEPS)) < ROUNDING_TOLERANCE
-
-    /** The card to send when [validate] found nothing (the effective date is set by the server). */
-    @Suppress("LongParameterList")
-    fun toCard(
-        baseFare: Long,
-        baseKm: Double,
-        ratePerKm: Long,
-        minFee: Long,
-        maxKm: Double,
-        riderShareBps: Int,
-    ): RateCard =
-        RateCard(
-            baseFareCentavos = baseFare,
-            baseKm = baseKm,
-            ratePerKmCentavos = ratePerKm,
-            minFeeCentavos = minFee,
-            maxKm = maxKm,
-            riderShareBps = riderShareBps,
-        )
 }
 
 /** A reviewer's rejection reason (shown to the applicant). */

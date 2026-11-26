@@ -37,6 +37,8 @@ import ph.foxdrop.core.designsystem.component.Loadable
 import ph.foxdrop.core.designsystem.component.LoadableContent
 import ph.foxdrop.core.designsystem.component.StatusPill
 import ph.foxdrop.core.designsystem.component.StatusTone
+import ph.foxdrop.core.designsystem.component.label
+import ph.foxdrop.core.designsystem.component.tone
 import ph.foxdrop.core.designsystem.theme.FoxLayout
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
 import ph.foxdrop.core.domain.partner.RiderSummary

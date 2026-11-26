@@ -3,6 +3,7 @@
 use App\Models\Store;
 use App\Models\User;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -179,4 +180,29 @@ it('deletes the replaced document photos when a store is resubmitted', function 
         Storage::disk('kyc')->assertMissing($path);
     }
     expect(DB::table('store_documents')->where('store_id', $store->id)->count())->toBe(2);
+});
+
+it('refuses photos too large to decode safely, before saving anything', function () {
+    $owner = User::factory()->create();
+
+    applyForStore($owner, ['valid_id' => UploadedFile::fake()->image('huge.jpg', 6001, 8)])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['valid_id' => 'This photo is too large. Please use one under 6000 pixels wide and high.']);
+
+    expect(Store::query()->where('owner_user_id', $owner->id)->exists())->toBeFalse()
+        ->and(Storage::disk('kyc')->allFiles())->toBe([]);
+});
+
+it('stops a former operator from reviewing once the province is licensed to someone else', function () {
+    $store = submittedStore(User::factory()->create());
+    $former = demoUser(6); // keeps the operator role row, but the province's current license is now another operator's
+    $current = operatorOf(DemoSeeder::NEGROS_OCCIDENTAL);
+
+    $this->withHeaders(bearer($former))->getJson(route('api.v1.operator.stores.index', ['status' => 'SUBMITTED']))->assertForbidden();
+    $this->withHeaders(bearer($former))->getJson(route('api.v1.operator.stores.show', $store))->assertForbidden();
+    $this->withHeaders(bearer($former))->getJson(route('api.v1.operator.riders.index'))->assertForbidden();
+    $this->withHeaders(bearer($former))->postJson(route('api.v1.operator.stores.approve', $store))->assertForbidden();
+
+    $this->withHeaders(bearer($current))->getJson(route('api.v1.operator.stores.index', ['status' => 'SUBMITTED']))
+        ->assertOk()->assertJsonFragment(['id' => $store->id]);
 });

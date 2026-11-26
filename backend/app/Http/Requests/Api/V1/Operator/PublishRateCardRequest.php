@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Operator;
 
+use App\Support\Fees\RateCardTerms;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PublishRateCardRequest extends FormRequest
@@ -27,5 +28,20 @@ class PublishRateCardRequest extends FormRequest
             'bad_weather_surcharge_centavos' => ['sometimes', 'integer', 'between:0,100000'],
             'extra_stop_centavos' => ['sometimes', 'integer', 'between:0,100000'],
         ];
+    }
+
+    /**
+     * The validated fields the fee formula needs.
+     */
+    public function terms(): RateCardTerms
+    {
+        return new RateCardTerms(
+            baseFareCentavos: $this->integer('base_fare_centavos'),
+            baseKm: $this->float('base_km'),
+            ratePerKmCentavos: $this->integer('rate_per_km_centavos'),
+            minFeeCentavos: $this->integer('min_fee_centavos'),
+            maxKm: $this->float('max_km'),
+            riderShareBps: $this->integer('rider_share_bps'),
+        );
     }
 }

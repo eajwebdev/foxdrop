@@ -18,7 +18,6 @@
     <string name="license_business_permit">Business permit (optional)</string>
     <string name="license_submit">Submit application</string>
     <string name="license_submitting">Submitting application</string>
-    <string name="license_photo_unreadable">That photo could not be read. Please try another one.</string>
 
     <string name="license_status_submitted">Under review</string>
     <string name="license_status_approved">Approved</string>

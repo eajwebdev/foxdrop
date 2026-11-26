@@ -1,7 +1,6 @@
 package ph.foxdrop.core.network
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.FormBuilder
 import io.ktor.client.request.forms.formData
@@ -34,4 +33,4 @@ internal fun FormBuilder.field(name: String, value: String?) {
 internal suspend inline fun <reified T> HttpClient.upload(path: String, noinline parts: FormBuilder.() -> Unit): T =
     submitFormWithBinaryData(url = path, formData = formData(parts)) {
         timeout { requestTimeoutMillis = UPLOAD_TIMEOUT_MS }
-    }.body<DataEnvelope<T>>().data
+    }.data<T>()

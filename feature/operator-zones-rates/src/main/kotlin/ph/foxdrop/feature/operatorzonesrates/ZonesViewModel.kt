@@ -8,7 +8,9 @@ import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -139,8 +141,12 @@ class ZonesViewModel @Inject constructor(
     private fun load() {
         _state.update { it.copy(content = Loadable.Loading) }
         viewModelScope.launch {
-            val zones = territory.zones()
-            val province = territory.province()
+            val (zones, province) =
+                coroutineScope {
+                    val zones = async { territory.zones() }
+                    val province = async { territory.province() }
+                    zones.await() to province.await()
+                }
             val content =
                 when {
                     zones is FoxResult.Failure -> Loadable.Failed(zones.error)

@@ -40,11 +40,11 @@ class Store extends Model
 
     public const string REJECTED = 'REJECTED';
 
-    /** Documents an application must include. */
-    public const array REQUIRED_DOCUMENTS = ['BUSINESS_PERMIT', 'VALID_ID'];
-
     /** A storefront customers can see (§5.2). */
     public const array PUBLISHED_STATUSES = ['ACTIVE', 'PAUSED'];
+
+    /** Statuses a reviewer may list (§9.4 step 4). */
+    public const array REVIEW_FILTERS = [self::SUBMITTED, self::ACTIVE, 'PAUSED', 'SUSPENDED', self::REJECTED, 'CLOSED'];
 
     /**
      * @return BelongsTo<Province, $this>

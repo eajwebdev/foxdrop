@@ -53,7 +53,9 @@ import ph.foxdrop.core.designsystem.component.SkeletonList
 import ph.foxdrop.core.designsystem.component.StatusPill
 import ph.foxdrop.core.designsystem.component.StatusTone
 import ph.foxdrop.core.designsystem.component.errorMessage
+import ph.foxdrop.core.designsystem.component.label
 import ph.foxdrop.core.designsystem.component.problemMessage
+import ph.foxdrop.core.designsystem.component.tone
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
 import ph.foxdrop.core.designsystem.theme.FoxTheme
 import ph.foxdrop.core.domain.onboarding.Problem
@@ -64,6 +66,7 @@ import ph.foxdrop.core.domain.partner.StoreStatus
 import ph.foxdrop.core.location.LocationResult
 import ph.foxdrop.core.location.rememberLocationPermissionRequest
 import ph.foxdrop.core.media.PhotoSlot
+import ph.foxdrop.core.media.R as MediaR
 import ph.foxdrop.core.media.rememberPhotoPicker
 import ph.foxdrop.feature.storeonboarding.StoreOnboardingAction as Action
 import ph.foxdrop.feature.storeonboarding.StoreOnboardingState as State
@@ -81,7 +84,7 @@ fun StoreOnboardingRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val unreadable = stringResource(R.string.store_photo_unreadable)
+    val unreadable = stringResource(MediaR.string.media_photo_unreadable)
     val askLocation = rememberLocationPermissionRequest { viewModel.onAction(Action.LocationPermissionResult(it)) }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -360,7 +363,7 @@ private fun StatusContent(state: State.Status, onAction: (Action) -> Unit, onOpe
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    StatusPill(statusLabel(store.status), statusTone(store.status))
+                    StatusPill(store.status.label(), store.status.tone())
                 }
                 Text(statusTitle(store), style = MaterialTheme.typography.titleMedium)
                 statusMessage(store)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
@@ -418,34 +421,6 @@ private fun statusMessage(store: MyStore): String? =
 
         else -> null
     }
-
-@Composable
-private fun statusLabel(status: StoreStatus): String =
-    when (status) {
-        StoreStatus.Active, StoreStatus.Approved -> stringResource(R.string.store_status_active)
-        StoreStatus.Rejected -> stringResource(R.string.store_status_rejected)
-        StoreStatus.Submitted, StoreStatus.Draft -> stringResource(R.string.store_status_pending)
-        else -> status.name
-    }
-
-private fun statusTone(status: StoreStatus): StatusTone =
-    when (status) {
-        StoreStatus.Active, StoreStatus.Approved -> StatusTone.Success
-        StoreStatus.Rejected, StoreStatus.Suspended, StoreStatus.Closed -> StatusTone.Error
-        StoreStatus.Submitted, StoreStatus.Draft -> StatusTone.Info
-        else -> StatusTone.Neutral
-    }
-
-@Composable
-internal fun StoreCategory.label(): String =
-    stringResource(
-        when (this) {
-            StoreCategory.Food -> R.string.category_food
-            StoreCategory.Groceries -> R.string.category_groceries
-            StoreCategory.Medicine -> R.string.category_medicine
-            StoreCategory.More -> R.string.category_more
-        },
-    )
 
 @Composable
 private fun locationMessage(result: LocationResult): String =

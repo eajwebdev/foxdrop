@@ -60,7 +60,7 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
 - **`Payment`**: `{id, purpose: LICENSE|TOPUP|ORDER, status: PENDING|PAID|FAILED|EXPIRED, amount_centavos, checkout_url, expires_at}`.
 
 ### How a payment finishes
-- The app opens `checkout_url` in a Custom Tab, then polls `payments/{id}` every 2 s for up to 2 min, or until the
+- The app opens `checkout_url` in a Custom Tab, then polls `payments/{id}` (after 2, 2, 3 and 5 s, then every 8 s, for about 2 min), or until the
   status is no longer PENDING.
 - **PayMongo**: `POST webhooks/paymongo` (public, signature-checked) marks the payment PAID, then activates or
   extends the license.

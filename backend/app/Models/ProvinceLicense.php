@@ -45,6 +45,9 @@ class ProvinceLicense extends Model
     /** The operator runs the province (GRACE: operations continue, §5.1). */
     public const array OPERATING = [self::ACTIVE, self::GRACE];
 
+    /** At most one license per province may be in these states (unique index province_licenses_one_live). */
+    public const array LIVE = [self::APPLIED, self::PENDING_PAYMENT, self::ACTIVE, self::GRACE];
+
     /**
      * @return array<string, string>
      */
@@ -59,6 +62,34 @@ class ProvinceLicense extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    /**
+     * Each province's current license: the live one if there is one, else the one that ended last (never a
+     * rejected application). Keyed by province id; provinces without one are absent.
+     *
+     * @param  list<string>  $provinceIds
+     * @return array<string, self>
+     */
+    public static function currentByProvince(array $provinceIds): array
+    {
+        if ($provinceIds === []) {
+            return [];
+        }
+
+        $current = [];
+        $licenses = static::query()
+            ->whereIn('province_id', $provinceIds)
+            ->where('status', '<>', self::REJECTED)
+            ->orderByRaw('status in ('.implode(', ', array_map(fn (string $s): string => "'$s'", self::LIVE)).') desc')
+            ->orderByDesc('end_at')
+            ->orderByDesc('created_at')
+            ->get();
+        foreach ($licenses as $license) {
+            $current[$license->province_id] ??= $license;
+        }
+
+        return $current;
     }
 
     /**

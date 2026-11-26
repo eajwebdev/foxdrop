@@ -9,6 +9,8 @@ import kotlin.math.roundToInt
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +70,14 @@ data class RateFields(
                 baseFare != null && baseKm != null && ratePerKm != null && minFee != null && maxKm != null &&
                     riderShareBps != null
             return if (problems.isEmpty() && complete) {
-                RateCardRules.toCard(baseFare, baseKm, ratePerKm, minFee, maxKm, riderShareBps)
+                RateCard(
+                    baseFareCentavos = baseFare,
+                    baseKm = baseKm,
+                    ratePerKmCentavos = ratePerKm,
+                    minFeeCentavos = minFee,
+                    maxKm = maxKm,
+                    riderShareBps = riderShareBps,
+                )
             } else {
                 null
             }
@@ -92,15 +101,12 @@ data class RateFields(
     }
 }
 
-enum class RateField { BaseFare, BaseKm, RatePerKm, MinFee, MaxKm, RiderShare }
-
 @Immutable
 data class RateCardState(
     val content: Loadable<Unit> = Loadable.Loading,
     val fields: RateFields = RateFields(),
     val problems: Map<RateCardRules.Field, Problem> = emptyMap(),
     val preview: Loadable<ImmutableList<FeePreview>> = Loadable.Loading,
-    val effectiveFrom: String? = null,
     /** The card in force; fields the editor does not show (surcharges) are kept from it when publishing. */
     val current: RateCard? = null,
     val publishing: Boolean = false,
@@ -129,8 +135,12 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
     fun load() {
         _state.update { it.copy(content = Loadable.Loading) }
         viewModelScope.launch {
-            val card = territory.rateCard()
-            val province = territory.province()
+            val (card, province) =
+                coroutineScope {
+                    val card = async { territory.rateCard() }
+                    val province = async { territory.province() }
+                    card.await() to province.await()
+                }
             when {
                 card is FoxResult.Failure -> _state.update { it.copy(content = Loadable.Failed(card.error)) }
 
@@ -142,7 +152,6 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
                         it.copy(
                             content = Loadable.Ready(Unit),
                             fields = RateFields.from(current),
-                            effectiveFrom = current.effectiveFrom,
                             current = current,
                             storeFee = PesoInput.toInput((province as FoxResult.Success).value.storeFeeCentavos),
                         )
@@ -153,16 +162,16 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
         }
     }
 
-    fun onFieldChanged(field: RateField, value: String) {
+    fun onFieldChanged(field: RateCardRules.Field, value: String) {
         _state.update {
             val fields =
                 when (field) {
-                    RateField.BaseFare -> it.fields.copy(baseFare = value)
-                    RateField.BaseKm -> it.fields.copy(baseKm = value)
-                    RateField.RatePerKm -> it.fields.copy(ratePerKm = value)
-                    RateField.MinFee -> it.fields.copy(minFee = value)
-                    RateField.MaxKm -> it.fields.copy(maxKm = value)
-                    RateField.RiderShare -> it.fields.copy(riderSharePercent = value)
+                    RateCardRules.Field.BaseFare -> it.fields.copy(baseFare = value)
+                    RateCardRules.Field.BaseKm -> it.fields.copy(baseKm = value)
+                    RateCardRules.Field.RatePerKm -> it.fields.copy(ratePerKm = value)
+                    RateCardRules.Field.MinFee -> it.fields.copy(minFee = value)
+                    RateCardRules.Field.MaxKm -> it.fields.copy(maxKm = value)
+                    RateCardRules.Field.RiderShare -> it.fields.copy(riderSharePercent = value)
                 }
             it.copy(fields = fields, problems = emptyMap(), justPublished = false)
         }
@@ -195,7 +204,6 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
                         it.copy(
                             publishing = false,
                             justPublished = true,
-                            effectiveFrom = result.value.effectiveFrom,
                             current = result.value,
                         )
                     }

@@ -10,7 +10,6 @@ use App\Http\Resources\RateCardResource;
 use App\Models\DeliveryRateCard;
 use App\Models\User;
 use App\Support\Fees\DeliveryFeeCalculator;
-use App\Support\Fees\RateCardTerms;
 use App\Support\OperatorContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,14 +43,7 @@ class RateCardController extends Controller
         $user = $request->user();
         OperatorContext::for($user);
 
-        $terms = new RateCardTerms(
-            baseFareCentavos: $request->integer('base_fare_centavos'),
-            baseKm: $request->float('base_km'),
-            ratePerKmCentavos: $request->integer('rate_per_km_centavos'),
-            minFeeCentavos: $request->integer('min_fee_centavos'),
-            maxKm: $request->float('max_km'),
-            riderShareBps: $request->integer('rider_share_bps'),
-        );
+        $terms = $request->terms();
 
         /** @var list<int|float|string> $distances */
         $distances = $request->input('distances_km');

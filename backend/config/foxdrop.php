@@ -47,7 +47,10 @@ return [
     'documents' => [
         // Signed document links for reviewers stay valid this long.
         'url_ttl_minutes' => 10,
-        'max_kilobytes' => 8192,
+        // The apps send ~1600 px JPEGs (well under 1 MB); 4 MB leaves room for other clients.
+        'max_kilobytes' => 4096,
+        // Photos wider or higher than this are refused before decoding (memory).
+        'max_source_pixels' => 6000,
         // Uploaded photos are re-encoded to JPEG no larger than this (drops EXIF/GPS).
         'max_pixels' => 2000,
     ],

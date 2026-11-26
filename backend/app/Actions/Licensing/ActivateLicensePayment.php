@@ -7,6 +7,7 @@ use App\Actions\Ledger\EnsureWallet;
 use App\Actions\Ledger\LedgerLine;
 use App\Actions\Ledger\PostLedgerTxn;
 use App\Actions\Roles\GrantRole;
+use App\Contracts\PaymentPurposeHandler;
 use App\Enums\AppRole;
 use App\Models\Payment;
 use App\Models\ProvinceLicense;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Log;
  * year from the later of today and its end date. Ledger rule 7 records the fee as platform revenue.
  * Runs inside the payment's transaction; safe to repeat for the same payment.
  */
-final class ActivateLicensePayment
+final class ActivateLicensePayment implements PaymentPurposeHandler
 {
     public function __construct(
         private readonly GrantRole $grantRole,
@@ -29,7 +30,7 @@ final class ActivateLicensePayment
         private readonly RecordAudit $audit,
     ) {}
 
-    public function __invoke(Payment $payment): void
+    public function onPaid(Payment $payment): void
     {
         $license = ProvinceLicense::query()->lockForUpdate()->findOrFail($payment->license_id);
         $termDays = (int) DB::table('platform_settings')->value('license_term_days');

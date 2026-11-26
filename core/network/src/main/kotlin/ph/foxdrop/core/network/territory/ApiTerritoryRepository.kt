@@ -1,6 +1,5 @@
 package ph.foxdrop.core.network.territory
 
-import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
@@ -16,9 +15,9 @@ import ph.foxdrop.core.domain.territory.RateCard
 import ph.foxdrop.core.domain.territory.TerritoryRepository
 import ph.foxdrop.core.domain.territory.Zone
 import ph.foxdrop.core.model.GeoPoint
-import ph.foxdrop.core.network.DataEnvelope
 import ph.foxdrop.core.network.FoxApiClient
 import ph.foxdrop.core.network.LatLngDto
+import ph.foxdrop.core.network.data
 import ph.foxdrop.core.network.jsonBody
 import ph.foxdrop.core.network.toDto
 
@@ -122,25 +121,25 @@ internal data class StoreFeeRequest(@SerialName("store_fee_centavos") val storeF
 
 internal class ApiTerritoryRepository @Inject constructor(private val api: FoxApiClient) : TerritoryRepository {
     override suspend fun zones(): FoxResult<List<Zone>> =
-        api.call { http -> http.get("operator/zones").body<DataEnvelope<List<ZoneDto>>>().data }
+        api.call { http -> http.get("operator/zones").data<List<ZoneDto>>() }
             .map { rows -> rows.map(ZoneDto::toDomain) }
 
     override suspend fun createCircleZone(name: String, center: GeoPoint, radiusKm: Double): FoxResult<Zone> =
         api.call { http ->
-            http.post("operator/zones") { jsonBody(CircleZoneRequest(name.trim(), center.toDto(), radiusKm)) }
-                .body<DataEnvelope<ZoneDto>>().data
+            http.post("operator/zones") { jsonBody(CircleZoneRequest(name, center.toDto(), radiusKm)) }
+                .data<ZoneDto>()
         }.map(ZoneDto::toDomain)
 
     override suspend fun deleteZone(zoneId: String): FoxResult<Unit> =
         api.call { http -> http.delete("operator/zones/$zoneId") }.map { }
 
     override suspend fun rateCard(): FoxResult<RateCard> =
-        api.call { http -> http.get("operator/rate-card").body<DataEnvelope<RateCardDto>>().data }
+        api.call { http -> http.get("operator/rate-card").data<RateCardDto>() }
             .map(RateCardDto::toDomain)
 
     override suspend fun publishRateCard(card: RateCard): FoxResult<RateCard> =
         api.call { http ->
-            http.post("operator/rate-cards") { jsonBody(card.toDto()) }.body<DataEnvelope<RateCardDto>>().data
+            http.post("operator/rate-cards") { jsonBody(card.toDto()) }.data<RateCardDto>()
         }.map(RateCardDto::toDomain)
 
     override suspend fun previewFees(card: RateCard, distancesKm: List<Double>): FoxResult<List<FeePreview>> =
@@ -159,16 +158,16 @@ internal class ApiTerritoryRepository @Inject constructor(private val api: FoxAp
                     distancesKm,
                 )
             http.post("operator/rate-cards/preview") { jsonBody(request) }
-                .body<DataEnvelope<List<FeePreviewDto>>>().data
+                .data<List<FeePreviewDto>>()
         }.map { rows -> rows.map(FeePreviewDto::toDomain) }
 
     override suspend fun province(): FoxResult<OperatorProvince> =
-        api.call { http -> http.get("operator/province").body<DataEnvelope<OperatorProvinceDto>>().data }
+        api.call { http -> http.get("operator/province").data<OperatorProvinceDto>() }
             .map(OperatorProvinceDto::toDomain)
 
     override suspend fun updateStoreFee(storeFeeCentavos: Long): FoxResult<OperatorProvince> =
         api.call { http ->
             http.patch("operator/province") { jsonBody(StoreFeeRequest(storeFeeCentavos)) }
-                .body<DataEnvelope<OperatorProvinceDto>>().data
+                .data<OperatorProvinceDto>()
         }.map(OperatorProvinceDto::toDomain)
 }

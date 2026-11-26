@@ -35,6 +35,9 @@ class User extends Authenticatable
 
     public const string STATUS_SUSPENDED = 'SUSPENDED';
 
+    /** @var list<string>|null */
+    private ?array $currentOperatorProvinceIds = null;
+
     /**
      * @return array<string, string>
      */
@@ -77,13 +80,42 @@ class User extends Authenticatable
     }
 
     /**
-     * Provinces this user runs as operator or operator staff.
+     * Provinces this user currently runs as operator or operator staff (DECISIONS 65): an operator grant counts only
+     * while the province's current license is theirs; a staff grant while the province has a license at all. Every
+     * operator check (visibility scopes, reviews, OperatorContext) reads this one list. Memoized per instance.
      *
      * @return list<string>
      */
     public function operatorProvinceIds(): array
     {
-        return $this->scopeIds(AppRole::operatorTeam(), fn (UserRole $grant): ?string => $grant->province_id);
+        return $this->currentOperatorProvinceIds ??= $this->resolveOperatorProvinceIds();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolveOperatorProvinceIds(): array
+    {
+        $grants = [];
+        foreach ($this->roles as $grant) {
+            if ($grant->province_id !== null && in_array($grant->role, AppRole::operatorTeam(), true)) {
+                $grants[$grant->province_id] ??= $grant;
+            }
+        }
+        if ($grants === []) {
+            return [];
+        }
+        $licenses = ProvinceLicense::currentByProvince(array_keys($grants));
+
+        $provinceIds = [];
+        foreach ($grants as $provinceId => $grant) {
+            $license = $licenses[$provinceId] ?? null;
+            if ($license !== null && ($grant->role !== AppRole::Operator || $license->operator_user_id === $grant->user_id)) {
+                $provinceIds[$license->province_id] = $license->province_id;
+            }
+        }
+
+        return array_values($provinceIds);
     }
 
     /**

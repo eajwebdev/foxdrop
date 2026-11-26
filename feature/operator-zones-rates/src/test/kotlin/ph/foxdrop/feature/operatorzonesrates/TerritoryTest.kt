@@ -146,8 +146,8 @@ class RateCardViewModelTest {
         runCurrent()
         territory.calls.clear()
 
-        vm.onFieldChanged(RateField.BaseFare, "5")
-        vm.onFieldChanged(RateField.BaseFare, "50")
+        vm.onFieldChanged(RateCardRules.Field.BaseFare, "5")
+        vm.onFieldChanged(RateCardRules.Field.BaseFare, "50")
         advanceTimeBy(RateCardViewModel.PREVIEW_DEBOUNCE_MS - 1)
         assertTrue(territory.calls.isEmpty())
         advanceTimeBy(2)
@@ -160,8 +160,8 @@ class RateCardViewModelTest {
     fun `invalid values block publishing and show where`() = runTest(main.dispatcher) {
         val vm = RateCardViewModel(territory)
         runCurrent()
-        vm.onFieldChanged(RateField.RiderShare, "150")
-        vm.onFieldChanged(RateField.BaseFare, "abc")
+        vm.onFieldChanged(RateCardRules.Field.RiderShare, "150")
+        vm.onFieldChanged(RateCardRules.Field.BaseFare, "abc")
         vm.publish()
 
         assertEquals(Problem.OutOfRange, vm.state.value.problems[RateCardRules.Field.RiderShare])
@@ -179,7 +179,7 @@ class RateCardViewModelTest {
             )
         val vm = RateCardViewModel(territory)
         runCurrent()
-        vm.onFieldChanged(RateField.RatePerKm, "12")
+        vm.onFieldChanged(RateCardRules.Field.RatePerKm, "12")
         vm.publish()
         runCurrent()
 
@@ -193,7 +193,7 @@ class RateCardViewModelTest {
     fun `publishing a valid card and saving the store fee`() = runTest(main.dispatcher) {
         val vm = RateCardViewModel(territory)
         runCurrent()
-        vm.onFieldChanged(RateField.BaseFare, "45.50")
+        vm.onFieldChanged(RateCardRules.Field.BaseFare, "45.50")
         vm.publish()
         runCurrent()
         assertTrue(vm.state.value.justPublished)

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A PSGC province (82 + NCR). One licensed operator per province (§5.1).
@@ -26,6 +27,16 @@ class Province extends Model
     protected function casts(): array
     {
         return ['is_enabled' => 'boolean'];
+    }
+
+    /**
+     * Partner applications are only taken where customers can order (an ACTIVE or GRACE license, §5.1); the
+     * province_directory view defines "serviceable" once.
+     */
+    public static function ensureServiceable(string $provinceId): void
+    {
+        $serviceable = DB::table('province_directory')->where('id', $provinceId)->value('is_serviceable');
+        abort_unless($serviceable === true, 409, 'FoxDrop is not open in this province yet.');
     }
 
     /**

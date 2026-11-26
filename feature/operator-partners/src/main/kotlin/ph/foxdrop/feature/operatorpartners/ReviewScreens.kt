@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material3.Icon
@@ -35,11 +33,15 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.LocalPlatformContext
 import coil3.compose.SubcomposeAsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
 import java.util.Locale
 import ph.foxdrop.core.designsystem.component.FoxButton
 import ph.foxdrop.core.designsystem.component.FoxButtonState
 import ph.foxdrop.core.designsystem.component.FoxCard
+import ph.foxdrop.core.designsystem.component.FoxFormColumn
 import ph.foxdrop.core.designsystem.component.FoxOutlinedButton
 import ph.foxdrop.core.designsystem.component.FoxScreenScaffold
 import ph.foxdrop.core.designsystem.component.FoxTextField
@@ -48,7 +50,9 @@ import ph.foxdrop.core.designsystem.component.LoadableContent
 import ph.foxdrop.core.designsystem.component.StatusPill
 import ph.foxdrop.core.designsystem.component.StatusTone
 import ph.foxdrop.core.designsystem.component.errorMessage
+import ph.foxdrop.core.designsystem.component.label
 import ph.foxdrop.core.designsystem.component.problemMessage
+import ph.foxdrop.core.designsystem.component.tone
 import ph.foxdrop.core.designsystem.theme.FoxLayout
 import ph.foxdrop.core.designsystem.theme.FoxShapes
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
@@ -233,13 +237,8 @@ private fun <T> ReviewScaffold(
             onRetry = actions.onRetry,
             modifier = Modifier.padding(padding).fillMaxSize(),
         ) { review ->
-            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.TopCenter) {
-                Column(
-                    Modifier.widthIn(max = FoxLayout.MaxFormWidth).fillMaxWidth().padding(FoxSpacing.L),
-                    verticalArrangement = Arrangement.spacedBy(FoxSpacing.M),
-                ) {
-                    content(review)
-                }
+            FoxFormColumn {
+                content(review)
             }
         }
     }
@@ -358,9 +357,19 @@ private fun Documents(documents: List<PartnerDocument>) {
         val label = documentLabel(document.type)
         Column(verticalArrangement = Arrangement.spacedBy(FoxSpacing.XS)) {
             Text(label, style = MaterialTheme.typography.labelLarge)
-            // Signed, short-lived URLs (DECISIONS 60): loaded on demand, never stored by the app.
+            // Signed, short-lived URLs (DECISIONS 60): loaded on demand, never stored by the app. The signature
+            // changes on every fetch, so the cache key is the URL path, which names the document (a resubmission
+            // gets new ones).
+            val cacheKey = "doc:${document.url.substringBefore('?')}:${document.type}"
             SubcomposeAsyncImage(
-                model = document.url,
+                model =
+                    ImageRequest
+                        .Builder(LocalPlatformContext.current)
+                        .data(document.url)
+                        .memoryCacheKey(cacheKey)
+                        // ID and permit photos are personal data (Data Privacy Act): never written to the phone's disk.
+                        .diskCachePolicy(CachePolicy.DISABLED)
+                        .build(),
                 contentDescription = label,
                 contentScale = ContentScale.Fit,
                 loading = { ImageFrame() },

@@ -144,7 +144,7 @@ class OperatorLicenseViewModelTest {
                 runCurrent()
                 assertEquals(OperatorLicenseEffect.RolesChanged, awaitItem())
             }
-            assertEquals(LicenseStatus.Active, (vm.state.value as State.Status).license?.status)
+            assertEquals(LicenseStatus.Active, (vm.state.value as State.Status).application.license?.status)
             assertEquals(listOf("pay:lic-1", "poll:pay-1", "poll:pay-1"), licenses.calls)
         }
 
@@ -170,7 +170,7 @@ class OperatorLicenseViewModelTest {
         val vm = viewModel()
         runCurrent()
         vm.onAction(Action.Pay)
-        advanceTimeBy(PaymentPoller.POLL_INTERVAL_MS * PaymentPoller.MAX_POLLS + 1)
+        advanceTimeBy(PaymentPoller.POLL_DELAYS_MS.sum() + 1)
         runCurrent()
 
         assertEquals(PayState.StillPending, (vm.state.value as State.Status).pay)

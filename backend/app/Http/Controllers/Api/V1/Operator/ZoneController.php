@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1\Operator;
 
-use App\Actions\Audit\RecordAudit;
 use App\Actions\Territory\CreateDeliveryZone;
+use App\Actions\Territory\DeactivateDeliveryZone;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Operator\CreateZoneRequest;
 use App\Http\Resources\ZoneResource;
@@ -49,14 +49,9 @@ class ZoneController extends Controller
         return ZoneResource::make(DeliveryZone::query()->withGeometry()->findOrFail($zone->id))->response()->setStatusCode(201);
     }
 
-    public function destroy(Request $request, string $zone, RecordAudit $audit): Response
+    public function destroy(Request $request, string $zone, DeactivateDeliveryZone $deactivate): Response
     {
-        $operator = OperatorContext::for($this->user($request));
-        $operator->ensureCanChange();
-
-        $model = DeliveryZone::query()->where('province_id', $operator->provinceId)->findOrFail($zone);
-        $model->forceFill(['is_active' => false])->save();
-        $audit($operator->user, 'delivery_zone.deactivated', 'delivery_zone', $model->id, $operator->provinceId);
+        $deactivate(OperatorContext::for($this->user($request)), $zone);
 
         return response()->noContent();
     }

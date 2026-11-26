@@ -8,7 +8,6 @@ import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.domain.media.PhotoUpload
 import ph.foxdrop.core.domain.onboarding.OperatorApplicationRules.Field
 import ph.foxdrop.core.domain.onboarding.Problem
-import ph.foxdrop.core.domain.operator.License
 import ph.foxdrop.core.domain.operator.OperatorApplication
 import ph.foxdrop.core.domain.province.ProvinceOption
 
@@ -60,7 +59,6 @@ sealed interface OperatorLicenseState {
 
     data class Status(
         val application: OperatorApplication,
-        val license: License?,
         val pay: PayState = PayState.Idle,
         val refreshing: Boolean = false,
     ) : OperatorLicenseState

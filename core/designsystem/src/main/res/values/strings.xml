@@ -17,4 +17,19 @@
     <string name="field_invalid">Please check this</string>
     <string name="field_not_future">Must be a future date</string>
     <string name="field_out_of_range">Out of range</string>
+    <!-- Store and rider values (PartnerLabels.kt), shared by applicants and operators -->
+    <string name="fox_category_food">Food</string>
+    <string name="fox_category_groceries">Groceries</string>
+    <string name="fox_category_medicine">Medicine</string>
+    <string name="fox_category_more">More</string>
+    <string name="fox_vehicle_motorcycle">Motorcycle</string>
+    <string name="fox_vehicle_bicycle">Bicycle</string>
+    <string name="fox_vehicle_tricycle">Tricycle</string>
+    <string name="fox_vehicle_car">Car</string>
+    <string name="fox_status_pending">Pending review</string>
+    <string name="fox_status_approved">Approved</string>
+    <string name="fox_status_active">Active</string>
+    <string name="fox_status_paused">Paused</string>
+    <string name="fox_status_rejected">Rejected</string>
+    <string name="fox_status_inactive">Inactive</string>
 </resources>

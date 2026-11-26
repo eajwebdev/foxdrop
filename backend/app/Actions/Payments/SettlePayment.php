@@ -3,8 +3,11 @@
 namespace App\Actions\Payments;
 
 use App\Actions\Licensing\ActivateLicensePayment;
+use App\Contracts\PaymentPurposeHandler;
 use App\Models\Payment;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /**
  * Finishes a payment once the provider (webhook, or the local fake checkout) reports the result. Safe to call more
@@ -12,7 +15,12 @@ use Illuminate\Support\Facades\DB;
  */
 final class SettlePayment
 {
-    public function __construct(private readonly ActivateLicensePayment $activateLicense) {}
+    /** @var array<string, class-string<PaymentPurposeHandler>> what each payment purpose pays for */
+    private const array HANDLERS = [
+        Payment::PURPOSE_LICENSE => ActivateLicensePayment::class,
+    ];
+
+    public function __construct(private readonly Container $container) {}
 
     /**
      * @param  array<string, mixed>|null  $raw  the provider's event, kept for support
@@ -26,9 +34,7 @@ final class SettlePayment
             }
 
             $payment->forceFill(['status' => Payment::PAID, 'raw' => $raw])->save();
-            if ($payment->purpose === Payment::PURPOSE_LICENSE) {
-                ($this->activateLicense)($payment);
-            }
+            $this->handlerFor($payment->purpose)->onPaid($payment);
 
             return $payment;
         });
@@ -47,5 +53,15 @@ final class SettlePayment
 
             return $payment;
         });
+    }
+
+    /**
+     * An unknown purpose rolls the PAID mark back: the provider retries, and nothing is settled half-way.
+     */
+    private function handlerFor(string $purpose): PaymentPurposeHandler
+    {
+        $handler = self::HANDLERS[$purpose] ?? throw new LogicException("No handler for {$purpose} payments.");
+
+        return $this->container->make($handler);
     }
 }

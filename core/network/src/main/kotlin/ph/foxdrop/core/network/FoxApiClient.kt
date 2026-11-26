@@ -1,6 +1,7 @@
 package ph.foxdrop.core.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
@@ -9,6 +10,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -90,6 +92,9 @@ internal inline fun <reified T> HttpRequestBuilder.jsonBody(value: T) {
 /** {"data": ...}: the envelope of every API resource. */
 @Serializable
 internal data class DataEnvelope<T>(val data: T)
+
+/** The `data` of a `{"data": ...}` response. */
+internal suspend inline fun <reified T> HttpResponse.data(): T = body<DataEnvelope<T>>().data
 
 /** JSON for API bodies: tolerant of fields a newer server adds. */
 internal val ApiJson = Json {

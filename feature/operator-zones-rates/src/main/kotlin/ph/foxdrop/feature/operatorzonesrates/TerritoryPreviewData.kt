@@ -35,7 +35,7 @@ internal object TerritoryPreviewData {
             content = Loadable.Ready(Unit),
             fields = RateFields.from(RateCard.Default),
             preview = preview,
-            effectiveFrom = "2026-11-26T00:00:00Z",
+            current = RateCard.Default.copy(effectiveFrom = "2026-11-26T00:00:00Z"),
             storeFee = "15",
         )
 }

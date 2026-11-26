@@ -3,67 +3,57 @@
 namespace App\Http\Controllers\Api\V1\Operator;
 
 use App\Actions\Partners\ReviewRider;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\Operator\RejectApplicationRequest;
 use App\Http\Resources\RiderReviewResource;
 use App\Http\Resources\RiderSummaryResource;
 use App\Models\Rider;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * "Recruit and verify riders" (§9.4 step 4) for the operator's province; admins see every province.
+ * Rider applications ("recruit and verify riders", §9.4 step 4).
+ *
+ * @extends PartnerReviewController<Rider>
  */
-class RiderReviewController extends Controller
+class RiderReviewController extends PartnerReviewController
 {
-    public function index(Request $request): AnonymousResourceCollection
-    {
-        $user = $this->reviewer($request);
-        $status = $request->validate(['status' => ['sometimes', Rule::in(['DOCS_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED', 'DEACTIVATED'])]])['status'] ?? Rider::DOCS_REVIEW;
+    public function __construct(private readonly ReviewRider $reviewRider) {}
 
-        return RiderSummaryResource::collection(
-            Rider::query()->reviewableBy($user)->with('user')
-                ->where('status', $status)
-                ->orderBy('created_at')
-                ->orderBy('id')
-                ->get(),
-        );
+    protected function statusFilters(): array
+    {
+        return Rider::REVIEW_FILTERS;
     }
 
-    public function show(Request $request, string $rider): RiderReviewResource
+    protected function pendingStatus(): string
     {
-        return RiderReviewResource::make($this->find($this->reviewer($request), $rider));
+        return Rider::DOCS_REVIEW;
     }
 
-    public function approve(Request $request, string $rider, ReviewRider $review): RiderReviewResource
+    protected function applicantRelation(): string
     {
-        $user = $this->reviewer($request);
-        $review($user, $this->find($user, $rider), approve: true);
-
-        return RiderReviewResource::make($this->find($user, $rider));
+        return 'user';
     }
 
-    public function reject(RejectApplicationRequest $request, string $rider, ReviewRider $review): RiderReviewResource
+    protected function reviewable(User $reviewer): Builder
     {
-        $user = $this->reviewer($request);
-        $review($user, $this->find($user, $rider), approve: false, reason: $request->string('reason')->toString());
-
-        return RiderReviewResource::make($this->find($user, $rider));
+        return Rider::query()->reviewableBy($reviewer);
     }
 
-    private function find(User $user, string $id): Rider
+    protected function decide(User $reviewer, Model $partner, bool $approve, ?string $reason): Model
     {
-        return Rider::query()->reviewableBy($user)->with('user', 'documents')->findOrFail($id);
+        return ($this->reviewRider)($reviewer, $partner, $approve, $reason);
     }
 
-    private function reviewer(Request $request): User
+    protected function summaries(Collection $partners): AnonymousResourceCollection
     {
-        /** @var User $user */
-        $user = $request->user();
-        abort_unless($user->isPlatformAdmin() || $user->operatorProvinceIds() !== [], 403, 'This needs a provincial operator account.');
+        return RiderSummaryResource::collection($partners);
+    }
 
-        return $user;
+    protected function detail(Model $partner): JsonResource
+    {
+        return RiderReviewResource::make($partner);
     }
 }

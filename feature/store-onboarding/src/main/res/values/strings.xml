@@ -28,7 +28,6 @@
     <string name="store_documents">Documents</string>
     <string name="store_business_permit">Business permit</string>
     <string name="store_valid_id">Owner\'s valid ID</string>
-    <string name="store_photo_unreadable">We couldn\'t read that photo. Try another one.</string>
     <string name="store_submit">Send for review</string>
     <string name="store_submitting">Sending your application</string>
 
@@ -39,16 +38,8 @@
     <string name="store_status_rejected_title">Your application was not approved</string>
     <string name="store_status_rejected_reason">Reason: %1$s</string>
     <string name="store_status_other_title">Store status: %1$s</string>
-    <string name="store_status_pending">Pending review</string>
-    <string name="store_status_active">Active</string>
-    <string name="store_status_rejected">Rejected</string>
     <string name="store_check_status">Check status</string>
     <string name="store_checking">Checking status</string>
     <string name="store_open">Open my store</string>
     <string name="store_fix">Fix and send again</string>
-
-    <string name="category_food">Food</string>
-    <string name="category_groceries">Groceries</string>
-    <string name="category_medicine">Medicine</string>
-    <string name="category_more">More</string>
 </resources>

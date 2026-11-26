@@ -32,7 +32,6 @@
     <string name="rider_bicycle_note">Bicycles don\'t need a plate number or OR/CR.</string>
     <string name="rider_date_ok">OK</string>
     <string name="rider_date_cancel">Cancel</string>
-    <string name="rider_photo_unreadable">We couldn\'t read that photo. Try another one.</string>
     <string name="rider_submit">Send for review</string>
     <string name="rider_submitting">Sending your registration</string>
     <string name="rider_sign_out">Sign out</string>
@@ -45,18 +44,9 @@
     <string name="rider_status_rejected_reason">Reason: %1$s</string>
     <string name="rider_status_inactive_title">Your rider account is not active</string>
     <string name="rider_status_inactive_message">Contact the FoxDrop operator in %1$s for help.</string>
-    <string name="rider_status_pending">Pending review</string>
-    <string name="rider_status_approved">Approved</string>
-    <string name="rider_status_rejected">Rejected</string>
-    <string name="rider_status_inactive">Inactive</string>
     <string name="rider_license_summary">License •••• %1$s, valid until %2$s</string>
     <string name="rider_check_status">Check status</string>
     <string name="rider_checking">Checking status</string>
     <string name="rider_start">Start delivering</string>
     <string name="rider_fix">Fix and send again</string>
-
-    <string name="vehicle_motorcycle">Motorcycle</string>
-    <string name="vehicle_bicycle">Bicycle</string>
-    <string name="vehicle_tricycle">Tricycle</string>
-    <string name="vehicle_car">Car</string>
 </resources>

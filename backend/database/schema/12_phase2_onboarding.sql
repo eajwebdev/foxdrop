@@ -26,6 +26,8 @@ create trigger store_documents_updated_at before update on public.store_document
 -- A rider has one current document per type (resubmitting replaces it).
 alter table public.rider_documents
   add constraint rider_documents_one_per_type unique (rider_id, doc_type);
+-- Its index leads with rider_id, so the plain rider_id index from 08 is redundant.
+drop index public.rider_documents_rider_idx;
 
 -- Checkout sessions expire; the local fake checkout is a provider too (DECISIONS 57).
 alter table public.payments
@@ -40,8 +42,9 @@ alter table public.delivery_zones
   add column center geography(Point, 4326),
   add column radius_m integer check (radius_m between 500 and 30000);
 
--- Review queues for operators.
+-- Review queues for operators. The store one also serves (province_id, status) lookups, replacing the 07 index.
 create index stores_province_review_idx on public.stores (province_id, status, created_at);
+drop index public.stores_province_status_idx;
 create index riders_province_review_idx on public.riders (province_id, status, created_at);
 
 -- The public province list says where customers can order (serviceable) and where an operator can apply

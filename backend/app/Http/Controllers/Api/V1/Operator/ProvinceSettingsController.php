@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Operator;
 
-use App\Actions\Audit\RecordAudit;
+use App\Actions\Territory\UpdateProvinceStoreFee;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Operator\UpdateProvinceSettingsRequest;
 use App\Models\User;
@@ -24,18 +24,12 @@ class ProvinceSettingsController extends Controller
         return $this->respond(OperatorContext::for($user)->provinceId);
     }
 
-    public function update(UpdateProvinceSettingsRequest $request, RecordAudit $audit): JsonResponse
+    public function update(UpdateProvinceSettingsRequest $request, UpdateProvinceStoreFee $updateStoreFee): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
         $operator = OperatorContext::for($user);
-        $operator->ensureCanChange();
-
-        $before = DB::table('provinces')->where('id', $operator->provinceId)->value('store_fee_centavos');
-        $fee = $request->integer('store_fee_centavos');
-        DB::table('provinces')->where('id', $operator->provinceId)->update(['store_fee_centavos' => $fee]);
-        $audit($user, 'province.store_fee_changed', 'province', $operator->provinceId, $operator->provinceId,
-            before: ['store_fee_centavos' => $before], after: ['store_fee_centavos' => $fee]);
+        $updateStoreFee($operator, $request->integer('store_fee_centavos'));
 
         return $this->respond($operator->provinceId);
     }

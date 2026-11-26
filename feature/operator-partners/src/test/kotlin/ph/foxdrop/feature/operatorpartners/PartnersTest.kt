@@ -47,7 +47,8 @@ class PartnerListViewModelTest {
         vm.select(PartnerFilter.Rejected)
         runCurrent()
         assertEquals(PartnerFilter.Rejected, vm.state.value.filter)
-        assertEquals(listOf("stores:Submitted", "stores:Submitted", "stores:Rejected"), reviews.calls)
+        // The second refresh was still running when the filter changed, so it was cancelled before it called.
+        assertEquals(listOf("stores:Submitted", "stores:Rejected"), reviews.calls)
     }
 
     @Test

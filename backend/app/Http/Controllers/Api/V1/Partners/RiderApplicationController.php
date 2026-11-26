@@ -16,17 +16,12 @@ use Illuminate\Http\Request;
  */
 class RiderApplicationController extends Controller
 {
-    private const array DOCUMENTS = [
-        'valid_id' => 'VALID_ID', 'drivers_license' => 'DRIVERS_LICENSE', 'selfie' => 'SELFIE',
-        'or_cr' => 'OR_CR', 'vehicle_photo' => 'VEHICLE_PHOTO',
-    ];
-
     public function store(SubmitRiderRequest $request, SubmitRiderApplication $submit): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
         $documents = [];
-        foreach (self::DOCUMENTS as $field => $type) {
+        foreach (Rider::DOCUMENTS as $field => $type) {
             $file = $request->file($field);
             if ($file !== null && ! is_array($file)) {
                 $documents[$type] = $file;

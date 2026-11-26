@@ -22,4 +22,11 @@ class ImageSizingTest {
         assertEquals(4, sampleSize(8000, 6000, 1600))
         assertEquals(1, sampleSize(3000, 2000, 1600))
     }
+
+    @Test
+    fun `thumbnails decode with a step that keeps the short edge at the thumbnail size`() {
+        assertEquals(8, powerOfTwoStep(1200, 128))
+        assertEquals(1, powerOfTwoStep(100, 128))
+        assertEquals(4, powerOfTwoStep(900, 168))
+    }
 }

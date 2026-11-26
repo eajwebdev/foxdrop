@@ -9,7 +9,6 @@ import org.junit.Test
 import ph.foxdrop.core.domain.media.PhotoUpload
 import ph.foxdrop.core.domain.onboarding.RiderApplicationRules.Field as RiderField
 import ph.foxdrop.core.domain.partner.VehicleType
-import ph.foxdrop.core.domain.territory.RateCard
 
 class FormRulesTest {
     private val today = LocalDate.of(2026, 11, 26)
@@ -115,7 +114,6 @@ class FormRulesTest {
         assertTrue(RateCardRules.validate(4_000, 2.0, 1_000, 4_000, 15.0, 8_000).isEmpty())
         val problems = RateCardRules.validate(null, -1.0, null, null, 0.0, 12_000)
         assertEquals(RateCardRules.Field.entries.toSet(), problems.keys)
-        assertEquals(RateCard.Default, RateCardRules.toCard(4_000, 2.0, 1_000, 4_000, 15.0, 8_000))
     }
 
     @Test

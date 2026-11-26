@@ -16,18 +16,4 @@ final readonly class RateCardTerms
         public int $riderShareBps,
     ) {}
 
-    /**
-     * @param  array{base_fare_centavos: int|string, base_km: float|int|string, rate_per_km_centavos: int|string, min_fee_centavos: int|string, max_km: float|int|string, rider_share_bps: int|string}  $card
-     */
-    public static function fromArray(array $card): self
-    {
-        return new self(
-            baseFareCentavos: (int) $card['base_fare_centavos'],
-            baseKm: (float) $card['base_km'],
-            ratePerKmCentavos: (int) $card['rate_per_km_centavos'],
-            minFeeCentavos: (int) $card['min_fee_centavos'],
-            maxKm: (float) $card['max_km'],
-            riderShareBps: (int) $card['rider_share_bps'],
-        );
-    }
 }

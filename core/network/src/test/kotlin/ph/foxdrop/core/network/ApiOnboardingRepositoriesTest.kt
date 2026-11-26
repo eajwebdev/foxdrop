@@ -168,7 +168,7 @@ class ApiOnboardingRepositoriesTest {
                 },
             )
 
-        val zone = (repo.createCircleZone(" Metro Bacolod ", GeoPoint(10.67, 122.95), 5.0) as FoxResult.Success).value
+        val zone = (repo.createCircleZone("Metro Bacolod", GeoPoint(10.67, 122.95), 5.0) as FoxResult.Success).value
         val preview = (repo.previewFees(RateCard.Default, listOf(3.0, 20.0)) as FoxResult.Success).value
         val province = (repo.updateStoreFee(2_000) as FoxResult.Success).value
 
@@ -282,7 +282,7 @@ class ApiOnboardingRepositoriesTest {
             )
         val form =
             RiderApplicationForm(
-                "neg", "Ana Villanueva", VehicleType.Bicycle, null, "n01-23-4567", "2028-01-31",
+                "neg", "Ana Villanueva", VehicleType.Bicycle, null, "N01-23-4567", "2028-01-31",
                 photo, photo, photo, null, null,
             )
 
@@ -327,7 +327,7 @@ class ApiOnboardingRepositoriesTest {
         val stores = (repo.stores(StoreStatus.Submitted) as FoxResult.Success).value
         val store = (repo.store("s1") as FoxResult.Success).value
         repo.approveStore("s1")
-        repo.rejectStore("s1", " Blurry permit photo ")
+        repo.rejectStore("s1", "Blurry permit photo")
         val riders = (repo.riders(RiderStatus.DocsReview) as FoxResult.Success).value
         val rider = (repo.rider("r1") as FoxResult.Success).value
         repo.approveRider("r1")

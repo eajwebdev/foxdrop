@@ -102,7 +102,7 @@ class OperatorLicenseViewModel @Inject constructor(
         ) {
             openFormNow(previous = null)
         } else {
-            _state.value = State.Status(application, application.license)
+            _state.value = State.Status(application)
         }
     }
 
@@ -136,7 +136,6 @@ class OperatorLicenseViewModel @Inject constructor(
                     _state.update {
                         (it as? State.Status)?.copy(
                             application = application,
-                            license = application.license,
                             refreshing = false,
                         )
                             ?: it
@@ -211,7 +210,7 @@ class OperatorLicenseViewModel @Inject constructor(
                 )
             _state.value =
                 when (val result = licenses.submitApplication(request)) {
-                    is FoxResult.Success -> State.Status(result.value, result.value.license)
+                    is FoxResult.Success -> State.Status(result.value)
                     is FoxResult.Failure -> current.copy(submitting = false, message = result.error)
                 }
         }
@@ -219,7 +218,7 @@ class OperatorLicenseViewModel @Inject constructor(
 
     private fun pay() {
         val current = state.value as? State.Status ?: return
-        val license = current.license ?: return
+        val license = current.application.license ?: return
         if (current.pay == PayState.Starting || current.pay == PayState.Waiting || !license.canPay) return
         _state.value = current.copy(pay = PayState.Starting)
         viewModelScope.launch {

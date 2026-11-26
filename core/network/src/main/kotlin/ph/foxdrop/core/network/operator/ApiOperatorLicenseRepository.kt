@@ -1,6 +1,5 @@
 package ph.foxdrop.core.network.operator
 
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import javax.inject.Inject
@@ -16,10 +15,10 @@ import ph.foxdrop.core.domain.operator.OperatorApplicationForm
 import ph.foxdrop.core.domain.operator.OperatorLicenseRepository
 import ph.foxdrop.core.domain.operator.Payment
 import ph.foxdrop.core.domain.operator.PaymentStatus
-import ph.foxdrop.core.network.DataEnvelope
 import ph.foxdrop.core.network.FoxApiClient
 import ph.foxdrop.core.network.NamedRefDto
 import ph.foxdrop.core.network.apiEnum
+import ph.foxdrop.core.network.data
 import ph.foxdrop.core.network.field
 import ph.foxdrop.core.network.notFoundAsNull
 import ph.foxdrop.core.network.photo
@@ -97,18 +96,18 @@ internal class ApiOperatorLicenseRepository @Inject constructor(
         }.map(OperatorApplicationDto::toDomain)
 
     override suspend fun myApplication(): FoxResult<OperatorApplication?> =
-        api.call { http -> http.get("operator/applications/mine").body<DataEnvelope<OperatorApplicationDto?>>().data }
+        api.call { http -> http.get("operator/applications/mine").data<OperatorApplicationDto?>() }
             .map { it?.toDomain() }
 
     override suspend fun myLicense(): FoxResult<License?> =
-        api.call { http -> http.get("operator/license").body<DataEnvelope<LicenseDto>>().data.toDomain() }
+        api.call { http -> http.get("operator/license").data<LicenseDto>().toDomain() }
             .notFoundAsNull()
 
     override suspend fun startPayment(licenseId: String): FoxResult<Payment> =
-        api.call { http -> http.post("licenses/$licenseId/payments").body<DataEnvelope<PaymentDto>>().data }
+        api.call { http -> http.post("licenses/$licenseId/payments").data<PaymentDto>() }
             .map(PaymentDto::toDomain)
 
     override suspend fun payment(paymentId: String): FoxResult<Payment> =
-        api.call { http -> http.get("payments/$paymentId").body<DataEnvelope<PaymentDto>>().data }
+        api.call { http -> http.get("payments/$paymentId").data<PaymentDto>() }
             .map(PaymentDto::toDomain)
 }

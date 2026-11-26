@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Support\Fees\RateCardTerms;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -72,13 +71,5 @@ class DeliveryRateCard extends Model
             ->orderByDesc('created_at')
             ->first()
             ?? new self(self::DEFAULTS + ['province_id' => $provinceId]);
-    }
-
-    public function terms(): RateCardTerms
-    {
-        return new RateCardTerms(
-            $this->base_fare_centavos, $this->base_km, $this->rate_per_km_centavos,
-            $this->min_fee_centavos, $this->max_km, $this->rider_share_bps,
-        );
     }
 }

@@ -61,7 +61,6 @@ private fun ApprovedPreview() {
             state =
                 OperatorLicenseState.Status(
                     LicensePreviewData.application(ApplicationStatus.Approved),
-                    LicensePreviewData.license(LicenseStatus.PendingPayment, null),
                 ),
             onAction = {},
             onBack = {},

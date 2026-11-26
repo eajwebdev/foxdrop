@@ -1,6 +1,5 @@
 package ph.foxdrop.core.network.province
 
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import javax.inject.Inject
 import kotlinx.serialization.SerialName
@@ -9,8 +8,8 @@ import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.common.result.map
 import ph.foxdrop.core.domain.province.ProvinceOption
 import ph.foxdrop.core.domain.province.ProvinceRepository
-import ph.foxdrop.core.network.DataEnvelope
 import ph.foxdrop.core.network.FoxApiClient
+import ph.foxdrop.core.network.data
 
 @Serializable
 internal data class ProvinceDto(
@@ -25,6 +24,6 @@ internal data class ProvinceDto(
 
 internal class ApiProvinceRepository @Inject constructor(private val api: FoxApiClient) : ProvinceRepository {
     override suspend fun directory(): FoxResult<List<ProvinceOption>> =
-        api.call { http -> http.get("provinces").body<DataEnvelope<List<ProvinceDto>>>().data }
+        api.call { http -> http.get("provinces").data<List<ProvinceDto>>() }
             .map { rows -> rows.map(ProvinceDto::toDomain) }
 }

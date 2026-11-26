@@ -41,8 +41,11 @@ fun rememberPhotoPicker(onPicked: (Uri?) -> Unit): PhotoPickerLauncher {
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> currentOnPicked(uri) }
     val camera =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
-            currentOnPicked(if (saved) pendingCameraUri else null)
+            val uri = pendingCameraUri
             pendingCameraUri = null
+            // A cancelled capture leaves an empty cache file; a saved one is deleted after compression.
+            if (!saved && uri != null) context.contentResolver.delete(uri, null, null)
+            currentOnPicked(if (saved) uri else null)
         }
     return remember(context) {
         PhotoPickerLauncher(
@@ -61,5 +64,5 @@ fun rememberPhotoPicker(onPicked: (Uri?) -> Unit): PhotoPickerLauncher {
 private fun newCameraUri(context: Context): Uri {
     val dir = File(context.cacheDir, "photos").apply { mkdirs() }
     val file = File(dir, "${UUID.randomUUID()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.foxdrop.media", file)
+    return FileProvider.getUriForFile(context, mediaAuthority(context), file)
 }

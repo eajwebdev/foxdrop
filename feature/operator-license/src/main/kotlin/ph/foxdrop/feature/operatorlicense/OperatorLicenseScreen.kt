@@ -60,6 +60,7 @@ import ph.foxdrop.core.domain.operator.ApplicationStatus
 import ph.foxdrop.core.domain.operator.LicenseStatus
 import ph.foxdrop.core.domain.operator.OperatorApplication
 import ph.foxdrop.core.media.PhotoSlot
+import ph.foxdrop.core.media.R as MediaR
 import ph.foxdrop.core.media.rememberPhotoPicker
 import ph.foxdrop.core.model.Money
 import ph.foxdrop.core.payments.CheckoutLauncher
@@ -80,7 +81,7 @@ fun OperatorLicenseRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
-    val unreadable = stringResource(R.string.license_photo_unreadable)
+    val unreadable = stringResource(MediaR.string.media_photo_unreadable)
     val currentOnRolesChanged by rememberUpdatedState(onRolesChanged)
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -265,7 +266,7 @@ private fun ApplyContent(
 @Composable
 private fun StatusContent(state: State.Status, onAction: (Action) -> Unit) {
     val application = state.application
-    val license = state.license
+    val license = state.application.license
     FoxFormColumn {
         FoxCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(FoxSpacing.M), verticalArrangement = Arrangement.spacedBy(FoxSpacing.S)) {

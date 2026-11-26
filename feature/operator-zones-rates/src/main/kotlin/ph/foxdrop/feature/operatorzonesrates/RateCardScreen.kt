@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -20,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +30,7 @@ import ph.foxdrop.core.common.format.formatPeso
 import ph.foxdrop.core.designsystem.component.FoxButton
 import ph.foxdrop.core.designsystem.component.FoxButtonState
 import ph.foxdrop.core.designsystem.component.FoxCard
+import ph.foxdrop.core.designsystem.component.FoxFormColumn
 import ph.foxdrop.core.designsystem.component.FoxOutlinedButton
 import ph.foxdrop.core.designsystem.component.FoxScreenScaffold
 import ph.foxdrop.core.designsystem.component.FoxTextField
@@ -42,7 +39,6 @@ import ph.foxdrop.core.designsystem.component.LoadableContent
 import ph.foxdrop.core.designsystem.component.SkeletonBox
 import ph.foxdrop.core.designsystem.component.errorMessage
 import ph.foxdrop.core.designsystem.component.problemMessage
-import ph.foxdrop.core.designsystem.theme.FoxLayout
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
 import ph.foxdrop.core.designsystem.theme.FoxTheme
 import ph.foxdrop.core.domain.onboarding.Problem
@@ -72,7 +68,7 @@ fun RateCardScreen(
     state: RateCardState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
-    onFieldChanged: (RateField, String) -> Unit,
+    onFieldChanged: (RateCardRules.Field, String) -> Unit,
     onPublish: () -> Unit,
     onStoreFeeChanged: (String) -> Unit,
     onSaveStoreFee: () -> Unit,
@@ -99,27 +95,26 @@ fun RateCardScreen(
             onRetry = onRetry,
             modifier = Modifier.padding(padding).fillMaxSize(),
         ) {
-            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.TopCenter) {
-                Column(
-                    Modifier.widthIn(max = FoxLayout.MaxFormWidth).fillMaxWidth().padding(FoxSpacing.L),
-                    verticalArrangement = Arrangement.spacedBy(FoxSpacing.M),
-                ) {
-                    RateCardForm(state, onFieldChanged, onPublish)
-                    StoreFeeCard(state, onStoreFeeChanged, onSaveStoreFee)
-                }
+            FoxFormColumn {
+                RateCardForm(state, onFieldChanged, onPublish)
+                StoreFeeCard(state, onStoreFeeChanged, onSaveStoreFee)
             }
         }
     }
 }
 
 @Composable
-private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, String) -> Unit, onPublish: () -> Unit) {
+private fun RateCardForm(
+    state: RateCardState,
+    onFieldChanged: (RateCardRules.Field, String) -> Unit,
+    onPublish: () -> Unit,
+) {
     Text(
         stringResource(R.string.rates_intro),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    state.effectiveFrom?.let {
+    state.current?.effectiveFrom?.let {
         Text(stringResource(R.string.rates_effective, it.take(DATE_LENGTH)), style = MaterialTheme.typography.bodySmall)
     }
     val fields = state.fields
@@ -130,7 +125,7 @@ private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, Strin
             state.problems[RateCardRules.Field.BaseFare],
             Modifier.weight(1f),
         ) {
-            onFieldChanged(RateField.BaseFare, it)
+            onFieldChanged(RateCardRules.Field.BaseFare, it)
         }
         NumberField(
             fields.baseKm,
@@ -138,7 +133,7 @@ private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, Strin
             state.problems[RateCardRules.Field.BaseKm],
             Modifier.weight(1f),
         ) {
-            onFieldChanged(RateField.BaseKm, it)
+            onFieldChanged(RateCardRules.Field.BaseKm, it)
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(FoxSpacing.S)) {
@@ -148,7 +143,7 @@ private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, Strin
             state.problems[RateCardRules.Field.RatePerKm],
             Modifier.weight(1f),
         ) {
-            onFieldChanged(RateField.RatePerKm, it)
+            onFieldChanged(RateCardRules.Field.RatePerKm, it)
         }
         NumberField(
             fields.minFee,
@@ -156,7 +151,7 @@ private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, Strin
             state.problems[RateCardRules.Field.MinFee],
             Modifier.weight(1f),
         ) {
-            onFieldChanged(RateField.MinFee, it)
+            onFieldChanged(RateCardRules.Field.MinFee, it)
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(FoxSpacing.S)) {
@@ -166,7 +161,7 @@ private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, Strin
             state.problems[RateCardRules.Field.MaxKm],
             Modifier.weight(1f),
         ) {
-            onFieldChanged(RateField.MaxKm, it)
+            onFieldChanged(RateCardRules.Field.MaxKm, it)
         }
         NumberField(
             fields.riderSharePercent,
@@ -174,7 +169,7 @@ private fun RateCardForm(state: RateCardState, onFieldChanged: (RateField, Strin
             state.problems[RateCardRules.Field.RiderShare],
             Modifier.weight(1f),
         ) {
-            onFieldChanged(RateField.RiderShare, it)
+            onFieldChanged(RateCardRules.Field.RiderShare, it)
         }
     }
     PreviewTable(state.preview)

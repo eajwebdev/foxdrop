@@ -69,7 +69,9 @@ import ph.foxdrop.core.designsystem.component.SkeletonList
 import ph.foxdrop.core.designsystem.component.StatusPill
 import ph.foxdrop.core.designsystem.component.StatusTone
 import ph.foxdrop.core.designsystem.component.errorMessage
+import ph.foxdrop.core.designsystem.component.label
 import ph.foxdrop.core.designsystem.component.problemMessage
+import ph.foxdrop.core.designsystem.component.tone
 import ph.foxdrop.core.designsystem.theme.FoxSpacing
 import ph.foxdrop.core.designsystem.theme.FoxTheme
 import ph.foxdrop.core.domain.onboarding.Problem
@@ -78,6 +80,7 @@ import ph.foxdrop.core.domain.partner.MyRider
 import ph.foxdrop.core.domain.partner.RiderStatus
 import ph.foxdrop.core.domain.partner.VehicleType
 import ph.foxdrop.core.media.PhotoSlot
+import ph.foxdrop.core.media.R as MediaR
 import ph.foxdrop.core.media.rememberPhotoPicker
 import ph.foxdrop.feature.rideronboarding.RiderOnboardingAction as Action
 import ph.foxdrop.feature.rideronboarding.RiderOnboardingState as State
@@ -95,7 +98,7 @@ fun RiderOnboardingRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val unreadable = stringResource(R.string.rider_photo_unreadable)
+    val unreadable = stringResource(MediaR.string.media_photo_unreadable)
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -421,7 +424,8 @@ private fun StatusContent(state: State.Status, onAction: (Action) -> Unit, onSta
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    val (label, tone) = statusPill(rider.status)
+                    val label = rider.status.label()
+                    val tone = rider.status.tone()
                     StatusPill(label, tone)
                 }
                 Text(statusTitle(rider.status), style = MaterialTheme.typography.titleMedium)
@@ -498,33 +502,6 @@ private fun statusMessage(rider: MyRider): String? =
 
         RiderStatus.Rejected -> null
     }
-
-@Composable
-private fun statusPill(status: RiderStatus): Pair<String, StatusTone> =
-    when (status) {
-        RiderStatus.Applied, RiderStatus.DocsReview, RiderStatus.Unknown -> stringResource(
-            R.string.rider_status_pending,
-        ) to
-            StatusTone.Info
-
-        RiderStatus.Approved -> stringResource(R.string.rider_status_approved) to StatusTone.Success
-
-        RiderStatus.Rejected -> stringResource(R.string.rider_status_rejected) to StatusTone.Error
-
-        RiderStatus.Suspended, RiderStatus.Deactivated -> stringResource(R.string.rider_status_inactive) to
-            StatusTone.Warning
-    }
-
-@Composable
-internal fun VehicleType.label(): String =
-    stringResource(
-        when (this) {
-            VehicleType.Motorcycle -> R.string.vehicle_motorcycle
-            VehicleType.Bicycle -> R.string.vehicle_bicycle
-            VehicleType.Tricycle -> R.string.vehicle_tricycle
-            VehicleType.Car -> R.string.vehicle_car
-        },
-    )
 
 private fun LocalDate.toUtcMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 

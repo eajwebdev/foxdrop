@@ -22,14 +22,15 @@ sealed interface PaymentOutcome {
 }
 
 /**
- * Polls `payments/{id}` every 2 s for up to 2 minutes while the user pays in the Custom Tab. Network blips are
- * retried until the time is up; only a final answer stops early.
+ * Polls `payments/{id}` while the user pays in the Custom Tab: quickly at first (most checkouts finish in seconds),
+ * then every 8 s, for about 2 minutes in all. Network blips are retried until the time is up; only a final answer
+ * stops early.
  */
 class PaymentPoller @Inject constructor(private val licenses: OperatorLicenseRepository) {
     suspend fun await(paymentId: String): PaymentOutcome {
         var lastError: DomainError? = null
-        repeat(MAX_POLLS) {
-            delay(POLL_INTERVAL_MS)
+        for (wait in POLL_DELAYS_MS) {
+            delay(wait)
             val result = licenses.payment(paymentId)
             finalOutcome(result)?.let { return it }
             lastError = (result as? FoxResult.Failure)?.error
@@ -57,7 +58,14 @@ class PaymentPoller @Inject constructor(private val licenses: OperatorLicenseRep
         }
 
     companion object {
-        const val POLL_INTERVAL_MS = 2_000L
-        const val MAX_POLLS = 60
+        private const val STEADY_DELAY_MS = 8_000L
+        private const val MAX_WAIT_MS = 120_000L
+
+        /** The wait before each poll: 2, 2, 3, 5, then 8 s until about [MAX_WAIT_MS] have passed. */
+        val POLL_DELAYS_MS: List<Long> =
+            buildList {
+                addAll(listOf(2_000L, 2_000L, 3_000L, 5_000L))
+                while (sum() + STEADY_DELAY_MS <= MAX_WAIT_MS) add(STEADY_DELAY_MS)
+            }
     }
 }

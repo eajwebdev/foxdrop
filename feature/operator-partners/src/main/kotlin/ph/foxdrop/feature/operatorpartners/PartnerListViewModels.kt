@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,53 +44,48 @@ internal fun PartnerFilter.riderStatus(): RiderStatus =
         PartnerFilter.Rejected -> RiderStatus.Rejected
     }
 
-/** The province's stores by review status. */
-@HiltViewModel
-class StoreListViewModel @Inject constructor(private val reviews: PartnerReviewRepository) : ViewModel() {
-    private val _state = MutableStateFlow(PartnerListState<StoreSummary>())
-    val state: StateFlow<PartnerListState<StoreSummary>> = _state.asStateFlow()
+/**
+ * A review list of one partner kind. Refreshed on every resume, so a partner reviewed on the detail screen moves lists
+ * at once; a newer refresh (resume or filter tap) cancels the one still running.
+ */
+abstract class PartnerListViewModel<T> : ViewModel() {
+    private val _state = MutableStateFlow(PartnerListState<T>())
+    val state: StateFlow<PartnerListState<T>> = _state.asStateFlow()
+    private var loading: Job? = null
+
+    protected abstract suspend fun fetch(filter: PartnerFilter): FoxResult<List<T>>
 
     fun select(filter: PartnerFilter) {
         _state.update { it.copy(filter = filter) }
         refresh()
     }
 
-    /** Called on every resume, so a store reviewed on the detail screen moves lists at once. */
     fun refresh() {
         val filter = state.value.filter
         if (state.value.items !is Loadable.Ready) _state.update { it.copy(items = Loadable.Loading) }
-        viewModelScope.launch {
-            val items =
-                when (val result = reviews.stores(filter.storeStatus())) {
-                    is FoxResult.Success -> Loadable.Ready(result.value.toImmutableList())
-                    is FoxResult.Failure -> Loadable.Failed(result.error)
-                }
-            _state.update { if (it.filter == filter) it.copy(items = items) else it }
-        }
+        loading?.cancel()
+        loading =
+            viewModelScope.launch {
+                val items =
+                    when (val result = fetch(filter)) {
+                        is FoxResult.Success -> Loadable.Ready(result.value.toImmutableList())
+                        is FoxResult.Failure -> Loadable.Failed(result.error)
+                    }
+                _state.update { if (it.filter == filter) it.copy(items = items) else it }
+            }
     }
+}
+
+/** The province's stores by review status. */
+@HiltViewModel
+class StoreListViewModel @Inject constructor(private val reviews: PartnerReviewRepository) :
+    PartnerListViewModel<StoreSummary>() {
+    override suspend fun fetch(filter: PartnerFilter) = reviews.stores(filter.storeStatus())
 }
 
 /** The province's riders by review status. */
 @HiltViewModel
-class RiderListViewModel @Inject constructor(private val reviews: PartnerReviewRepository) : ViewModel() {
-    private val _state = MutableStateFlow(PartnerListState<RiderSummary>())
-    val state: StateFlow<PartnerListState<RiderSummary>> = _state.asStateFlow()
-
-    fun select(filter: PartnerFilter) {
-        _state.update { it.copy(filter = filter) }
-        refresh()
-    }
-
-    fun refresh() {
-        val filter = state.value.filter
-        if (state.value.items !is Loadable.Ready) _state.update { it.copy(items = Loadable.Loading) }
-        viewModelScope.launch {
-            val items =
-                when (val result = reviews.riders(filter.riderStatus())) {
-                    is FoxResult.Success -> Loadable.Ready(result.value.toImmutableList())
-                    is FoxResult.Failure -> Loadable.Failed(result.error)
-                }
-            _state.update { if (it.filter == filter) it.copy(items = items) else it }
-        }
-    }
+class RiderListViewModel @Inject constructor(private val reviews: PartnerReviewRepository) :
+    PartnerListViewModel<RiderSummary>() {
+    override suspend fun fetch(filter: PartnerFilter) = reviews.riders(filter.riderStatus())
 }

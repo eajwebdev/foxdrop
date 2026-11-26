@@ -3,70 +3,57 @@
 namespace App\Http\Controllers\Api\V1\Operator;
 
 use App\Actions\Partners\ReviewStore;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\Operator\RejectApplicationRequest;
 use App\Http\Resources\StoreReviewResource;
 use App\Http\Resources\StoreSummaryResource;
 use App\Models\Store;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * "Onboard local partners: approve stores" (§9.4 step 4) for the operator's province; admins see every province.
+ * Store applications ("approve stores", §9.4 step 4).
+ *
+ * @extends PartnerReviewController<Store>
  */
-class StoreReviewController extends Controller
+class StoreReviewController extends PartnerReviewController
 {
-    public function index(Request $request): AnonymousResourceCollection
-    {
-        $user = $this->reviewer($request);
-        $status = $request->validate(['status' => ['sometimes', Rule::in(['SUBMITTED', 'ACTIVE', 'PAUSED', 'SUSPENDED', 'REJECTED', 'CLOSED'])]])['status'] ?? Store::SUBMITTED;
+    public function __construct(private readonly ReviewStore $reviewStore) {}
 
-        return StoreSummaryResource::collection(
-            Store::query()->reviewableBy($user)->with('owner')
-                ->where('status', $status)
-                ->orderBy('created_at')
-                ->orderBy('id')
-                ->get(),
-        );
+    protected function statusFilters(): array
+    {
+        return Store::REVIEW_FILTERS;
     }
 
-    public function show(Request $request, string $store): StoreReviewResource
+    protected function pendingStatus(): string
     {
-        return StoreReviewResource::make($this->find($this->reviewer($request), $store));
+        return Store::SUBMITTED;
     }
 
-    public function approve(Request $request, string $store, ReviewStore $review): StoreReviewResource
+    protected function applicantRelation(): string
     {
-        $user = $this->reviewer($request);
-        $review($user, $this->find($user, $store), approve: true);
-
-        return StoreReviewResource::make($this->find($user, $store));
+        return 'owner';
     }
 
-    public function reject(RejectApplicationRequest $request, string $store, ReviewStore $review): StoreReviewResource
+    protected function reviewable(User $reviewer): Builder
     {
-        $user = $this->reviewer($request);
-        $review($user, $this->find($user, $store), approve: false, reason: $request->string('reason')->toString());
-
-        return StoreReviewResource::make($this->find($user, $store));
+        return Store::query()->withLocation()->reviewableBy($reviewer);
     }
 
-    /**
-     * Another province's store is "not found", not "forbidden": its existence is not shared.
-     */
-    private function find(User $user, string $id): Store
+    protected function decide(User $reviewer, Model $partner, bool $approve, ?string $reason): Model
     {
-        return Store::query()->withLocation()->reviewableBy($user)->with('owner', 'documents')->findOrFail($id);
+        return ($this->reviewStore)($reviewer, $partner, $approve, $reason);
     }
 
-    private function reviewer(Request $request): User
+    protected function summaries(Collection $partners): AnonymousResourceCollection
     {
-        /** @var User $user */
-        $user = $request->user();
-        abort_unless($user->isPlatformAdmin() || $user->operatorProvinceIds() !== [], 403, 'This needs a provincial operator account.');
+        return StoreSummaryResource::collection($partners);
+    }
 
-        return $user;
+    protected function detail(Model $partner): JsonResource
+    {
+        return StoreReviewResource::make($partner);
     }
 }

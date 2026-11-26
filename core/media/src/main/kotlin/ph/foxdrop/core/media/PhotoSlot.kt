@@ -1,6 +1,5 @@
 package ph.foxdrop.core.media
 
-import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,16 +20,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import ph.foxdrop.core.designsystem.component.FoxCard
 import ph.foxdrop.core.designsystem.component.FoxTextButton
 import ph.foxdrop.core.designsystem.preview.FoxPreviews
@@ -103,23 +107,32 @@ fun PhotoSlot(
 
 @Composable
 private fun Thumbnail(photo: PhotoUpload?) {
-    val bitmap = remember(photo) { photo?.let { BitmapFactory.decodeByteArray(it.bytes, 0, it.bytes.size) } }
+    val sizePx = with(LocalDensity.current) { ThumbnailSize.roundToPx() }
+    // Decoded small and off the main thread: the upload is up to 1600 px, the thumbnail is 64 dp.
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, photo, sizePx) {
+        value = photo?.let { withContext(Dispatchers.Default) { decodeThumbnail(it.bytes, sizePx)?.asImageBitmap() } }
+    }
     Box(
-        modifier = Modifier.size(64.dp).clip(FoxShapes.Small).background(MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.size(
+            ThumbnailSize,
+        ).clip(FoxShapes.Small).background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        if (bitmap != null) {
+        val thumbnail = bitmap
+        if (photo != null && thumbnail != null) {
             Image(
-                bitmap.asImageBitmap(),
+                thumbnail,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(ThumbnailSize),
             )
         } else {
             Icon(Icons.Rounded.AddAPhoto, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
+
+private val ThumbnailSize = 64.dp
 
 @FoxPreviews
 @Composable

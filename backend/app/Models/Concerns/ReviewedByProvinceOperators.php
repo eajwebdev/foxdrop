@@ -14,11 +14,6 @@ use Illuminate\Database\Eloquent\Builder;
  */
 trait ReviewedByProvinceOperators
 {
-    public function isReviewableBy(User $user): bool
-    {
-        return $user->isPlatformAdmin() || in_array($this->province_id, $user->operatorProvinceIds(), true);
-    }
-
     /**
      * @param  Builder<static>  $query
      */

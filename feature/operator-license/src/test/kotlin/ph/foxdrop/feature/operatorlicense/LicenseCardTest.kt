@@ -75,6 +75,13 @@ class PaymentPollerTest {
     val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
+    fun `polls quickly at first, then backs off, for about two minutes`() {
+        val delays = PaymentPoller.POLL_DELAYS_MS
+        assertEquals(listOf(2_000L, 2_000L, 3_000L, 5_000L, 8_000L), delays.take(5))
+        assertEquals(116_000L, delays.sum())
+    }
+
+    @Test
     fun `network blips are retried, other errors stop at once`() = runTest(main.dispatcher) {
         val licenses =
             object : ph.foxdrop.core.domain.operator.OperatorLicenseRepository by FakeOperatorLicenseRepository() {
@@ -152,7 +159,7 @@ class OperatorLicenseScreenshotTest {
     fun submitted() =
         screen(
             "operator_license_submitted",
-            OperatorLicenseState.Status(LicensePreviewData.application(ApplicationStatus.Submitted, null), null),
+            OperatorLicenseState.Status(LicensePreviewData.application(ApplicationStatus.Submitted, null)),
         )
 
     @Test
@@ -161,7 +168,6 @@ class OperatorLicenseScreenshotTest {
             "operator_license_pay",
             OperatorLicenseState.Status(
                 LicensePreviewData.application(ApplicationStatus.Approved),
-                LicensePreviewData.license(LicenseStatus.PendingPayment, null),
                 pay = PayState.Waiting,
             ),
             ph.foxdrop.core.testing.screenshot.FoxScreenshotVariant.entries,
@@ -173,7 +179,6 @@ class OperatorLicenseScreenshotTest {
             "operator_license_rejected",
             OperatorLicenseState.Status(
                 LicensePreviewData.application(ApplicationStatus.Rejected, null, "Business permit expired."),
-                null,
             ),
         )
 

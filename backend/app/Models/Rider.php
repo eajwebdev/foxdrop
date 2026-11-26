@@ -40,10 +40,14 @@ class Rider extends Model
 
     public const string REJECTED = 'REJECTED';
 
-    /** Documents every rider submits; a bicycle needs no OR/CR or vehicle photo. */
-    public const array REQUIRED_DOCUMENTS = ['VALID_ID', 'DRIVERS_LICENSE', 'SELFIE'];
+    /** Statuses a reviewer may list (§9.4 step 4). */
+    public const array REVIEW_FILTERS = [self::DOCS_REVIEW, self::APPROVED, self::REJECTED, 'SUSPENDED', 'DEACTIVATED'];
 
-    public const array MOTOR_VEHICLE_DOCUMENTS = ['OR_CR', 'VEHICLE_PHOTO'];
+    /** Upload field => rider_document_type. A bicycle needs no OR/CR or vehicle photo (SubmitRiderRequest). */
+    public const array DOCUMENTS = [
+        'valid_id' => 'VALID_ID', 'drivers_license' => 'DRIVERS_LICENSE', 'selfie' => 'SELFIE',
+        'or_cr' => 'OR_CR', 'vehicle_photo' => 'VEHICLE_PHOTO',
+    ];
 
     /**
      * The driver's license number is encrypted at rest with the app key (§17); only the last 4 are shown.

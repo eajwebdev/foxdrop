@@ -2,9 +2,9 @@
 
 namespace App\Actions\Partners;
 
-use App\Actions\Documents\StoreKycImage;
+use App\Actions\Documents\ReplaceKycDocuments;
+use App\Models\Province;
 use App\Models\Rider;
-use App\Models\RiderDocument;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class SubmitRiderApplication
 {
-    public function __construct(private readonly StoreKycImage $storeImage) {}
+    public function __construct(private readonly ReplaceKycDocuments $documents) {}
 
     /**
      * @param  array{province_id: string, full_name: string, vehicle_type: string, plate_no?: string|null, license_no: string, license_expiry: string}  $details
@@ -23,18 +23,19 @@ final class SubmitRiderApplication
      */
     public function __invoke(User $user, array $details, array $documents): Rider
     {
-        $serviceable = DB::table('province_directory')->where('id', $details['province_id'])->value('is_serviceable');
-        abort_unless((bool) $serviceable, 409, 'FoxDrop is not open in this province yet.');
+        Province::ensureServiceable($details['province_id']);
 
         $existing = Rider::query()->where('user_id', $user->id)->first();
         abort_if($existing !== null && $existing->status !== Rider::REJECTED, 409, 'You already applied as a rider.');
 
         $licenseNo = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $details['license_no']));
+        $photos = $this->documents->encode($documents);
 
-        return DB::transaction(function () use ($user, $details, $documents, $existing, $licenseNo): Rider {
+        return DB::transaction(function () use ($user, $details, $photos, $existing, $licenseNo): Rider {
             $user->forceFill(['full_name' => $details['full_name']])->save();
 
-            $attributes = [
+            $rider = $existing ?? new Rider;
+            $rider->forceFill([
                 'user_id' => $user->id,
                 'province_id' => $details['province_id'],
                 'vehicle_type' => $details['vehicle_type'],
@@ -44,27 +45,13 @@ final class SubmitRiderApplication
                 'license_expiry' => $details['license_expiry'],
                 'status' => Rider::DOCS_REVIEW,
                 'rejection_reason' => null,
-            ];
+            ]);
 
-            if ($existing !== null) {
-                // Documents point at (rider, province): drop them before the rider may move to another province.
-                $replaced = RiderDocument::query()->where('rider_id', $existing->id);
-                $this->storeImage->deleteAfterCommit(array_values($replaced->get()->map(fn (RiderDocument $doc): string => $doc->storage_path)->all()));
-                $replaced->delete();
-                $existing->forceFill($attributes)->save();
-                $rider = $existing;
-            } else {
-                $rider = Rider::query()->create($attributes);
+            if ($rider->exists) {
+                $this->documents->discard($rider->documents());
             }
-
-            foreach ($documents as $type => $file) {
-                RiderDocument::query()->create([
-                    'rider_id' => $rider->id,
-                    'province_id' => $rider->province_id,
-                    'doc_type' => $type,
-                    'storage_path' => ($this->storeImage)($file, 'riders/'.$rider->id, strtolower($type)),
-                ]);
-            }
+            $rider->save();
+            $this->documents->attach($rider->documents(), $rider->province_id, 'riders/'.$rider->id, $photos);
 
             return $rider->refresh();
         });

@@ -212,3 +212,10 @@ Format: **what** — why — revisit when.
 66. **Phase 2 models have no factories yet** (Payment, OperatorApplication, DeliveryZone, DeliveryRateCard,
     StoreDocument, RiderDocument, WebhookEvent): their tests create rows through the very Actions under test, which
     is what the app does. Factories are added when a test needs such a row without its Action.
+67. **Deferred Phase 2 refactors** (from /simplify; working and end-to-end tested as they are): move the payment flow
+    (models, poller, start → checkout → poll) into `core:payments` when the second payment type arrives (store top-up,
+    Phase 5); replace the role-refresh plumbing through the NavHosts with `RoleRepository.refresh()`; a shared
+    onboarding ViewModel helper and one photo-slot model for the three application flows; `LoadableContent` in the
+    three onboarding screens; cursor pagination for the review lists (Phase 6, when lists grow).
+68. **Partner document photos are never cached on disk** on the reviewer's phone (memory only), as personal data
+    under the Data Privacy Act.

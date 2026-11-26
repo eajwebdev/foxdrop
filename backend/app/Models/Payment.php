@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -44,18 +43,5 @@ class Payment extends Model
     protected function casts(): array
     {
         return ['amount_centavos' => 'integer', 'expires_at' => 'datetime', 'raw' => 'array'];
-    }
-
-    /**
-     * @return BelongsTo<ProvinceLicense, $this>
-     */
-    public function license(): BelongsTo
-    {
-        return $this->belongsTo(ProvinceLicense::class, 'license_id');
-    }
-
-    public function isOpen(): bool
-    {
-        return $this->status === self::PENDING && ($this->expires_at === null || $this->expires_at->isFuture());
     }
 }

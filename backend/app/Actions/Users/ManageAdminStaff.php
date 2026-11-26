@@ -7,8 +7,8 @@ use App\Actions\Roles\GrantRole;
 use App\Enums\AdminPermission;
 use App\Enums\AppRole;
 use App\Models\User;
-use App\Support\AdminGuard;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Admin staff accounts and what they may do (§9.5 steps 1 and 3, DECISIONS 72). Only the super admin manages them;
@@ -26,7 +26,7 @@ final class ManageAdminStaff
      */
     public function create(User $superAdmin, string $fullName, string $email, string $password, array $permissions): User
     {
-        AdminGuard::ensureSuperAdmin($superAdmin);
+        Gate::forUser($superAdmin)->authorize('admin.staff');
 
         return DB::transaction(function () use ($superAdmin, $fullName, $email, $password, $permissions): User {
             $email = mb_strtolower(trim($email));
@@ -103,8 +103,7 @@ final class ManageAdminStaff
 
     private function ensureStaff(User $superAdmin, User $staff): void
     {
-        AdminGuard::ensureSuperAdmin($superAdmin);
-        abort_unless($staff->roles->contains('role', AppRole::AdminStaff) && ! $staff->isSuperAdmin(), 404);
+        Gate::forUser($superAdmin)->authorize('manageStaff', $staff);
     }
 
     /**

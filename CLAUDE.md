@@ -8,7 +8,7 @@ The full spec is in `MASTER_PROMPT.md`. Business source of truth is the images i
 - Every provincial row has `province_id`; Laravel policies and `visibleTo()` scopes isolate provinces, and Pest tests on real PostgreSQL prove it.
 - Never commit secrets. The Android apps hold only the API base URL, the restricted Maps key and the Google web client ID.
 - Every screen: loading skeleton, empty state, error + retry, dark mode, previews, screenshot test, animations from §11A using `FoxMotion` tokens, respects "Remove animations".
-- Super Admin = web dashboard inside `backend/` (Phase W1): Inertia.js v2 + React + TypeScript in `backend/resources/js`, shadcn/ui + Tailwind, Vite (NOT Laravel Mix). Admin changes go through Laravel Actions with policies and an audit log. 2FA required.
+- Super Admin = web dashboard inside `backend/` (Phase W1): Inertia.js v3 (current starter kit, DECISIONS 71) + React + TypeScript in `backend/resources/js`, shadcn/ui + Tailwind, Vite (NOT Laravel Mix). Admin changes go through Laravel Actions with policies and an audit log. 2FA required.
 - Brand: pink `#F2014F`, navy `#05153C`. Logos in `reference/logos/`.
 - Work phase by phase (§13). End every phase with the Quality Gate (§19): `./gradlew check`, backend Pest + PHPStan + Pint, `/simplify`, `/code-review`, `/security-review`, phase report, commit/PR.
 - When unsure, use the defaults in §14, record the choice in `docs/DECISIONS.md`, and continue.

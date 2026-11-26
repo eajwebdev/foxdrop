@@ -3,12 +3,11 @@
 namespace App\Actions\Licensing;
 
 use App\Actions\Audit\RecordAudit;
-use App\Enums\AdminPermission;
 use App\Models\ProvinceLicense;
 use App\Models\User;
-use App\Support\AdminGuard;
 use App\Support\PlatformSettings;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The admin suspends a running license or lifts the suspension (§5.1, DECISIONS 77). A suspended province keeps its
@@ -40,7 +39,7 @@ final class ChangeLicenseSuspension
      */
     private function change(User $admin, ProvinceLicense $license, callable $apply, string $action): ProvinceLicense
     {
-        AdminGuard::ensure($admin, AdminPermission::FranchisesManage);
+        Gate::forUser($admin)->authorize('manage', $license);
 
         return DB::transaction(function () use ($admin, $license, $apply, $action): ProvinceLicense {
             $license = ProvinceLicense::query()->lockForUpdate()->findOrFail($license->id);

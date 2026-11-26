@@ -3,14 +3,13 @@
 namespace App\Actions\Licensing;
 
 use App\Actions\Audit\RecordAudit;
-use App\Enums\AdminPermission;
 use App\Models\Province;
 use App\Models\ProvinceLicense;
 use App\Models\User;
-use App\Support\AdminGuard;
 use App\Support\PlatformSettings;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The admin gives a free province to an existing account without an application (§9.5 step 3, DECISIONS 78), e.g.
@@ -23,7 +22,7 @@ final class AssignProvinceLicense
 
     public function __invoke(User $admin, Province $province, User $operator): ProvinceLicense
     {
-        AdminGuard::ensure($admin, AdminPermission::FranchisesManage);
+        Gate::forUser($admin)->authorize('assignLicense', $province);
         abort_unless($operator->status === User::STATUS_ACTIVE, 409, 'This account is suspended.');
         abort_if($operator->isPlatformAdmin(), 409, 'Admin accounts cannot run a province.');
 

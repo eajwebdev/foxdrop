@@ -18,7 +18,7 @@ class AuditLogController extends AdminController
             'action' => $this->filter($request, 'action'),
             'entity' => $this->filter($request, 'entity'),
             'actor' => $this->filter($request, 'actor'),
-            'province' => $this->filter($request, 'province'),
+            'province' => $this->uuidFilter($request, 'province'),
             'from' => $this->date($request, 'from'),
             'to' => $this->date($request, 'to'),
         ];

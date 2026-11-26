@@ -3,6 +3,7 @@
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -57,11 +58,12 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($status === 500 && config('app.debug')) {
                 return $response; // keep the debug page locally
             }
-            // Only messages our own code wrote for people (abort() in Actions: 403/409) are shown; framework messages
-            // such as "No query results for model …" (a wrapped ModelNotFoundException) never reach the page.
+            // Only messages our own code wrote for people are shown: abort() in Actions (403/409) and policy denials.
+            // Framework messages such as "No query results for model …" (a wrapped ModelNotFoundException) never are.
+            $ours = $e->getPrevious() === null || $e->getPrevious() instanceof AuthorizationException;
             $message = match (true) {
                 $status === 429 => 'Too many tries. Please wait a minute and try again.',
-                in_array($status, [403, 409], true) && $e instanceof HttpExceptionInterface && $e->getPrevious() === null && $e->getMessage() !== '' => $e->getMessage(),
+                in_array($status, [403, 409], true) && $e instanceof HttpExceptionInterface && $ours && $e->getMessage() !== '' => $e->getMessage(),
                 default => null,
             };
 

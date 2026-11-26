@@ -3,10 +3,9 @@
 namespace App\Actions\Users;
 
 use App\Actions\Audit\RecordAudit;
-use App\Enums\AdminPermission;
 use App\Models\User;
-use App\Support\AdminGuard;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Suspends or reactivates any account (§9.5 step 3, DECISIONS 79). A suspension ends every API token and web session
@@ -18,11 +17,7 @@ final class ChangeUserStatus
 
     public function suspend(User $admin, User $user, string $reason): User
     {
-        AdminGuard::ensure($admin, AdminPermission::UsersManage);
-        abort_if($admin->is($user), 409, 'You cannot suspend your own account.');
-        if ($user->isPlatformAdmin()) {
-            AdminGuard::ensureSuperAdmin($admin);
-        }
+        Gate::forUser($admin)->authorize('changeStatus', $user);
 
         return $this->change($admin, $user, User::STATUS_SUSPENDED, 'user.suspended', $reason, function (User $user): void {
             $user->tokens()->delete();
@@ -32,10 +27,7 @@ final class ChangeUserStatus
 
     public function reactivate(User $admin, User $user): User
     {
-        AdminGuard::ensure($admin, AdminPermission::UsersManage);
-        if ($user->isPlatformAdmin()) {
-            AdminGuard::ensureSuperAdmin($admin);
-        }
+        Gate::forUser($admin)->authorize('changeStatus', $user);
 
         return $this->change($admin, $user, User::STATUS_ACTIVE, 'user.reactivated');
     }

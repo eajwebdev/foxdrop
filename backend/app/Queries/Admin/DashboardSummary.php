@@ -2,8 +2,10 @@
 
 namespace App\Queries\Admin;
 
+use App\Enums\AdminPermission;
 use App\Models\OperatorApplication;
 use App\Models\ProvinceLicense;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -14,11 +16,26 @@ use Illuminate\Support\Facades\DB;
 final class DashboardSummary
 {
     /**
+     * The numbers [viewer] may see: franchise figures need franchises.view, store and rider figures partners.view,
+     * the account total users.view.
+     *
      * @return array<string, mixed>
      */
-    public function __invoke(): array
+    public function __invoke(User $viewer): array
     {
-        return Cache::remember('admin.dashboard.summary', now()->addSeconds(15), fn (): array => $this->compute());
+        /** @var array{attention: array<string, int>, totals: array<string, int>, expiring: list<array<string, mixed>>} $summary */
+        $summary = Cache::remember('admin.dashboard.summary', now()->addSeconds(15), fn (): array => $this->compute());
+        $hidden = [
+            ...($viewer->hasAdminPermission(AdminPermission::FranchisesView) ? [] : ['operator_applications', 'awaiting_payment', 'in_grace', 'active_provinces', 'expiring']),
+            ...($viewer->hasAdminPermission(AdminPermission::PartnersView) ? [] : ['stores', 'riders', 'active_stores', 'active_riders']),
+            ...($viewer->hasAdminPermission(AdminPermission::UsersView) ? [] : ['users']),
+        ];
+
+        return [
+            'attention' => array_diff_key($summary['attention'], array_flip($hidden)),
+            'totals' => array_diff_key($summary['totals'], array_flip($hidden)),
+            'expiring' => in_array('expiring', $hidden, true) ? null : $summary['expiring'],
+        ];
     }
 
     /**

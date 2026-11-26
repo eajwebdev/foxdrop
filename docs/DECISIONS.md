@@ -234,8 +234,9 @@ Format: **what** — why — revisit when.
     `backend/`) with ESLint + Prettier + Vitest, as §20.1/§20.7 name them.
 72. **Who is an admin stays in `user_roles`** (`super_admin`, `admin_staff`); **what an admin-staff account may do
     is a row in `admin_permissions`** (user, permission; the database check lists the permissions of the
-    `AdminPermission` enum). They are checked through Laravel's Gate (`can:partners.manage` middleware, policies),
-    and `super_admin` passes every admin permission. spatie/laravel-permission (§20.1) was installed and removed:
+    `AdminPermission` enum). Routes check them with `can:` middleware; every shared Action authorizes through a
+    model policy (`app/Policies`: licenses, provinces, operator applications, users, stores and riders; the store and
+    rider policies also hold the operator rule). `super_admin` passes every admin permission. spatie/laravel-permission (§20.1) was installed and removed:
     its `roles` relation clashes with `User::roles()` (our `user_roles`), and it would keep a second set of roles.
     Admin staff management is super-admin only.
 73. **`audit_logs` is the one audit trail** (append-only, written inside each Action's transaction).
@@ -269,9 +270,6 @@ Format: **what** — why — revisit when.
     and SUBMITTED or waiting for payment; a check still on its way is not repeated), so an approval in the web shows
     in the app within seconds without push (FCM arrives in Phase 3/6).
 81. **Deferred W1 refactors** (from /simplify; working and tested as they are):
-    - Admin permission checks stay the Gate abilities plus `AdminGuard` inside Actions (both go through the Gate).
-      Per-model policies (`StorePolicy@review` for "admin with permission, or operator of this province") come when
-      the operator web or W2 needs a third caller.
     - Admin detail pages build their own shape instead of reusing the API review resources: the document URLs and the
       person shape differ.
     - A filter change costs two requests: the page shell, then its deferred list. Partial reloads (`only`) per list
@@ -279,3 +277,4 @@ Format: **what** — why — revisit when.
     - The cross-province lists filter by status alone. Status-first indexes are added when stores and riders reach
       the thousands (Phase 6 load test).
     - The province page reads its current license with one extra query.
+    - The dashboard shows each admin only the numbers their permissions cover (franchises, partners, users).

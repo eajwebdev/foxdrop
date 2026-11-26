@@ -3,12 +3,11 @@
 namespace App\Actions\Licensing;
 
 use App\Actions\Audit\RecordAudit;
-use App\Enums\AdminPermission;
 use App\Models\OperatorApplication;
 use App\Models\ProvinceLicense;
 use App\Models\User;
-use App\Support\AdminGuard;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Admin decision on an operator application (§9.5 step 3, DECISIONS 55). Approve → the license waits for payment;
@@ -24,7 +23,7 @@ final class ReviewOperatorApplication
     public function __invoke(?User $admin, OperatorApplication $application, bool $approve, ?string $reason = null): OperatorApplication
     {
         if ($admin !== null) {
-            AdminGuard::ensure($admin, AdminPermission::FranchisesManage);
+            Gate::forUser($admin)->authorize('review', $application);
         }
 
         return DB::transaction(function () use ($admin, $application, $approve, $reason): OperatorApplication {

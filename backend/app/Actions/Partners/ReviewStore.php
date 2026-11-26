@@ -9,8 +9,8 @@ use App\Enums\AppRole;
 use App\Models\Store;
 use App\Models\StoreDocument;
 use App\Models\User;
-use App\Support\OperatorContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The operator (or an admin, overriding) approves or rejects a store application (§9.4 step 4, §9.5 step 4).
@@ -26,9 +26,8 @@ final class ReviewStore
 
     public function __invoke(User $reviewer, Store $store, bool $approve, ?string $reason = null): Store
     {
-        // An operator whose license expired is read-only (§5.1); admins may override anywhere.
-        OperatorContext::ensureCanReview($reviewer, $store->province_id);
-        abort_if($store->owner_user_id === $reviewer->id && ! $reviewer->isPlatformAdmin(), 403, 'You cannot review your own application.');
+        // Admin with the partners permission, or the operator team of a running license; never one's own (PartnerPolicy).
+        Gate::forUser($reviewer)->authorize('review', $store);
 
         return DB::transaction(function () use ($reviewer, $store, $approve, $reason): Store {
             $store = Store::query()->lockForUpdate()->findOrFail($store->id);

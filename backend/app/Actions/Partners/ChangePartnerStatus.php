@@ -6,8 +6,8 @@ use App\Actions\Audit\RecordAudit;
 use App\Models\Rider;
 use App\Models\Store;
 use App\Models\User;
-use App\Support\OperatorContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Suspends, reinstates or ends a live store or rider (§5.2, §5.3, §9.5 step 4, DECISIONS 79). Which change is
@@ -21,7 +21,7 @@ final class ChangePartnerStatus
 
     public function __invoke(User $actor, Store|Rider $partner, string $to, ?string $reason = null): Store|Rider
     {
-        OperatorContext::ensureCanReview($actor, $partner->province_id);
+        Gate::forUser($actor)->authorize('review', $partner);
 
         return DB::transaction(function () use ($actor, $partner, $to, $reason): Store|Rider {
             $partner = $partner::query()->lockForUpdate()->findOrFail($partner->id);

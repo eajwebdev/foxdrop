@@ -24,7 +24,7 @@ class StoreController extends AdminController
     {
         $filters = [
             'status' => $request->has('status') ? $this->filter($request, 'status', Store::REVIEW_FILTERS) : Store::SUBMITTED,
-            'province' => $this->filter($request, 'province'),
+            'province' => $this->uuidFilter($request, 'province'),
             'q' => $this->filter($request, 'q'),
         ];
 

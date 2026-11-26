@@ -3,7 +3,6 @@ import { Page, Section } from '@/components/admin/page';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePollWhileActive } from '@/hooks/use-poll-while-active';
 import { daysUntil, formatDate, formatNumber } from '@/lib/format';
-import { useCan } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import admin from '@/routes/admin';
 import { Head, Link } from '@inertiajs/react';
@@ -19,25 +18,20 @@ import {
     Wallet,
 } from 'lucide-react';
 
+/** The server leaves out what this admin may not see (DashboardSummary): every number is optional. */
 type Summary = {
-    attention: {
-        operator_applications: number;
-        stores: number;
-        riders: number;
-        awaiting_payment: number;
-        in_grace: number;
-    };
-    totals: {
-        active_provinces: number;
-        active_stores: number;
-        active_riders: number;
-        users: number;
-    };
-    expiring: {
-        id: string;
-        province: { id: string; name: string | null };
-        end_at: string | null;
-    }[];
+    attention: Partial<
+        Record<
+            'operator_applications' | 'stores' | 'riders' | 'awaiting_payment' | 'in_grace',
+            number
+        >
+    >;
+    totals: Partial<
+        Record<'active_provinces' | 'active_stores' | 'active_riders' | 'users', number>
+    >;
+    expiring:
+        | { id: string; province: { id: string; name: string | null }; end_at: string | null }[]
+        | null;
 };
 
 export default function Dashboard({ summary }: { summary?: Summary }) {
@@ -57,21 +51,65 @@ export default function Dashboard({ summary }: { summary?: Summary }) {
 }
 
 function DashboardBody({ summary }: { summary: Summary }) {
-    const can = useCan();
-    const { attention, totals } = summary;
+    const { attention, totals, expiring } = summary;
+    const kpis = [
+        {
+            icon: Map,
+            label: 'Active provinces',
+            value: totals.active_provinces,
+            tone: 'brand' as const,
+        },
+        { icon: Store, label: 'Active stores', value: totals.active_stores, tone: 'navy' as const },
+        { icon: Bike, label: 'Active riders', value: totals.active_riders, tone: 'brand' as const },
+        { icon: Users, label: 'Accounts', value: totals.users, tone: 'navy' as const },
+    ];
+    const waiting = [
+        {
+            icon: FileCheck2,
+            label: 'Operator applications',
+            count: attention.operator_applications,
+            href: admin.applications.index.url(),
+        },
+        {
+            icon: Wallet,
+            label: 'Licenses waiting for payment',
+            count: attention.awaiting_payment,
+            href: admin.franchises.index.url(),
+        },
+        {
+            icon: Store,
+            label: 'Store applications',
+            count: attention.stores,
+            href: admin.stores.index.url(),
+        },
+        {
+            icon: Bike,
+            label: 'Rider applications',
+            count: attention.riders,
+            href: admin.riders.index.url(),
+        },
+        {
+            icon: Hourglass,
+            label: 'Provinces in grace period',
+            count: attention.in_grace,
+            href: admin.franchises.index.url(),
+        },
+    ];
 
     return (
         <>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Kpi
-                    icon={Map}
-                    label="Active provinces"
-                    value={totals.active_provinces}
-                    tone="brand"
-                />
-                <Kpi icon={Store} label="Active stores" value={totals.active_stores} tone="navy" />
-                <Kpi icon={Bike} label="Active riders" value={totals.active_riders} tone="brand" />
-                <Kpi icon={Users} label="Accounts" value={totals.users} tone="navy" />
+                {kpis.map((kpi) =>
+                    kpi.value === undefined ? null : (
+                        <Kpi
+                            key={kpi.label}
+                            icon={kpi.icon}
+                            label={kpi.label}
+                            value={kpi.value}
+                            tone={kpi.tone}
+                        />
+                    ),
+                )}
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
@@ -81,79 +119,52 @@ function DashboardBody({ summary }: { summary: Summary }) {
                     className="lg:col-span-2"
                 >
                     <ul className="grid gap-3 sm:grid-cols-2">
-                        {can('franchises.view') && (
-                            <AttentionItem
-                                icon={FileCheck2}
-                                label="Operator applications"
-                                count={attention.operator_applications}
-                                href={admin.applications.index.url()}
-                            />
-                        )}
-                        {can('franchises.view') && (
-                            <AttentionItem
-                                icon={Wallet}
-                                label="Licenses waiting for payment"
-                                count={attention.awaiting_payment}
-                                href={admin.franchises.index.url()}
-                            />
-                        )}
-                        {can('partners.view') && (
-                            <AttentionItem
-                                icon={Store}
-                                label="Store applications"
-                                count={attention.stores}
-                                href={admin.stores.index.url()}
-                            />
-                        )}
-                        {can('partners.view') && (
-                            <AttentionItem
-                                icon={Bike}
-                                label="Rider applications"
-                                count={attention.riders}
-                                href={admin.riders.index.url()}
-                            />
-                        )}
-                        {can('franchises.view') && (
-                            <AttentionItem
-                                icon={Hourglass}
-                                label="Provinces in grace period"
-                                count={attention.in_grace}
-                                href={admin.franchises.index.url()}
-                            />
+                        {waiting.map((item) =>
+                            item.count === undefined ? null : (
+                                <AttentionItem
+                                    key={item.label}
+                                    icon={item.icon}
+                                    label={item.label}
+                                    count={item.count}
+                                    href={item.href}
+                                />
+                            ),
                         )}
                     </ul>
                 </Section>
 
-                <Section
-                    title="Licenses expiring soon"
-                    description="Active licenses ending within 30 days."
-                >
-                    {summary.expiring.length === 0 ? (
-                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CalendarClock className="size-4" /> None in the next 30 days.
-                        </p>
-                    ) : (
-                        <ul className="divide-y">
-                            {summary.expiring.map((license) => (
-                                <li
-                                    key={license.id}
-                                    className="flex items-center justify-between gap-2 py-2.5 text-sm"
-                                >
-                                    <Link
-                                        href={admin.franchises.show.url(license.province.id)}
-                                        className="font-medium hover:underline"
+                {expiring && (
+                    <Section
+                        title="Licenses expiring soon"
+                        description="Active licenses ending within 30 days."
+                    >
+                        {expiring.length === 0 ? (
+                            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <CalendarClock className="size-4" /> None in the next 30 days.
+                            </p>
+                        ) : (
+                            <ul className="divide-y">
+                                {expiring.map((license) => (
+                                    <li
+                                        key={license.id}
+                                        className="flex items-center justify-between gap-2 py-2.5 text-sm"
                                     >
-                                        {license.province.name}
-                                    </Link>
-                                    <span className="text-muted-foreground">
-                                        {formatDate(license.end_at)} · {daysUntil(license.end_at)}{' '}
-                                        days
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Section>
+                                        <Link
+                                            href={admin.franchises.show.url(license.province.id)}
+                                            className="font-medium hover:underline"
+                                        >
+                                            {license.province.name}
+                                        </Link>
+                                        <span className="text-muted-foreground">
+                                            {formatDate(license.end_at)} ·{' '}
+                                            {daysUntil(license.end_at)} days
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Section>
+                )}
             </div>
         </>
     );

@@ -4,14 +4,13 @@ namespace App\Actions\Licensing;
 
 use App\Actions\Audit\RecordAudit;
 use App\Actions\Payments\SettlePayment;
-use App\Enums\AdminPermission;
 use App\Models\Payment;
 use App\Models\ProvinceLicense;
 use App\Models\User;
-use App\Support\AdminGuard;
 use App\Support\PlatformSettings;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The admin records a license fee paid outside the gateway (bank transfer, cash; §20.4 "record license payments",
@@ -29,11 +28,21 @@ final class RecordOfflineLicensePayment
 
     public function __invoke(User $admin, ProvinceLicense $license, string $method, string $reference, ?string $note = null): Payment
     {
-        AdminGuard::ensure($admin, AdminPermission::FranchisesManage);
+        Gate::forUser($admin)->authorize('manage', $license);
 
         return DB::transaction(function () use ($admin, $license, $method, $reference, $note): Payment {
             $license = ProvinceLicense::query()->lockForUpdate()->findOrFail($license->id);
             abort_unless(in_array($license->status, ProvinceLicense::PAYABLE, true), 409, 'This license cannot take a payment now.');
+            // An open online checkout could still be paid and would then count as a second term: wait for it to end.
+            $openCheckout = Payment::query()
+                ->where('license_id', $license->id)
+                ->where('status', Payment::PENDING)
+                ->where('provider', '<>', Payment::PROVIDER_MANUAL)
+                ->where('expires_at', '>', now())
+                ->orderByDesc('expires_at')
+                ->first();
+            abort_if($openCheckout !== null, 409, 'The operator has an online checkout open until '
+                .$openCheckout?->expires_at?->timezone('Asia/Manila')->format('g:i A').'. Record the payment after that.');
 
             try {
                 $payment = Payment::query()->create([

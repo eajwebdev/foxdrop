@@ -4,9 +4,9 @@ use App\Actions\Users\ManageAdminStaff;
 use App\Enums\AdminPermission;
 use App\Enums\AppRole;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Accounts and admin staff (§9.5 steps 1 and 3, DECISIONS 72, 79).
@@ -91,7 +91,7 @@ it('keeps admin staff management to the super admin, also through the Action', f
 
     $this->actingAs($staff, 'web')->get('/admin/settings/staff')->assertForbidden();
     expect(fn () => app(ManageAdminStaff::class)->create($staff, 'X', 'x@example.com', 'Strong-pass-2026', []))
-        ->toThrow(HttpException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('changes my own password and signs my other devices out', function () {
@@ -119,4 +119,34 @@ it('shows the audit log with filters', function () {
             ->loadDeferredProps(fn (Assert $reload) => $reload
                 ->where('entries.data.0.action', 'license.suspended')
                 ->where('entries.data.0.after.reason', 'Test')));
+});
+
+it('lists admin staff with their last real sign-in', function () {
+    $super = superAdmin();
+    $this->post('/admin/login', ['email' => $super->email, 'password' => ADMIN_PASSWORD]);
+    $this->post('/admin/two-factor-challenge', ['code' => totp()])->assertRedirect('/admin');
+
+    $this->withSession(confirmedSession())->get('/admin/settings/staff')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('staff', fn ($staff) => collect($staff)->firstWhere('id', $super->id)['last_sign_in_at'] !== null));
+});
+
+it('shows each admin only the dashboard numbers their permissions cover', function () {
+    $auditor = adminUser(permissions: [AdminPermission::AuditView]);
+
+    $this->actingAs($auditor, 'web')->get('/admin')
+        ->assertInertia(fn (Assert $page) => $page->loadDeferredProps(fn (Assert $reload) => $reload
+            ->where('summary.attention', [])
+            ->where('summary.totals', [])
+            ->where('summary.expiring', null)));
+});
+
+it('ignores a province filter that is not an id', function () {
+    $this->actingAs(adminUser(permissions: [AdminPermission::AuditView, AdminPermission::PartnersView]), 'web');
+
+    $this->get('/admin/audit?province=abc')->assertInertia(fn (Assert $page) => $page
+        ->where('filters.province', null)
+        ->loadDeferredProps(fn (Assert $reload) => $reload->has('entries.data')));
+    $this->get('/admin/stores?province=abc')->assertInertia(fn (Assert $page) => $page->where('filters.province', null));
 });

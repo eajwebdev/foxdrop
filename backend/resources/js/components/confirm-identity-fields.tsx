@@ -62,7 +62,9 @@ export function IdentityFields({
 
 /** Inside a dangerous action's dialog: only when a fresh confirmation is needed. */
 export function ConfirmIdentityFields({ errors }: { errors: Errors }) {
-    if (!useNeedsConfirmation()) {
+    const needed = useNeedsConfirmation();
+    // The server decides: if it asked for a confirmation (e.g. this browser's clock is behind), show the fields.
+    if (!needed && !errors.confirm_password && !errors.confirm_code) {
         return null;
     }
 

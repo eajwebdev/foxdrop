@@ -27,8 +27,9 @@ final class StaffQuery
         $lastSignIn = AuditLog::query()
             ->where('action', 'admin.signed_in')
             ->whereIn('actor_user_id', $admins->pluck('id'))
+            ->selectRaw('actor_user_id, max(created_at) as last_sign_in_at')
             ->groupBy('actor_user_id')
-            ->pluck(DB::raw('max(created_at)'), 'actor_user_id');
+            ->pluck('last_sign_in_at', 'actor_user_id');
 
         return array_values($admins->map(fn (User $admin): array => [
             ...Present::person($admin) ?? [],

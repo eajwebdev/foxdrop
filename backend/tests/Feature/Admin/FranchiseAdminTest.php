@@ -7,9 +7,9 @@ use App\Models\Payment;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 use Database\Seeders\DemoSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Franchises in the admin web (§9.5 step 3): operator applications, assigning, paying offline, suspending.
@@ -77,7 +77,7 @@ it('needs the franchises permission to review, also through the shared Action', 
 
     expect(fn () => app(ReviewOperatorApplication::class)(
         $viewer, OperatorApplication::query()->findOrFail(DemoSeeder::CEBU_APPLICATION), true,
-    ))->toThrow(HttpException::class);
+    ))->toThrow(AuthorizationException::class);
 });
 
 it('assigns a free province, records the offline payment and activates the license with ledger rule 7', function () {
@@ -152,4 +152,21 @@ it('suspends a license: customers lose the province, the operator turns read-onl
     expect($license->refresh()->status)->toBe('ACTIVE')
         ->and($license->status_reason)->toBeNull()
         ->and(DB::table('province_directory')->where('id', $neg)->value('is_serviceable'))->toBeTrue();
+});
+
+it('waits for an open online checkout before recording an offline payment', function () {
+    $operator = User::factory()->create();
+    $aklan = provinceId('0600400000');
+    $admin = superAdmin();
+    $this->actingAs($admin, 'web')->withSession(confirmedSession())
+        ->post("/admin/franchises/{$aklan}/license", ['operator' => (string) $operator->phone])->assertSessionHasNoErrors();
+    $license = ProvinceLicense::query()->where('province_id', $aklan)->sole();
+
+    $this->postJson("/api/v1/licenses/{$license->id}/payments", [], bearer($operator))->assertCreated(); // opens a checkout
+
+    $this->actingAs($admin, 'web')->withSession(confirmedSession())
+        ->post("/admin/licenses/{$license->id}/payments", ['method' => 'BANK_TRANSFER', 'reference' => 'BPI-0001'])
+        ->assertRedirect();
+    expect($license->refresh()->status)->toBe('PENDING_PAYMENT')
+        ->and(Payment::query()->where('license_id', $license->id)->where('provider', 'manual')->exists())->toBeFalse();
 });

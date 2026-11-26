@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\DeferProp;
 use Inertia\Inertia;
 
@@ -40,6 +41,16 @@ abstract class AdminController extends Controller
     protected function page(Request $request): int
     {
         return max(1, $request->integer('page', 1));
+    }
+
+    /**
+     * An id filter (e.g. a province) from the query string, or null when it is not a UUID.
+     */
+    protected function uuidFilter(Request $request, string $key): ?string
+    {
+        $value = $this->filter($request, $key);
+
+        return $value !== null && Str::isUuid($value) ? $value : null;
     }
 
     /**

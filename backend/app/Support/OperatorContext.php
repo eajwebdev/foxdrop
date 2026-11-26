@@ -36,7 +36,7 @@ final readonly class OperatorContext
     public static function ensureReviewer(User $user): void
     {
         if ($user->isPlatformAdmin()) {
-            AdminGuard::ensure($user, AdminPermission::PartnersView);
+            abort_unless($user->hasAdminPermission(AdminPermission::PartnersView), 403, 'You do not have permission to do this.');
 
             return;
         }
@@ -53,21 +53,5 @@ final readonly class OperatorContext
             403,
             'Your province license is not active. Renew it to make changes.',
         );
-    }
-
-    /**
-     * Partner reviews: platform admins with the partners permission may review anywhere (override); an operator team
-     * member only in the province they currently run, and only while its license is operating.
-     */
-    public static function ensureCanReview(User $reviewer, string $provinceId): void
-    {
-        if ($reviewer->isPlatformAdmin()) {
-            AdminGuard::ensure($reviewer, AdminPermission::PartnersManage);
-
-            return;
-        }
-        $context = self::for($reviewer);
-        abort_unless($context->provinceId === $provinceId, 404);
-        $context->ensureCanChange();
     }
 }

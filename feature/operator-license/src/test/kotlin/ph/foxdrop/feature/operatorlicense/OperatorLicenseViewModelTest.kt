@@ -240,7 +240,8 @@ class OperatorLicenseViewModelTest {
 
     @Test
     fun `an active license is not waiting for anyone`() = runTest(main.dispatcher) {
-        licenses.application = SampleData.application(ApplicationStatus.Approved, SampleData.license(LicenseStatus.Active))
+        licenses.application =
+            SampleData.application(ApplicationStatus.Approved, SampleData.license(LicenseStatus.Active))
         val vm = viewModel()
         runCurrent()
 

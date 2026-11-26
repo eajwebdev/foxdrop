@@ -24,7 +24,7 @@ class RiderController extends AdminController
     {
         $filters = [
             'status' => $request->has('status') ? $this->filter($request, 'status', Rider::REVIEW_FILTERS) : Rider::DOCS_REVIEW,
-            'province' => $this->filter($request, 'province'),
+            'province' => $this->uuidFilter($request, 'province'),
             'q' => $this->filter($request, 'q'),
         ];
 

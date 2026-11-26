@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Actions\Users;
+
+use App\Actions\Audit\RecordAudit;
+use App\Enums\AdminPermission;
+use App\Models\User;
+use App\Support\AdminGuard;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Suspends or reactivates any account (§9.5 step 3, DECISIONS 79). A suspension ends every API token and web session
+ * at once. Nobody suspends themselves, and only the super admin may suspend another admin.
+ */
+final class ChangeUserStatus
+{
+    public function __construct(private readonly RecordAudit $audit) {}
+
+    public function suspend(User $admin, User $user, string $reason): User
+    {
+        AdminGuard::ensure($admin, AdminPermission::UsersManage);
+        abort_if($admin->is($user), 409, 'You cannot suspend your own account.');
+        if ($user->isPlatformAdmin()) {
+            AdminGuard::ensureSuperAdmin($admin);
+        }
+
+        return $this->change($admin, $user, User::STATUS_SUSPENDED, 'user.suspended', $reason, function (User $user): void {
+            $user->tokens()->delete();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        });
+    }
+
+    public function reactivate(User $admin, User $user): User
+    {
+        AdminGuard::ensure($admin, AdminPermission::UsersManage);
+        if ($user->isPlatformAdmin()) {
+            AdminGuard::ensureSuperAdmin($admin);
+        }
+
+        return $this->change($admin, $user, User::STATUS_ACTIVE, 'user.reactivated');
+    }
+
+    /**
+     * @param  (callable(User): void)|null  $afterChange
+     */
+    private function change(User $admin, User $user, string $status, string $action, ?string $reason = null, ?callable $afterChange = null): User
+    {
+        return DB::transaction(function () use ($admin, $user, $status, $action, $reason, $afterChange): User {
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+            abort_if($user->status === $status, 409, $status === User::STATUS_SUSPENDED ? 'This account is already suspended.' : 'This account is already active.');
+            $before = ['status' => $user->status];
+
+            $user->forceFill(['status' => $status])->save();
+            if ($afterChange !== null) {
+                $afterChange($user);
+            }
+
+            ($this->audit)($admin, $action, 'user', $user->id, before: $before, after: ['status' => $status, 'reason' => $reason]);
+
+            return $user;
+        });
+    }
+}

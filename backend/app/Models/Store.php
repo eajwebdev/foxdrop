@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
  * @property string $name
  * @property string $status
  * @property string|null $rejection_reason
+ * @property string|null $status_reason
  * @property string $category
  * @property string $address_line
  * @property string $city
@@ -39,6 +40,10 @@ class Store extends Model
     public const string ACTIVE = 'ACTIVE';
 
     public const string REJECTED = 'REJECTED';
+
+    public const string SUSPENDED = 'SUSPENDED';
+
+    public const string CLOSED = 'CLOSED';
 
     /** A storefront customers can see (§5.2). */
     public const array PUBLISHED_STATUSES = ['ACTIVE', 'PAUSED'];

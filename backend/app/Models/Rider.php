@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $license_no_last4
  * @property Carbon|null $license_expiry
  * @property string|null $rejection_reason
+ * @property string|null $status_reason
  * @property Carbon|null $created_at
  */
 #[Hidden(['license_no_encrypted'])]
@@ -39,6 +40,10 @@ class Rider extends Model
     public const string APPROVED = 'APPROVED';
 
     public const string REJECTED = 'REJECTED';
+
+    public const string SUSPENDED = 'SUSPENDED';
+
+    public const string DEACTIVATED = 'DEACTIVATED';
 
     /** Statuses a reviewer may list (§9.4 step 4). */
     public const array REVIEW_FILTERS = [self::DOCS_REVIEW, self::APPROVED, self::REJECTED, 'SUSPENDED', 'DEACTIVATED'];

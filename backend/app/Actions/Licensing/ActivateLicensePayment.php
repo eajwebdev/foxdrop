@@ -58,7 +58,8 @@ final class ActivateLicensePayment implements PaymentPurposeHandler
             idempotencyKey: 'license-payment:'.$payment->id,
             provinceId: $license->province_id,
             lines: [
-                new LedgerLine(($this->wallet)('SYSTEM', null, null, 'GATEWAY_CLEARING'), -$payment->amount_centavos, 'LICENSE_FEE'),
+                // Money taken outside the gateway clears through its own account (DECISIONS 76).
+                new LedgerLine(($this->wallet)('SYSTEM', null, null, $payment->provider === Payment::PROVIDER_MANUAL ? 'OFFLINE_RECEIPTS' : 'GATEWAY_CLEARING'), -$payment->amount_centavos, 'LICENSE_FEE'),
                 new LedgerLine(($this->wallet)('PLATFORM', null, null, 'PLATFORM_REVENUE'), $payment->amount_centavos, 'LICENSE_FEE'),
             ],
             refType: 'payment',

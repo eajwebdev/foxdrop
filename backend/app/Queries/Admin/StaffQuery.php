@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Queries\Admin;
+
+use App\Enums\AppRole;
+use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Admin accounts for the staff page: role, permissions, 2FA and last sign-in (from the audit log).
+ */
+final class StaffQuery
+{
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function __invoke(): array
+    {
+        $admins = User::query()
+            ->whereHas('roles', fn ($grant) => $grant->whereIn('role', array_map(fn (AppRole $role): string => $role->value, AppRole::admin())))
+            ->with('roles')
+            ->orderBy('full_name')->orderBy('id')
+            ->get();
+        $lastSignIn = DB::table('audit_logs')
+            ->where('action', 'admin.signed_in')
+            ->whereIn('actor_user_id', $admins->pluck('id'))
+            ->groupBy('actor_user_id')
+            ->pluck(DB::raw('max(created_at)'), 'actor_user_id');
+
+        return array_values($admins->map(fn (User $admin): array => [
+            ...Present::person($admin) ?? [],
+            'status' => $admin->status,
+            'is_super_admin' => $admin->isSuperAdmin(),
+            'permissions' => $admin->adminPermissions(),
+            'two_factor_enabled' => $admin->two_factor_confirmed_at !== null,
+            'last_sign_in_at' => isset($lastSignIn[$admin->id]) ? Carbon::parse($lastSignIn[$admin->id])->toIso8601String() : null,
+        ])->all());
+    }
+}

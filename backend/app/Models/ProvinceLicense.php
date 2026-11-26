@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $end_at
  * @property int $fee_centavos
  * @property string|null $application_id
+ * @property string|null $status_reason
  */
 #[Fillable(['province_id', 'operator_user_id', 'application_id', 'status', 'start_at', 'end_at', 'fee_centavos', 'payment_id'])]
 class ProvinceLicense extends Model
@@ -39,14 +40,16 @@ class ProvinceLicense extends Model
 
     public const string REJECTED = 'REJECTED';
 
+    public const string SUSPENDED = 'SUSPENDED';
+
     /** A payment is accepted in these states (first payment, or renewal). */
     public const array PAYABLE = [self::PENDING_PAYMENT, self::ACTIVE, self::GRACE];
 
     /** The operator runs the province (GRACE: operations continue, §5.1). */
     public const array OPERATING = [self::ACTIVE, self::GRACE];
 
-    /** At most one license per province may be in these states (unique index province_licenses_one_live). */
-    public const array LIVE = [self::APPLIED, self::PENDING_PAYMENT, self::ACTIVE, self::GRACE];
+    /** At most one license per province may be in these states (unique index province_licenses_one_live, DECISIONS 77). */
+    public const array LIVE = [self::APPLIED, self::PENDING_PAYMENT, self::ACTIVE, self::GRACE, self::SUSPENDED];
 
     /**
      * @return array<string, string>

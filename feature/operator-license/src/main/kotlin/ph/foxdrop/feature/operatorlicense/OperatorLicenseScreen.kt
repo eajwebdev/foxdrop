@@ -32,8 +32,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import ph.foxdrop.core.common.format.formatPeso
 import ph.foxdrop.core.designsystem.component.DropdownOption
 import ph.foxdrop.core.designsystem.component.EmptyState
@@ -67,6 +71,9 @@ import ph.foxdrop.core.payments.CheckoutLauncher
 import ph.foxdrop.feature.operatorlicense.OperatorLicenseAction as Action
 import ph.foxdrop.feature.operatorlicense.OperatorLicenseState as State
 
+/** How often the status screen re-checks while the admin decides (DECISIONS 80). */
+internal const val STATUS_POLL_MILLIS = 10_000L
+
 /**
  * "Become a provincial operator" (§9.4 steps 1–2): the application form, then its status and the license payment.
  * [onRolesChanged] runs when the paid license made this account an operator.
@@ -89,6 +96,19 @@ fun OperatorLicenseRoute(
                 is OperatorLicenseEffect.OpenCheckout -> CheckoutLauncher.open(context, effect.url)
                 OperatorLicenseEffect.RolesChanged -> currentOnRolesChanged()
                 OperatorLicenseEffect.PhotoUnreadable -> snackbar.showSnackbar(unreadable)
+            }
+        }
+    }
+    // While the admin decides (or records an offline payment), check again every few seconds, only while visible.
+    val waitingForAdmin = (state as? State.Status)?.waitingForAdmin == true
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(waitingForAdmin, lifecycleOwner) {
+        if (waitingForAdmin) {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    delay(STATUS_POLL_MILLIS)
+                    viewModel.onAction(Action.Poll)
+                }
             }
         }
     }

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\AdminPermission;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 
@@ -34,7 +35,12 @@ final readonly class OperatorContext
      */
     public static function ensureReviewer(User $user): void
     {
-        abort_unless($user->isPlatformAdmin() || $user->operatorProvinceIds() !== [], 403, 'This needs a provincial operator account.');
+        if ($user->isPlatformAdmin()) {
+            AdminGuard::ensure($user, AdminPermission::PartnersView);
+
+            return;
+        }
+        abort_unless($user->operatorProvinceIds() !== [], 403, 'This needs a provincial operator account.');
     }
 
     /**
@@ -50,12 +56,14 @@ final readonly class OperatorContext
     }
 
     /**
-     * Partner reviews: platform admins may review anywhere (override); an operator team member only in the province
-     * they currently run, and only while its license is operating.
+     * Partner reviews: platform admins with the partners permission may review anywhere (override); an operator team
+     * member only in the province they currently run, and only while its license is operating.
      */
     public static function ensureCanReview(User $reviewer, string $provinceId): void
     {
         if ($reviewer->isPlatformAdmin()) {
+            AdminGuard::ensure($reviewer, AdminPermission::PartnersManage);
+
             return;
         }
         $context = self::for($reviewer);

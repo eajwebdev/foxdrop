@@ -51,7 +51,9 @@ class OperatorLicenseViewModel @Inject constructor(
         when (action) {
             Action.Retry -> load()
 
-            Action.Refresh -> refresh()
+            Action.Refresh -> refresh(quiet = false)
+
+            Action.Poll -> refresh(quiet = true)
 
             is Action.ProvinceSelected -> editForm {
                 copy(provinceId = action.provinceId).without(OperatorApplicationRules.Field.Province)
@@ -123,9 +125,9 @@ class OperatorLicenseViewModel @Inject constructor(
             }
     }
 
-    private fun refresh() {
-        val current = state.value as? State.Status ?: return load()
-        _state.value = current.copy(refreshing = true)
+    private fun refresh(quiet: Boolean) {
+        val current = state.value as? State.Status ?: return if (quiet) Unit else load()
+        if (!quiet) _state.value = current.copy(refreshing = true)
         viewModelScope.launch {
             when (val result = licenses.myApplication()) {
                 is FoxResult.Failure -> _state.update { (it as? State.Status)?.copy(refreshing = false) ?: it }
@@ -231,7 +233,7 @@ class OperatorLicenseViewModel @Inject constructor(
                     when (val outcome = poller.await(started.value.id)) {
                         PaymentOutcome.Paid -> {
                             setPay(PayState.Idle)
-                            refresh()
+                            refresh(quiet = false)
                         }
 
                         PaymentOutcome.NotPaid -> setPay(PayState.NotPaid)

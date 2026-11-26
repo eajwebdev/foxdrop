@@ -52,6 +52,7 @@ it('lets nobody suspend themselves, and only the super admin suspend an admin', 
     $this->post("/admin/users/{$otherAdmin->id}/suspend", ['reason' => 'Not allowed for staff'])->assertRedirect();
     expect($staff->refresh()->status)->toBe('ACTIVE')->and($otherAdmin->refresh()->status)->toBe('ACTIVE');
 
+    $this->flushSession(); // a new browser: AuthenticateSession ties a session to one account's password
     $this->actingAs(superAdmin(), 'web')->withSession(confirmedSession())
         ->post("/admin/users/{$otherAdmin->id}/suspend", ['reason' => 'Left the company'])->assertSessionHasNoErrors();
     expect($otherAdmin->refresh()->status)->toBe('SUSPENDED');

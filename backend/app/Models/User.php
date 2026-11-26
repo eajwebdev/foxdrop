@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AdminPermission;
 use App\Enums\AppRole;
+use App\Support\Like;
 use Closure;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,6 +19,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -105,7 +107,7 @@ class User extends Authenticatable
     #[Scope]
     protected function search(Builder $query, string $term): void
     {
-        $like = '%'.addcslashes(trim($term), '%_\\').'%';
+        $like = Like::contains($term);
         $phone = self::normalizePhone($term);
         $query->where(fn (Builder $match) => $match
             ->where('full_name', 'ilike', $like)
@@ -170,6 +172,28 @@ class User extends Authenticatable
         return $this->grantedAdminPermissions ??= array_values(
             DB::table('admin_permissions')->where('user_id', $this->id)->orderBy('permission')->pluck('permission')->all(),
         );
+    }
+
+    /**
+     * Signs this account out of the admin web everywhere (database sessions), except [exceptSessionId]. Password
+     * changes are also caught on the next request by the AuthenticateSession middleware.
+     *
+     * @return int how many sessions ended
+     */
+    public function endWebSessions(?string $exceptSessionId = null): int
+    {
+        return DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->when($exceptSessionId !== null, fn ($query) => $query->where('id', '<>', $exceptSessionId))
+            ->delete();
+    }
+
+    /**
+     * Clears the authenticator (Fortify's own action) so 2FA is set up again at the next sign-in.
+     */
+    public function resetTwoFactor(): void
+    {
+        app(DisableTwoFactorAuthentication::class)($this);
     }
 
     /**

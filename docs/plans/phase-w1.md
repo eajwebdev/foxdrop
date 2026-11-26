@@ -14,8 +14,9 @@ Source: MASTER_PROMPT §13 (W1), §9.5, §20; `reference/workflows/02_Super_Admi
    - Dangerous actions (licenses, suspensions, admin staff) need a fresh "confirm it's you" (password +
      authenticator code, valid 15 min).
 3. **Roles & permissions** (DECISIONS 72):
-   - `user_roles` decides who is an admin. `spatie/laravel-permission` holds the admin-staff permissions;
-     `super_admin` has every permission.
+   - `user_roles` decides who is an admin. An `admin_permissions` table holds the admin-staff permissions;
+     `super_admin` has every permission. spatie/laravel-permission was tried and dropped: its `roles` relation clashes
+     with `User::roles()`.
    - Permissions: `franchises.view`, `franchises.manage`, `partners.view`, `partners.manage`, `users.view`,
      `users.manage`, `audit.view`.
    - Admin staff management is for the super admin only.
@@ -50,13 +51,13 @@ Source: MASTER_PROMPT §13 (W1), §9.5, §20; `reference/workflows/02_Super_Admi
    |---|---|
    | `AssignProvinceLicense` | creates a license in PENDING_PAYMENT |
    | `RecordOfflineLicensePayment` | `manual` payment → `SettlePayment` → `ActivateLicensePayment`, the same ledger rule 7 |
-   | `SuspendProvinceLicense`, `ReinstateProvinceLicense` | license suspension and reinstatement |
+   | `ChangeLicenseSuspension` | license suspension and reinstatement |
    | `ChangeStoreStatus`, `ChangeRiderStatus` | suspend / reinstate / deactivate |
-   | `SuspendUser`, `ReactivateUser` | also revoke API tokens and web sessions |
-   | `CreateAdminStaff`, `UpdateAdminPermissions`, `RemoveAdminStaff` | admin staff management |
+   | `ChangeUserStatus` | suspend / reactivate; also revokes API tokens and web sessions |
+   | `ManageAdminStaff`, `ManageOwnSession` | admin staff management; own password and sessions |
 8. **Schema 13**:
    - 2FA columns on `users`.
-   - spatie permission tables (uuid model keys).
+   - the `admin_permissions` table.
    - `payments.provider` allows `manual`.
    - SYSTEM wallet kind `OFFLINE_RECEIPTS`.
    - SUSPENDED keeps the province exclusive (unique index and directory view).

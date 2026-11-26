@@ -22,14 +22,18 @@ import {
 } from '@/lib/format';
 import { useCan } from '@/lib/permissions';
 import admin from '@/routes/admin';
+import type { Person } from '@/types';
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Ban, Banknote, CircleCheck, FileCheck2, UserPlus } from 'lucide-react';
 
-type Person = { id: string; full_name: string | null; email: string | null; phone: string | null };
 type License = {
     id: string;
     status: string;
     status_reason: string | null;
+    /** What an admin may do now, from the server (ProvinceLicense::adminChanges). */
+    can_pay: boolean;
+    can_suspend: boolean;
+    can_reinstate: boolean;
     start_at: string | null;
     end_at: string | null;
     fee_centavos: number;
@@ -56,9 +60,6 @@ type Province = {
     licenses: License[];
 };
 
-const PAYABLE = ['PENDING_PAYMENT', 'ACTIVE', 'GRACE'];
-const OPERATING = ['ACTIVE', 'GRACE'];
-
 export default function ProvinceShow({ province }: { province: Province }) {
     const can = useCan();
     const current =
@@ -84,13 +85,13 @@ export default function ProvinceShow({ province }: { province: Province }) {
                             {province.is_available && province.is_enabled && (
                                 <AssignDialog province={province} />
                             )}
-                            {current && PAYABLE.includes(current.status) && (
+                            {current?.can_pay && (
                                 <PaymentDialog
                                     license={current}
                                     fee={province.license_fee_centavos}
                                 />
                             )}
-                            {current && OPERATING.includes(current.status) && (
+                            {current?.can_suspend && (
                                 <ActionDialog
                                     trigger={
                                         <Button variant="outline" className="text-destructive">
@@ -106,7 +107,7 @@ export default function ProvinceShow({ province }: { province: Province }) {
                                     confirmIdentity
                                 />
                             )}
-                            {current?.status === 'SUSPENDED' && (
+                            {current?.can_reinstate && (
                                 <ActionDialog
                                     trigger={
                                         <Button variant="outline">

@@ -15,12 +15,3 @@ export type Auth = {
     /** Unix seconds until "confirm it's you" stops counting; null when it must be asked again. */
     confirmedUntil: number | null;
 };
-
-export type TwoFactorSetupData = {
-    svg: string;
-    url: string;
-};
-
-export type TwoFactorSecretKey = {
-    secretKey: string;
-};

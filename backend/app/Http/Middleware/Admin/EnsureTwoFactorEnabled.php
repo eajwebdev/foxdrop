@@ -16,7 +16,7 @@ class EnsureTwoFactorEnabled
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if ($user instanceof User && $user->two_factor_confirmed_at !== null) {
+        if ($user instanceof User && $user->hasEnabledTwoFactorAuthentication()) {
             return $next($request);
         }
 

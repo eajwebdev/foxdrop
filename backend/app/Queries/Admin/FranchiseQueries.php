@@ -9,8 +9,8 @@ use App\Models\ProvinceLicense;
 use App\Models\Rider;
 use App\Models\Store;
 use App\Models\User;
+use App\Support\PlatformSettings;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,7 +30,7 @@ final class FranchiseQueries
         /** @var list<string> $ids */
         $ids = $directory->pluck('id')->all();
         $licenses = ProvinceLicense::currentByProvince($ids);
-        $operators = $this->people(array_map(fn (ProvinceLicense $license): string => $license->operator_user_id, array_values($licenses)));
+        $operators = Present::peopleById(array_map(fn (ProvinceLicense $license): string => $license->operator_user_id, array_values($licenses)));
 
         return array_values($directory->map(function (object $row) use ($enabled, $licenses, $operators): array {
             $license = $licenses[$row->id] ?? null;
@@ -59,9 +59,7 @@ final class FranchiseQueries
     {
         $flags = DB::table('province_directory')->where('id', $province->id)->first(['is_serviceable', 'is_available']);
         $licenses = ProvinceLicense::query()->where('province_id', $province->id)->orderByDesc('created_at')->get();
-        /** @var list<string> $operatorIds */
-        $operatorIds = $licenses->pluck('operator_user_id')->all();
-        $people = $this->people($operatorIds);
+        $people = Present::peopleById($licenses->pluck('operator_user_id'));
         $payments = Payment::query()
             ->whereIn('license_id', $licenses->pluck('id'))
             ->where('status', Payment::PAID)
@@ -78,7 +76,7 @@ final class FranchiseQueries
             'is_serviceable' => (bool) ($flags->is_serviceable ?? false),
             'is_available' => (bool) ($flags->is_available ?? false),
             'current_license_id' => $current?->id,
-            'license_fee_centavos' => (int) DB::table('platform_settings')->value('license_fee_centavos'),
+            'license_fee_centavos' => PlatformSettings::licenseFeeCentavos(),
             'counts' => [
                 'active_stores' => Store::query()->where('province_id', $province->id)->whereIn('status', Store::PUBLISHED_STATUSES)->count(),
                 'active_riders' => Rider::query()->where('province_id', $province->id)->where('status', Rider::APPROVED)->count(),
@@ -87,6 +85,7 @@ final class FranchiseQueries
                 'id' => $license->id,
                 'status' => $license->status,
                 'status_reason' => $license->status_reason,
+                ...$license->adminChanges(),
                 'start_at' => Present::date($license->start_at),
                 'end_at' => Present::date($license->end_at),
                 'fee_centavos' => $license->fee_centavos,
@@ -118,7 +117,7 @@ final class FranchiseQueries
             'id' => $application->id,
             'status' => $application->status,
             'business_name' => $application->business_name,
-            'province' => ['id' => $application->province_id, 'name' => $application->province?->name],
+            'province' => Present::province($application),
             'applicant' => Present::person($application->applicant),
             'created_at' => Present::date($application->created_at),
         ]);
@@ -141,7 +140,7 @@ final class FranchiseQueries
             'contact_phone' => $application->contact_phone,
             'contact_email' => $application->contact_email,
             'rejection_reason' => $application->rejection_reason,
-            'province' => ['id' => $application->province_id, 'name' => $application->province?->name],
+            'province' => Present::province($application),
             'applicant' => Present::person($application->applicant),
             'reviewed_by' => Present::person($reviewer),
             'reviewed_at' => Present::date($application->reviewed_at),
@@ -167,14 +166,5 @@ final class FranchiseQueries
             ->get(['id', 'name'])
             ->map(fn (Province $province): array => ['value' => $province->id, 'label' => $province->name])
             ->all());
-    }
-
-    /**
-     * @param  list<string>  $ids
-     * @return Collection<string, User>
-     */
-    private function people(array $ids): Collection
-    {
-        return User::query()->whereIn('id', array_unique($ids))->get()->keyBy('id');
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Partners;
 
-use App\Actions\Partners\ChangeStoreStatus;
+use App\Actions\Partners\ChangePartnerStatus;
 use App\Actions\Partners\ReviewStore;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Requests\Admin\ChangePartnerStatusRequest;
@@ -31,7 +31,7 @@ class StoreController extends AdminController
         return Inertia::render('stores/index', [
             'filters' => $filters,
             'statuses' => Store::REVIEW_FILTERS,
-            'provinces' => FranchiseQueries::provinceOptions(),
+            'provinces' => fn (): array => FranchiseQueries::provinceOptions(), // skipped on partial reloads
             'stores' => $this->deferred(fn (): array => $queries->stores($filters, $this->page($request))),
         ]);
     }
@@ -55,7 +55,7 @@ class StoreController extends AdminController
         return $this->done('Store application rejected.');
     }
 
-    public function changeStatus(ChangePartnerStatusRequest $request, Store $store, ChangeStoreStatus $change): RedirectResponse
+    public function changeStatus(ChangePartnerStatusRequest $request, Store $store, ChangePartnerStatus $change): RedirectResponse
     {
         $change($this->admin($request), $store, $request->string('status')->toString(), $request->reason());
 

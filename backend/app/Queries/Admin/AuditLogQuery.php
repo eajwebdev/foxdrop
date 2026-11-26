@@ -4,8 +4,10 @@ namespace App\Queries\Admin;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\Like;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -20,17 +22,17 @@ final class AuditLogQuery
     public function __invoke(array $filters, int $page): array
     {
         $rows = AuditLog::query()
-            ->when($filters['action'] ?? null, fn (Builder $query, string $action) => $query->where('action', 'like', addcslashes($action, '%_\\').'%'))
+            ->when($filters['action'] ?? null, fn (Builder $query, string $action) => $query->where('action', 'like', Like::startsWith($action)))
             ->when($filters['entity'] ?? null, fn (Builder $query, string $entity) => $query->where('entity_type', $entity))
             ->when($filters['actor'] ?? null, fn (Builder $query, string $actor) => $query->whereIn('actor_user_id', User::query()->search($actor)->select('id')))
             ->when($filters['province'] ?? null, fn (Builder $query, string $province) => $query->where('province_id', $province))
             ->when($filters['from'] ?? null, fn (Builder $query, string $from) => $query->where('created_at', '>=', Carbon::parse($from, 'Asia/Manila')->startOfDay()->utc()))
             ->when($filters['to'] ?? null, fn (Builder $query, string $to) => $query->where('created_at', '<=', Carbon::parse($to, 'Asia/Manila')->endOfDay()->utc()))
-            ->orderByDesc('created_at')->orderByDesc('id')
+            ->orderByDesc('id') // identity column: the primary key gives newest first without a sort
             ->paginate(50, page: $page);
 
         $entries = collect($rows->items());
-        $actors = User::query()->whereIn('id', $entries->pluck('actor_user_id')->filter()->unique())->get()->keyBy('id');
+        $actors = Present::peopleById($entries->pluck('actor_user_id'));
         $provinces = DB::table('provinces')->whereIn('id', $entries->pluck('province_id')->filter()->unique())->pluck('name', 'id');
 
         return Present::page($rows, fn (AuditLog $entry): array => [
@@ -56,6 +58,9 @@ final class AuditLogQuery
      */
     public static function entityTypes(): array
     {
-        return array_values(AuditLog::query()->distinct()->orderBy('entity_type')->pluck('entity_type')->all());
+        // A distinct scan of the whole log; the list changes only when a new kind of change ships.
+        return Cache::remember('admin.audit.entity-types', now()->addMinutes(10), fn (): array => array_values(
+            AuditLog::query()->distinct()->orderBy('entity_type')->pluck('entity_type')->all(),
+        ));
     }
 }

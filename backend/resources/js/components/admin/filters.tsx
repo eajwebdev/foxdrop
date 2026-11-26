@@ -8,17 +8,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { humanize } from '@/lib/format';
-import { router } from '@inertiajs/react';
+import { visitWithQuery } from '@/lib/utils';
 import { Search, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 /** Changes one query-string filter and goes back to page 1 (filters live in the URL: §20.5 saved filters). */
 export function applyFilter(key: string, value: string | null) {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('page');
-    url.searchParams.set(key, value ?? '');
-    router.get(url.pathname + url.search, {}, { preserveState: true, replace: true });
+    visitWithQuery({ [key]: value }, { resetPage: true });
 }
 
 export function FilterBar({ children }: { children: ReactNode }) {

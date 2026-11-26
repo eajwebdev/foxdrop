@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Partners;
 
-use App\Actions\Partners\ChangeRiderStatus;
+use App\Actions\Partners\ChangePartnerStatus;
 use App\Actions\Partners\ReviewRider;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Requests\Admin\ChangePartnerStatusRequest;
@@ -31,7 +31,7 @@ class RiderController extends AdminController
         return Inertia::render('riders/index', [
             'filters' => $filters,
             'statuses' => Rider::REVIEW_FILTERS,
-            'provinces' => FranchiseQueries::provinceOptions(),
+            'provinces' => fn (): array => FranchiseQueries::provinceOptions(), // skipped on partial reloads
             'riders' => $this->deferred(fn (): array => $queries->riders($filters, $this->page($request))),
         ]);
     }
@@ -55,7 +55,7 @@ class RiderController extends AdminController
         return $this->done('Rider application rejected.');
     }
 
-    public function changeStatus(ChangePartnerStatusRequest $request, Rider $rider, ChangeRiderStatus $change): RedirectResponse
+    public function changeStatus(ChangePartnerStatusRequest $request, Rider $rider, ChangePartnerStatus $change): RedirectResponse
     {
         $change($this->admin($request), $rider, $request->string('status')->toString(), $request->reason());
 

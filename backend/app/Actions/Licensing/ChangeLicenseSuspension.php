@@ -7,6 +7,7 @@ use App\Enums\AdminPermission;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 use App\Support\AdminGuard;
+use App\Support\PlatformSettings;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,14 +31,7 @@ final class ChangeLicenseSuspension
     {
         return $this->change($admin, $license, function (ProvinceLicense $license): void {
             abort_unless($license->status === ProvinceLicense::SUSPENDED, 409, 'This license is not suspended.');
-            $graceDays = (int) DB::table('platform_settings')->value('license_grace_days');
-            $endAt = $license->end_at ?? now();
-            $status = match (true) {
-                $endAt->isFuture() => ProvinceLicense::ACTIVE,
-                $endAt->copy()->addDays($graceDays)->isFuture() => ProvinceLicense::GRACE,
-                default => ProvinceLicense::EXPIRED,
-            };
-            $license->forceFill(['status' => $status, 'status_reason' => null]);
+            $license->forceFill(['status' => $license->statusForTerm(PlatformSettings::licenseGraceDays()), 'status_reason' => null]);
         }, 'license.reinstated');
     }
 

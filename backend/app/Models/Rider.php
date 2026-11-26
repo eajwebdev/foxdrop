@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasStatusChanges;
 use App\Models\Concerns\ReviewedByProvinceOperators;
 use App\Models\Concerns\VisibleToViewer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -33,7 +34,7 @@ use Illuminate\Support\Carbon;
 ])]
 class Rider extends Model
 {
-    use HasUuids, ReviewedByProvinceOperators, VisibleToViewer;
+    use HasStatusChanges, HasUuids, ReviewedByProvinceOperators, VisibleToViewer;
 
     public const string DOCS_REVIEW = 'DOCS_REVIEW';
 
@@ -45,8 +46,18 @@ class Rider extends Model
 
     public const string DEACTIVATED = 'DEACTIVATED';
 
+    /** Admin / operator changes of an approved rider: target status => statuses it may come from (DECISIONS 79). */
+    public const array STATUS_CHANGES = [
+        self::SUSPENDED => [self::APPROVED],
+        self::APPROVED => [self::SUSPENDED],
+        self::DEACTIVATED => [self::APPROVED, self::SUSPENDED],
+    ];
+
+    /** Lifting a suspension returns the rider here. */
+    public const string REINSTATED = self::APPROVED;
+
     /** Statuses a reviewer may list (§9.4 step 4). */
-    public const array REVIEW_FILTERS = [self::DOCS_REVIEW, self::APPROVED, self::REJECTED, 'SUSPENDED', 'DEACTIVATED'];
+    public const array REVIEW_FILTERS = [self::DOCS_REVIEW, self::APPROVED, self::REJECTED, self::SUSPENDED, self::DEACTIVATED];
 
     /** Upload field => rider_document_type. A bicycle needs no OR/CR or vehicle photo (SubmitRiderRequest). */
     public const array DOCUMENTS = [

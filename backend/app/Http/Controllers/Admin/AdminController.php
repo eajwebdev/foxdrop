@@ -49,8 +49,8 @@ abstract class AdminController extends Controller
      */
     protected function filter(Request $request, string $key, ?array $allowed = null): ?string
     {
-        $value = trim($request->string($key)->toString());
-        if ($value === '' || mb_strlen($value) > 100) {
+        $value = $request->input($key); // already trimmed, '' → null
+        if (! is_string($value) || mb_strlen($value) > 100) {
             return null;
         }
 

@@ -247,7 +247,9 @@ Format: **what** — why — revisit when.
     the super admin resets staff passwords, and `php artisan foxdrop:admin-password` resets anyone's on the server.
     Sessions expire after 30 idle minutes.
 75. **Dangerous admin actions need "Confirm it's you" within 15 minutes**: password + a current authenticator code.
-    This covers license changes, suspensions, admin staff changes and re-keying 2FA.
+    This covers license changes, suspensions, admin staff changes and re-keying 2FA. Signing in (password + code) is
+    such a confirmation too, so the first 15 minutes after sign-in need no second prompt. A password change or reset
+    also signs out the account's other sessions (`AuthenticateSession` on the admin routes).
 76. **Offline license payments** (bank transfer or cash to the platform) are recorded by an admin as a `manual`
     payment and run through the same `SettlePayment` → `ActivateLicensePayment` path as PayMongo. The ledger debits
     a new SYSTEM wallet `OFFLINE_RECEIPTS` instead of `GATEWAY_CLEARING`, so gateway reconciliation (Phase 5) stays
@@ -263,6 +265,17 @@ Format: **what** — why — revisit when.
       deactivated. All of these carry a reason that the partner sees.
     - Suspending a user account also revokes their API tokens and web sessions.
     - Nobody can suspend themselves. Only the super admin can suspend another admin.
-80. **The operator application status screen polls while it waits** (every 10 s while visible and SUBMITTED or
-    waiting for payment), so an approval in the web shows in the app within seconds without push (FCM arrives in
-    Phase 3/6).
+80. **The operator application status screen polls while it waits** (every 10 s, slowing to 60 s, only while visible
+    and SUBMITTED or waiting for payment; a check still on its way is not repeated), so an approval in the web shows
+    in the app within seconds without push (FCM arrives in Phase 3/6).
+81. **Deferred W1 refactors** (from /simplify; working and tested as they are):
+    - Admin permission checks stay the Gate abilities plus `AdminGuard` inside Actions (both go through the Gate).
+      Per-model policies (`StorePolicy@review` for "admin with permission, or operator of this province") come when
+      the operator web or W2 needs a third caller.
+    - Admin detail pages build their own shape instead of reusing the API review resources: the document URLs and the
+      person shape differ.
+    - A filter change costs two requests: the page shell, then its deferred list. Partial reloads (`only`) per list
+      follow in W2 together with saved filters.
+    - The cross-province lists filter by status alone. Status-first indexes are added when stores and riders reach
+      the thousands (Phase 6 load test).
+    - The province page reads its current license with one extra query.

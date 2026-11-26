@@ -1,11 +1,12 @@
 import { DeferredBlock } from '@/components/admin/deferred-block';
 import { Page, Section } from '@/components/admin/page';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePollWhileActive } from '@/hooks/use-poll-while-active';
 import { daysUntil, formatDate, formatNumber } from '@/lib/format';
 import { useCan } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import admin from '@/routes/admin';
-import { Head, Link, usePoll } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
     Bike,
@@ -40,8 +41,8 @@ type Summary = {
 };
 
 export default function Dashboard({ summary }: { summary?: Summary }) {
-    // §20.4: the dashboard refreshes itself every 15 s.
-    usePoll(15_000, { only: ['summary'] });
+    // §20.4: the dashboard refreshes itself every 15 s while someone is using it.
+    usePollWhileActive(15_000, ['summary']);
 
     return (
         <>

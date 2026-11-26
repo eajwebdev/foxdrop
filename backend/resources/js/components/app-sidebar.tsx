@@ -10,17 +10,12 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { adminNav } from '@/lib/navigation';
+import { useVisibleNav } from '@/lib/navigation';
 import admin from '@/routes/admin';
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 
 export function AppSidebar() {
-    const user = usePage().props.auth.user;
-    const items = adminNav.filter(
-        (item) =>
-            (!item.permission || user?.permissions.includes(item.permission)) &&
-            (!item.superAdminOnly || user?.is_super_admin),
-    );
+    const items = useVisibleNav();
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">

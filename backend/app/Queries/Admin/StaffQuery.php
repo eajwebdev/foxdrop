@@ -3,6 +3,7 @@
 namespace App\Queries\Admin;
 
 use App\Enums\AppRole;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,8 @@ final class StaffQuery
             ->with('roles')
             ->orderBy('full_name')->orderBy('id')
             ->get();
-        $lastSignIn = DB::table('audit_logs')
+        $permissions = DB::table('admin_permissions')->whereIn('user_id', $admins->pluck('id'))->orderBy('permission')->get()->groupBy('user_id');
+        $lastSignIn = AuditLog::query()
             ->where('action', 'admin.signed_in')
             ->whereIn('actor_user_id', $admins->pluck('id'))
             ->groupBy('actor_user_id')
@@ -32,8 +34,8 @@ final class StaffQuery
             ...Present::person($admin) ?? [],
             'status' => $admin->status,
             'is_super_admin' => $admin->isSuperAdmin(),
-            'permissions' => $admin->adminPermissions(),
-            'two_factor_enabled' => $admin->two_factor_confirmed_at !== null,
+            'permissions' => $admin->isSuperAdmin() ? [] : array_values(($permissions[$admin->id] ?? collect())->pluck('permission')->all()),
+            'two_factor_enabled' => $admin->hasEnabledTwoFactorAuthentication(),
             'last_sign_in_at' => isset($lastSignIn[$admin->id]) ? Carbon::parse($lastSignIn[$admin->id])->toIso8601String() : null,
         ])->all());
     }

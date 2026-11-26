@@ -39,7 +39,7 @@ class HandleInertiaRequests extends Middleware
                         fn (AdminPermission $permission): string => $permission->value,
                         array_filter(AdminPermission::cases(), fn (AdminPermission $permission): bool => $user->hasAdminPermission($permission)),
                     )),
-                    'two_factor_enabled' => $user->two_factor_confirmed_at !== null,
+                    'two_factor_enabled' => $user->hasEnabledTwoFactorAuthentication(),
                 ] : null,
                 'confirmedUntil' => $user instanceof User ? IdentityConfirmation::confirmedUntil($request) : null,
             ],

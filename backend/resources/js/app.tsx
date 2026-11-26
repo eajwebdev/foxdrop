@@ -1,8 +1,8 @@
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
-import AppLayout from '@/layouts/app-layout';
-import AuthLayout from '@/layouts/auth-layout';
+import AppLayout from '@/layouts/app/app-sidebar-layout';
+import AuthLayout from '@/layouts/auth/auth-simple-layout';
 import { createInertiaApp } from '@inertiajs/react';
 
 void createInertiaApp({

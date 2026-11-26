@@ -6,6 +6,7 @@ use App\Models\Rider;
 use App\Models\RiderDocument;
 use App\Models\Store;
 use App\Models\StoreDocument;
+use App\Support\Like;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -23,7 +24,7 @@ final class PartnerQueries
             ->with(['province:id,name', 'owner'])
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['province'] ?? null, fn (Builder $query, string $province) => $query->where('province_id', $province))
-            ->when($filters['q'] ?? null, fn (Builder $query, string $term) => $query->where('name', 'ilike', self::like($term)))
+            ->when($filters['q'] ?? null, fn (Builder $query, string $term) => $query->where('name', 'ilike', Like::contains($term)))
             ->orderByDesc('created_at')->orderBy('id')
             ->paginate(25, page: $page);
 
@@ -33,7 +34,7 @@ final class PartnerQueries
             'category' => $store->category,
             'status' => $store->status,
             'city' => $store->city,
-            'province' => ['id' => $store->province_id, 'name' => $store->province?->name],
+            'province' => Present::province($store),
             'owner' => Present::person($store->owner),
             'created_at' => Present::date($store->created_at),
         ]);
@@ -60,7 +61,8 @@ final class PartnerQueries
             'location' => $lat === null ? null : ['lat' => (float) $lat, 'lng' => (float) $store->getAttribute('location_lng')],
             'rejection_reason' => $store->rejection_reason,
             'status_reason' => $store->status_reason,
-            'province' => ['id' => $store->province_id, 'name' => $store->province?->name],
+            'status_changes' => $store->statusChanges(),
+            'province' => Present::province($store),
             'owner' => Present::person($store->owner),
             'created_at' => Present::date($store->created_at),
             'documents' => array_values($store->documents->map(fn (StoreDocument $document): array => [
@@ -82,7 +84,7 @@ final class PartnerQueries
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['province'] ?? null, fn (Builder $query, string $province) => $query->where('province_id', $province))
             ->when($filters['q'] ?? null, fn (Builder $query, string $term) => $query->where(fn (Builder $match) => $match
-                ->where('plate_no', 'ilike', self::like($term))
+                ->where('plate_no', 'ilike', Like::contains($term))
                 ->orWhereHas('user', fn (Builder $user) => $user->search($term))))
             ->orderByDesc('created_at')->orderBy('id')
             ->paginate(25, page: $page);
@@ -92,7 +94,7 @@ final class PartnerQueries
             'status' => $rider->status,
             'vehicle_type' => $rider->vehicle_type,
             'plate_no' => $rider->plate_no,
-            'province' => ['id' => $rider->province_id, 'name' => $rider->province?->name],
+            'province' => Present::province($rider),
             'person' => Present::person($rider->user),
             'created_at' => Present::date($rider->created_at),
         ]);
@@ -114,7 +116,8 @@ final class PartnerQueries
             'license_expiry' => $rider->license_expiry?->toDateString(),
             'rejection_reason' => $rider->rejection_reason,
             'status_reason' => $rider->status_reason,
-            'province' => ['id' => $rider->province_id, 'name' => $rider->province?->name],
+            'status_changes' => $rider->statusChanges(),
+            'province' => Present::province($rider),
             'person' => Present::person($rider->user),
             'created_at' => Present::date($rider->created_at),
             'documents' => array_values($rider->documents->map(fn (RiderDocument $document): array => [
@@ -123,10 +126,5 @@ final class PartnerQueries
                 'url' => route('admin.documents.rider', $document),
             ])->all()),
         ];
-    }
-
-    public static function like(string $term): string
-    {
-        return '%'.addcslashes(trim($term), '%_\\').'%';
     }
 }

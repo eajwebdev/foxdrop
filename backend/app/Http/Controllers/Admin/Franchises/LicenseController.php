@@ -28,8 +28,8 @@ class LicenseController extends AdminController
 
     public function recordPayment(RecordLicensePaymentRequest $request, ProvinceLicense $license, RecordOfflineLicensePayment $record): RedirectResponse
     {
-        $note = trim($request->string('note')->toString());
-        $record($this->admin($request), $license, $request->string('method')->toString(), $request->string('reference')->trim()->toString(), $note === '' ? null : $note);
+        $note = $request->input('note'); // trimmed, and '' → null, by Laravel's default middleware
+        $record($this->admin($request), $license, $request->string('method')->toString(), $request->string('reference')->toString(), is_string($note) ? $note : null);
 
         return $this->done('Payment recorded and the license updated.');
     }

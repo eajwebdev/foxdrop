@@ -253,5 +253,5 @@ it('turns a refused change into an error toast instead of an error page', functi
 
     $this->get('/admin/stores/00000000-0000-4000-8000-999999999999')
         ->assertNotFound()
-        ->assertInertia(fn (Assert $page) => $page->component('error')->where('status', 404));
+        ->assertInertia(fn (Assert $page) => $page->component('error')->where('status', 404)->where('message', null)); // never "No query results for model …"
 });

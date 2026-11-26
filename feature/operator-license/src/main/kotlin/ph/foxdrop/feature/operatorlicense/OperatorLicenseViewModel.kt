@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,7 @@ class OperatorLicenseViewModel @Inject constructor(
     private val _state = MutableStateFlow<State>(State.Loading)
     val state: StateFlow<State> = _state.asStateFlow()
     private val _effects = Channel<OperatorLicenseEffect>(Channel.BUFFERED)
+    private var refreshJob: Job? = null
     val effects: Flow<OperatorLicenseEffect> = _effects.receiveAsFlow()
 
     init {
@@ -127,8 +129,9 @@ class OperatorLicenseViewModel @Inject constructor(
 
     private fun refresh(quiet: Boolean) {
         val current = state.value as? State.Status ?: return if (quiet) Unit else load()
+        if (quiet && refreshJob?.isActive == true) return // the last check is still on its way
         if (!quiet) _state.value = current.copy(refreshing = true)
-        viewModelScope.launch {
+        refreshJob = viewModelScope.launch {
             when (val result = licenses.myApplication()) {
                 is FoxResult.Failure -> _state.update { (it as? State.Status)?.copy(refreshing = false) ?: it }
 

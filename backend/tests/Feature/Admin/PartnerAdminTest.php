@@ -49,9 +49,12 @@ it('approves a store for an operator (override) and it goes live', function () {
 });
 
 it('suspends, reinstates and closes a live store with a reason the owner sees', function () {
-    $admin = adminUser(permissions: [AdminPermission::PartnersManage]);
+    $admin = adminUser(permissions: [AdminPermission::PartnersView, AdminPermission::PartnersManage]);
     $storeId = DemoSeeder::storeId(1);
     $this->actingAs($admin, 'web')->withSession(confirmedSession());
+
+    // The page offers exactly the changes the model allows from ACTIVE.
+    $this->get("/admin/stores/{$storeId}")->assertInertia(fn (Assert $page) => $page->where('store.status_changes', ['SUSPENDED', 'CLOSED']));
 
     $this->post("/admin/stores/{$storeId}/status", ['status' => 'SUSPENDED'])->assertSessionHasErrors('reason');
     $this->post("/admin/stores/{$storeId}/status", ['status' => 'SUSPENDED', 'reason' => 'Food safety complaint'])->assertSessionHasNoErrors();

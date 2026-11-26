@@ -43,6 +43,15 @@ class Payment extends Model
     public const string PROVIDER_MANUAL = 'manual';
 
     /**
+     * The SYSTEM wallet this money came in through: offline receipts keep the gateway clearing account matching
+     * PayMongo exactly (DECISIONS 76). Every ledger rule that settles a payment debits this wallet.
+     */
+    public function clearingWalletKind(): string
+    {
+        return $this->provider === self::PROVIDER_MANUAL ? 'OFFLINE_RECEIPTS' : 'GATEWAY_CLEARING';
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

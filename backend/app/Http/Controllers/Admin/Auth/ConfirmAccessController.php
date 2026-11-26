@@ -20,15 +20,14 @@ class ConfirmAccessController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return Inertia::render('auth/confirm-password', ['needsCode' => $user->two_factor_confirmed_at !== null]);
+        return Inertia::render('auth/confirm-password', ['needsCode' => $user->hasEnabledTwoFactorAuthentication()]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $request->validate(['confirm_password' => ['required', 'string', 'max:200'], 'confirm_code' => ['nullable', 'string', 'max:20']]);
         /** @var User $user */
         $user = $request->user();
-        IdentityConfirmation::confirm($request, $user, $request->string('confirm_password')->toString(), $request->input('confirm_code'));
+        IdentityConfirmation::confirmFromRequest($request, $user);
 
         return redirect()->intended(route('admin.dashboard'));
     }

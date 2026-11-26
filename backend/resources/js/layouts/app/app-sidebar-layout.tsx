@@ -6,9 +6,9 @@ import type { AppLayoutProps } from '@/types';
 
 export default function AppSidebarLayout({ children, breadcrumbs = [] }: AppLayoutProps) {
     return (
-        <AppShell variant="sidebar">
+        <AppShell>
             <AppSidebar />
-            <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
+            <AppContent className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {children}
             </AppContent>

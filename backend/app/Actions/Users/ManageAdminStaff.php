@@ -65,7 +65,7 @@ final class ManageAdminStaff
 
         DB::transaction(function () use ($superAdmin, $staff, $password): void {
             $staff->forceFill(['password' => $password])->save();
-            DB::table('sessions')->where('user_id', $staff->id)->delete();
+            $staff->endWebSessions();
             ($this->audit)($superAdmin, 'admin_staff.password_reset', 'user', $staff->id);
         });
     }
@@ -78,8 +78,8 @@ final class ManageAdminStaff
         $this->ensureStaff($superAdmin, $staff);
 
         DB::transaction(function () use ($superAdmin, $staff): void {
-            $staff->forceFill(['two_factor_secret' => null, 'two_factor_recovery_codes' => null, 'two_factor_confirmed_at' => null])->save();
-            DB::table('sessions')->where('user_id', $staff->id)->delete();
+            $staff->resetTwoFactor();
+            $staff->endWebSessions();
             ($this->audit)($superAdmin, 'admin_staff.two_factor_reset', 'user', $staff->id);
         });
     }
@@ -95,7 +95,7 @@ final class ManageAdminStaff
             $before = $staff->adminPermissions();
             DB::table('admin_permissions')->where('user_id', $staff->id)->delete();
             DB::table('user_roles')->where('user_id', $staff->id)->where('role', AppRole::AdminStaff->value)->delete();
-            DB::table('sessions')->where('user_id', $staff->id)->delete();
+            $staff->endWebSessions();
 
             ($this->audit)($superAdmin, 'admin_staff.removed', 'user', $staff->id, before: ['permissions' => $before]);
         });

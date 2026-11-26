@@ -2,6 +2,7 @@ import { ActionDialog } from '@/components/admin/action-dialog';
 import { Page, Section } from '@/components/admin/page';
 import { SettingsTabs } from '@/components/admin/settings-tabs';
 import InputError from '@/components/input-error';
+import { NewPasswordFields } from '@/components/new-password-fields';
 import PasswordInput from '@/components/password-input';
 import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import { Button } from '@/components/ui/button';
@@ -56,26 +57,10 @@ export default function Security({
                                         />
                                         <InputError message={formErrors.current_password} />
                                     </div>
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="password">New password</Label>
-                                        <PasswordInput
-                                            id="password"
-                                            name="password"
-                                            autoComplete="new-password"
-                                            passwordrules={passwordRules}
-                                        />
-                                        <InputError message={formErrors.password} />
-                                    </div>
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="password_confirmation">
-                                            Repeat new password
-                                        </Label>
-                                        <PasswordInput
-                                            id="password_confirmation"
-                                            name="password_confirmation"
-                                            autoComplete="new-password"
-                                        />
-                                    </div>
+                                    <NewPasswordFields
+                                        passwordRules={passwordRules}
+                                        error={formErrors.password}
+                                    />
                                     <Button disabled={processing}>
                                         {processing && <Spinner />}
                                         Change password

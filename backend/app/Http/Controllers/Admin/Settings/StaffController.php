@@ -31,7 +31,7 @@ class StaffController extends AdminController
 
     public function store(StaffRequest $request, ManageAdminStaff $manage): RedirectResponse
     {
-        $manage->create($this->admin($request), $request->string('full_name')->trim()->toString(), $request->string('email')->toString(), $request->string('password')->toString(), $request->permissions());
+        $manage->create($this->admin($request), $request->string('full_name')->toString(), $request->string('email')->toString(), $request->string('password')->toString(), $request->permissions());
 
         return $this->done('Staff account created. They set up 2FA when they first sign in.');
     }

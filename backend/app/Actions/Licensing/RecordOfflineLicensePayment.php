@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 use App\Support\AdminGuard;
+use App\Support\PlatformSettings;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -40,7 +41,7 @@ final class RecordOfflineLicensePayment
                     'purpose' => Payment::PURPOSE_LICENSE,
                     'provider' => Payment::PROVIDER_MANUAL,
                     'intent_id' => $reference, // unique per provider: one transfer is recorded once
-                    'amount_centavos' => (int) DB::table('platform_settings')->value('license_fee_centavos'),
+                    'amount_centavos' => PlatformSettings::licenseFeeCentavos(),
                     'status' => Payment::PENDING,
                     'payer_user_id' => $license->operator_user_id,
                     'license_id' => $license->id,

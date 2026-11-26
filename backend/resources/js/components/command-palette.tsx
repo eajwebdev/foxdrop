@@ -1,13 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { adminNav } from '@/lib/navigation';
+import { useVisibleNav } from '@/lib/navigation';
+import { useCan } from '@/lib/permissions';
 import admin from '@/routes/admin';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Command } from 'cmdk';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Entry = { label: string; hint?: string; href: string };
+type Entry = { label: string; href: string };
 
 /**
  * ⌘K / Ctrl+K (§20.5): jump to any section, or search users, stores and riders by what was typed.
@@ -15,9 +16,8 @@ type Entry = { label: string; hint?: string; href: string };
 export function CommandPalette() {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
-    const user = usePage().props.auth.user;
-    const can = (permission?: string) =>
-        !permission || (user?.permissions as string[] | undefined)?.includes(permission);
+    const can = useCan();
+    const visibleNav = useVisibleNav();
 
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
@@ -31,9 +31,9 @@ export function CommandPalette() {
         return () => window.removeEventListener('keydown', onKey);
     }, []);
 
-    const sections: Entry[] = adminNav
-        .filter((item) => item.href && can(item.permission))
-        .map((item) => ({ label: item.title, href: item.href as string }));
+    const sections: Entry[] = visibleNav.flatMap((item) =>
+        item.href ? [{ label: item.title, href: item.href }] : [],
+    );
     const term = query.trim();
     const searches: Entry[] = term
         ? [

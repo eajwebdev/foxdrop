@@ -26,7 +26,7 @@ final class ChangeUserStatus
 
         return $this->change($admin, $user, User::STATUS_SUSPENDED, 'user.suspended', $reason, function (User $user): void {
             $user->tokens()->delete();
-            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->endWebSessions();
         });
     }
 

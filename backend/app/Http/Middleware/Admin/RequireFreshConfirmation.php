@@ -19,11 +19,7 @@ class RequireFreshConfirmation
     {
         $user = $request->user();
         if ($user instanceof User && IdentityConfirmation::confirmedUntil($request) === null) {
-            $request->validate(
-                ['confirm_password' => ['required', 'string', 'max:200'], 'confirm_code' => ['nullable', 'string', 'max:20']],
-                ['confirm_password.required' => 'Confirm it\'s you: enter your password and authenticator code.'],
-            );
-            IdentityConfirmation::confirm($request, $user, $request->string('confirm_password')->toString(), $request->input('confirm_code'));
+            IdentityConfirmation::confirmFromRequest($request, $user);
         }
 
         return $next($request);

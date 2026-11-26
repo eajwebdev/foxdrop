@@ -71,8 +71,9 @@ import ph.foxdrop.core.payments.CheckoutLauncher
 import ph.foxdrop.feature.operatorlicense.OperatorLicenseAction as Action
 import ph.foxdrop.feature.operatorlicense.OperatorLicenseState as State
 
-/** How often the status screen re-checks while the admin decides (DECISIONS 80). */
+/** How often the status screen re-checks while the admin decides (DECISIONS 80): every 10 s, slowing to 60 s. */
 internal const val STATUS_POLL_MILLIS = 10_000L
+internal const val STATUS_POLL_MAX_MILLIS = 60_000L
 
 /**
  * "Become a provincial operator" (§9.4 steps 1–2): the application form, then its status and the license payment.
@@ -105,9 +106,12 @@ fun OperatorLicenseRoute(
     LaunchedEffect(waitingForAdmin, lifecycleOwner) {
         if (waitingForAdmin) {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Quick at first (an admin often decides while the applicant watches), then gently slower.
+                var wait = STATUS_POLL_MILLIS
                 while (true) {
-                    delay(STATUS_POLL_MILLIS)
+                    delay(wait)
                     viewModel.onAction(Action.Poll)
+                    wait = (wait * 3 / 2).coerceAtMost(STATUS_POLL_MAX_MILLIS)
                 }
             }
         }

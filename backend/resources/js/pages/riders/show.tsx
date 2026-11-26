@@ -17,6 +17,7 @@ type RiderDetail = {
     license_expiry: string | null;
     rejection_reason: string | null;
     status_reason: string | null;
+    status_changes: string[];
     province: { id: string; name: string | null };
     person: {
         id: string;
@@ -62,45 +63,10 @@ export default function RiderShow({ rider }: { rider: RiderDetail }) {
                                 />
                             )}
                             <PartnerStatusActions
+                                kind="rider"
+                                name={name}
+                                changes={rider.status_changes}
                                 action={admin.riders.status.form(rider.id)}
-                                changes={[
-                                    ...(rider.status === 'APPROVED'
-                                        ? [
-                                              {
-                                                  to: 'SUSPENDED',
-                                                  label: 'Suspend',
-                                                  title: `Suspend ${name}?`,
-                                                  description:
-                                                      'They go offline at once and get no jobs until reinstated.',
-                                                  destructive: true,
-                                              },
-                                          ]
-                                        : []),
-                                    ...(rider.status === 'SUSPENDED'
-                                        ? [
-                                              {
-                                                  to: 'APPROVED',
-                                                  label: 'Reinstate',
-                                                  title: `Reinstate ${name}?`,
-                                                  description:
-                                                      'They can go online and take jobs again.',
-                                                  reason: false,
-                                              },
-                                          ]
-                                        : []),
-                                    ...(rider.status === 'APPROVED' || rider.status === 'SUSPENDED'
-                                        ? [
-                                              {
-                                                  to: 'DEACTIVATED',
-                                                  label: 'Deactivate',
-                                                  title: `Deactivate ${name} for good?`,
-                                                  description:
-                                                      'A deactivated rider cannot ride for FoxDrop again without a new application.',
-                                                  destructive: true,
-                                              },
-                                          ]
-                                        : []),
-                                ]}
                             />
                         </>
                     )

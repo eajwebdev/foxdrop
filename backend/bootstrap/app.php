@@ -57,9 +57,11 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($status === 500 && config('app.debug')) {
                 return $response; // keep the debug page locally
             }
+            // Only messages our own code wrote for people (abort() in Actions: 403/409) are shown; framework messages
+            // such as "No query results for model …" (a wrapped ModelNotFoundException) never reach the page.
             $message = match (true) {
                 $status === 429 => 'Too many tries. Please wait a minute and try again.',
-                $e instanceof HttpExceptionInterface && $e->getMessage() !== '' => $e->getMessage(),
+                in_array($status, [403, 409], true) && $e instanceof HttpExceptionInterface && $e->getPrevious() === null && $e->getMessage() !== '' => $e->getMessage(),
                 default => null,
             };
 

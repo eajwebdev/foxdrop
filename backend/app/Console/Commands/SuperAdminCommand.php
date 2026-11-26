@@ -41,16 +41,16 @@ class SuperAdminCommand extends Command
             $user = User::query()->where('email', $email)->first();
             $created = $user === null;
             $user ??= User::query()->create(['full_name' => (string) ($this->option('name') ?: 'FoxDrop Admin'), 'email' => $email]);
-            $user->forceFill(array_filter([
+            $user->forceFill([
                 'password' => $password,
                 'status' => User::STATUS_ACTIVE,
                 'email_verified_at' => $user->email_verified_at ?? now(),
-            ]))->save();
+            ])->save();
             if ($this->option('reset-2fa')) {
-                $user->forceFill(['two_factor_secret' => null, 'two_factor_recovery_codes' => null, 'two_factor_confirmed_at' => null])->save();
+                $user->resetTwoFactor();
             }
             $grantRole($user->id, AppRole::SuperAdmin);
-            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->endWebSessions();
 
             $audit(null, $created ? 'admin.super_admin_created' : 'admin.super_admin_reset', 'user', $user->id,
                 after: ['reset_2fa' => (bool) $this->option('reset-2fa')]);

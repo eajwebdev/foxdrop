@@ -2,10 +2,14 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Rider;
+use App\Models\Store;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
- * Suspend / reinstate / close (stores) or deactivate (riders). A reason is needed for everything but reinstating.
+ * Suspend / reinstate / close (stores) or deactivate (riders). Every change but reinstating needs a reason; which
+ * change is allowed now is the model's STATUS_CHANGES, checked by the Action.
  */
 class ChangePartnerStatusRequest extends FormRequest
 {
@@ -19,16 +23,18 @@ class ChangePartnerStatusRequest extends FormRequest
      */
     public function rules(): array
     {
+        $reinstated = [Store::REINSTATED, Rider::REINSTATED];
+
         return [
-            'status' => ['required', 'string', 'in:SUSPENDED,ACTIVE,CLOSED,APPROVED,DEACTIVATED'],
-            'reason' => ['required_unless:status,ACTIVE,APPROVED', 'nullable', 'string', 'min:5', 'max:300'],
+            'status' => ['required', 'string', Rule::in([...array_keys(Store::STATUS_CHANGES), ...array_keys(Rider::STATUS_CHANGES)])],
+            'reason' => [Rule::requiredIf(fn (): bool => ! in_array($this->input('status'), $reinstated, true)), 'nullable', ...ReasonRequest::REASON],
         ];
     }
 
     public function reason(): ?string
     {
-        $reason = trim($this->string('reason')->toString());
+        $reason = $this->input('reason');
 
-        return $reason === '' ? null : $reason;
+        return is_string($reason) ? $reason : null;
     }
 }

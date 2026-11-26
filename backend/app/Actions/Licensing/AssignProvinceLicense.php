@@ -8,6 +8,7 @@ use App\Models\Province;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 use App\Support\AdminGuard;
+use App\Support\PlatformSettings;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -27,20 +28,15 @@ final class AssignProvinceLicense
         abort_if($operator->isPlatformAdmin(), 409, 'Admin accounts cannot run a province.');
 
         return DB::transaction(function () use ($admin, $province, $operator): ProvinceLicense {
-            $available = DB::table('province_directory')->where('id', $province->id)->value('is_available');
-            abort_unless((bool) $available, 409, 'This province already has an operator or is not enabled.');
-            abort_if(
-                ProvinceLicense::query()->where('operator_user_id', $operator->id)->whereIn('status', ProvinceLicense::LIVE)->exists(),
-                409,
-                'This account already holds a license or an open application.',
-            );
+            abort_unless(Province::isAvailable($province->id), 409, 'This province already has an operator or is not enabled.');
+            abort_if(ProvinceLicense::heldLiveBy($operator->id), 409, 'This account already holds a license or an open application.');
 
             try {
                 $license = ProvinceLicense::query()->create([
                     'province_id' => $province->id,
                     'operator_user_id' => $operator->id,
                     'status' => ProvinceLicense::PENDING_PAYMENT,
-                    'fee_centavos' => (int) DB::table('platform_settings')->value('license_fee_centavos'),
+                    'fee_centavos' => PlatformSettings::licenseFeeCentavos(),
                 ]);
             } catch (UniqueConstraintViolationException) {
                 abort(409, 'This province already has an operator.'); // someone applied in the same instant

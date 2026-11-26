@@ -32,7 +32,7 @@ class AssignLicenseRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
-            $this->operator = User::query()->whereAccount($this->string('operator')->trim()->toString())->first();
+            $this->operator = User::query()->whereAccount($this->string('operator')->toString())->first();
             if ($this->operator === null) {
                 $validator->errors()->add('operator', 'No account has this email or mobile number.');
             }

@@ -6,6 +6,7 @@ import { EmptyState, Page } from '@/components/admin/page';
 import { StatusBadge } from '@/components/admin/status-badge';
 import { formatDateTime, humanize } from '@/lib/format';
 import admin from '@/routes/admin';
+import type { Option } from '@/types';
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Store } from 'lucide-react';
@@ -20,7 +21,6 @@ type StoreRow = {
     owner: { full_name: string | null; phone: string | null } | null;
     created_at: string | null;
 };
-type Option = { value: string; label: string };
 
 const columns: ColumnDef<StoreRow>[] = [
     { header: 'Store', accessorKey: 'name' },

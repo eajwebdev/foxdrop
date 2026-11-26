@@ -5,9 +5,9 @@ import { StatusBadge } from '@/components/admin/status-badge';
 import { formatDateTime } from '@/lib/format';
 import { useCan } from '@/lib/permissions';
 import admin from '@/routes/admin';
+import type { Person } from '@/types';
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
 
-type Person = { id: string; full_name: string | null; email: string | null; phone: string | null };
 type Application = {
     id: string;
     status: string;

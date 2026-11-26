@@ -2,9 +2,12 @@
 
 namespace App\Queries\Admin;
 
+use App\Models\Province;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Small shapes shared by the admin pages (dates as ISO-8601 UTC; the page shows them in Asia/Manila).
@@ -27,6 +30,30 @@ final class Present
             'email' => $user->email,
             'phone' => $user->phone,
         ];
+    }
+
+    /**
+     * The province a record belongs to, with its `province` relation (select `id,name`) loaded.
+     *
+     * @return array{id: string, name: string|null}
+     */
+    public static function province(Model $record): array
+    {
+        /** @var Province|null $province */
+        $province = $record->getRelationValue('province');
+
+        return ['id' => (string) $record->getAttribute('province_id'), 'name' => $province?->name];
+    }
+
+    /**
+     * People by id, for showing several rows' actors or operators with one query.
+     *
+     * @param  iterable<string|null>  $ids
+     * @return Collection<string, User>
+     */
+    public static function peopleById(iterable $ids): Collection
+    {
+        return User::query()->whereIn('id', collect($ids)->filter()->unique()->values())->get()->keyBy('id');
     }
 
     /**

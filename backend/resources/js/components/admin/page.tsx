@@ -76,12 +76,10 @@ export function EmptyState({
     icon: Icon = Inbox,
     title,
     description,
-    action,
 }: {
     icon?: LucideIcon;
     title: string;
     description?: string;
-    action?: ReactNode;
 }) {
     return (
         <div
@@ -97,12 +95,11 @@ export function EmptyState({
                     <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
                 )}
             </div>
-            {action}
         </div>
     );
 }
 
-export function ErrorState({ message, onRetry }: { message?: string; onRetry: () => void }) {
+export function ErrorState({ onRetry }: { onRetry: () => void }) {
     return (
         <div
             className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center"
@@ -114,7 +111,7 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry: ()
             <div className="space-y-1">
                 <p className="font-medium">This did not load</p>
                 <p className="text-sm text-muted-foreground">
-                    {message ?? 'Check your connection and try again.'}
+                    Check your connection and try again.
                 </p>
             </div>
             <Button variant="outline" onClick={onRetry}>

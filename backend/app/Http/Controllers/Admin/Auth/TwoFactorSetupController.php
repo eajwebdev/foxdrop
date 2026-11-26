@@ -22,13 +22,13 @@ class TwoFactorSetupController extends Controller
         $user = $request->user();
         // Right after confirming, the page stays once more to show the recovery codes.
         $justConfirmed = $request->session()->get('status') === Fortify::TWO_FACTOR_AUTHENTICATION_CONFIRMED;
-        if ($user->two_factor_confirmed_at !== null && ! $justConfirmed) {
+        if ($user->hasEnabledTwoFactorAuthentication() && ! $justConfirmed) {
             return redirect()->route('admin.dashboard');
         }
 
         return Inertia::render('auth/two-factor-setup', [
             'pending' => $user->two_factor_secret !== null && $user->two_factor_confirmed_at === null,
-            'enabled' => $user->two_factor_confirmed_at !== null,
+            'enabled' => $user->hasEnabledTwoFactorAuthentication(),
         ]);
     }
 }

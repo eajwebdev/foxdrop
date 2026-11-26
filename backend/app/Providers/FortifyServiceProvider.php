@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Audit\RecordAudit;
 use App\Models\User;
+use App\Support\IdentityConfirmation;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -92,8 +93,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         Event::listen(function (Login $event) use ($audit): void {
             if ($event->guard === 'web' && $event->user instanceof User) {
-                // The password was just checked: setting up or re-keying 2FA right away needs no second prompt.
-                session()->put('auth.password_confirmed_at', now()->unix());
+                // Password + authenticator were just checked: that counts as "confirm it's you" (DECISIONS 75).
+                IdentityConfirmation::markConfirmed(request());
                 $audit($event->user, 'admin.signed_in', $event->user);
             }
         });

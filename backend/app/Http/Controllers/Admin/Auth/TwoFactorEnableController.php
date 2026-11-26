@@ -18,7 +18,7 @@ class TwoFactorEnableController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $enable($user, $user->two_factor_confirmed_at === null && $request->boolean('force'));
+        $enable($user, ! $user->hasEnabledTwoFactorAuthentication() && $request->boolean('force'));
 
         return app(TwoFactorEnabledResponse::class);
     }

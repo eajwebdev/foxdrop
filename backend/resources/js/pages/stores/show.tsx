@@ -22,6 +22,7 @@ type StoreDetail = {
     location: { lat: number; lng: number } | null;
     rejection_reason: string | null;
     status_reason: string | null;
+    status_changes: string[];
     province: { id: string; name: string | null };
     owner: {
         id: string;
@@ -41,8 +42,6 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
             { title: store.name, href: admin.stores.show.url(store.id) },
         ],
     });
-    const statusAction = admin.stores.status.form(store.id);
-    const live = store.status === 'ACTIVE' || store.status === 'PAUSED';
 
     return (
         <>
@@ -68,45 +67,10 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                                 />
                             )}
                             <PartnerStatusActions
-                                action={statusAction}
-                                changes={[
-                                    ...(live
-                                        ? [
-                                              {
-                                                  to: 'SUSPENDED',
-                                                  label: 'Suspend',
-                                                  title: `Suspend ${store.name}?`,
-                                                  description:
-                                                      'Customers stop seeing the store until it is reinstated.',
-                                                  destructive: true,
-                                              },
-                                          ]
-                                        : []),
-                                    ...(store.status === 'SUSPENDED'
-                                        ? [
-                                              {
-                                                  to: 'ACTIVE',
-                                                  label: 'Reinstate',
-                                                  title: `Reinstate ${store.name}?`,
-                                                  description:
-                                                      'The store is live for customers again.',
-                                                  reason: false,
-                                              },
-                                          ]
-                                        : []),
-                                    ...(live || store.status === 'SUSPENDED'
-                                        ? [
-                                              {
-                                                  to: 'CLOSED',
-                                                  label: 'Close store',
-                                                  title: `Close ${store.name} for good?`,
-                                                  description:
-                                                      'A closed store cannot be reopened; the owner would apply again.',
-                                                  destructive: true,
-                                              },
-                                          ]
-                                        : []),
-                                ]}
+                                kind="store"
+                                name={store.name}
+                                changes={store.status_changes}
+                                action={admin.stores.status.form(store.id)}
                             />
                         </>
                     )

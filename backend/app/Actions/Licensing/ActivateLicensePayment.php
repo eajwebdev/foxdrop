@@ -11,8 +11,8 @@ use App\Contracts\PaymentPurposeHandler;
 use App\Enums\AppRole;
 use App\Models\Payment;
 use App\Models\ProvinceLicense;
+use App\Support\PlatformSettings;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -33,7 +33,7 @@ final class ActivateLicensePayment implements PaymentPurposeHandler
     public function onPaid(Payment $payment): void
     {
         $license = ProvinceLicense::query()->lockForUpdate()->findOrFail($payment->license_id);
-        $termDays = (int) DB::table('platform_settings')->value('license_term_days');
+        $termDays = PlatformSettings::licenseTermDays();
 
         if ($license->status === ProvinceLicense::PENDING_PAYMENT) {
             $license->forceFill(['status' => ProvinceLicense::ACTIVE, 'start_at' => now(), 'end_at' => now()->addDays($termDays)]);
@@ -58,8 +58,7 @@ final class ActivateLicensePayment implements PaymentPurposeHandler
             idempotencyKey: 'license-payment:'.$payment->id,
             provinceId: $license->province_id,
             lines: [
-                // Money taken outside the gateway clears through its own account (DECISIONS 76).
-                new LedgerLine(($this->wallet)('SYSTEM', null, null, $payment->provider === Payment::PROVIDER_MANUAL ? 'OFFLINE_RECEIPTS' : 'GATEWAY_CLEARING'), -$payment->amount_centavos, 'LICENSE_FEE'),
+                new LedgerLine(($this->wallet)('SYSTEM', null, null, $payment->clearingWalletKind()), -$payment->amount_centavos, 'LICENSE_FEE'),
                 new LedgerLine(($this->wallet)('PLATFORM', null, null, 'PLATFORM_REVENUE'), $payment->amount_centavos, 'LICENSE_FEE'),
             ],
             refType: 'payment',

@@ -1,4 +1,5 @@
 import type { AdminPermission } from '@/lib/permissions';
+import { useCan } from '@/lib/permissions';
 import admin from '@/routes/admin';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -21,7 +22,6 @@ export type AdminNavItem = {
     href?: string;
     icon: LucideIcon;
     permission?: AdminPermission;
-    superAdminOnly?: boolean;
     /** Extra paths that count as this section (detail pages). */
     match?: string[];
 };
@@ -56,3 +56,10 @@ export const adminNav: AdminNavItem[] = [
         match: ['/admin/settings'],
     },
 ];
+
+/** The sections the signed-in admin may open (sidebar and command palette). The server checks every one again. */
+export function useVisibleNav(): AdminNavItem[] {
+    const can = useCan();
+
+    return adminNav.filter((item) => !item.permission || can(item.permission));
+}

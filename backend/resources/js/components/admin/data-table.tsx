@@ -9,7 +9,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { formatNumber } from '@/lib/format';
-import { Link, router } from '@inertiajs/react';
+import { visitWithQuery } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -76,7 +77,6 @@ export function DataTable<T>({
                                     {index === 0 && rowHref ? (
                                         <Link
                                             href={rowHref(row.original)}
-                                            prefetch
                                             className="font-medium after:absolute after:inset-0 focus-visible:outline-none"
                                         >
                                             {flexRender(
@@ -99,11 +99,7 @@ export function DataTable<T>({
 }
 
 function Pagination({ meta }: { meta: PageMeta }) {
-    const go = (page: number) => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('page', String(page));
-        router.get(url.pathname + url.search, {}, { preserveState: true, preserveScroll: false });
-    };
+    const go = (page: number) => visitWithQuery({ page: String(page) });
     const from = meta.total === 0 ? 0 : (meta.page - 1) * meta.per_page + 1;
     const to = Math.min(meta.page * meta.per_page, meta.total);
 
@@ -137,12 +133,12 @@ function Pagination({ meta }: { meta: PageMeta }) {
 }
 
 /** Skeleton rows while a deferred list loads. */
-export function TableSkeleton({ rows = 6, columns = 5 }: { rows?: number; columns?: number }) {
+export function TableSkeleton({ rows = 6 }: { rows?: number }) {
     return (
         <div className="space-y-3 p-3" aria-busy="true" aria-label="Loading">
             {Array.from({ length: rows }, (_, row) => (
                 <div key={row} className="flex gap-4">
-                    {Array.from({ length: columns }, (_, column) => (
+                    {Array.from({ length: 5 }, (_, column) => (
                         <Skeleton key={column} className="h-5 flex-1" />
                     ))}
                 </div>

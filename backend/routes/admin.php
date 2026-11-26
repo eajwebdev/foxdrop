@@ -19,6 +19,7 @@ use App\Http\Middleware\Admin\EnsureTwoFactorEnabled;
 use App\Http\Middleware\Admin\ForgetRememberMe;
 use App\Http\Middleware\Admin\RequireFreshConfirmation;
 use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 use Laravel\Fortify\Http\Controllers\ConfirmedTwoFactorAuthenticationController;
@@ -40,7 +41,8 @@ Route::prefix('admin')->group(function (): void {
         Route::post('two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])->middleware('throttle:two-factor')->name('two-factor.login.store');
     });
 
-    Route::middleware(['auth:web', EnsureAdminAccount::class])->group(function (): void {
+    // AuthenticateSession: a password change or reset signs out every other session on its next request.
+    Route::middleware(['auth:web', AuthenticateSession::class, EnsureAdminAccount::class])->group(function (): void {
         Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
         Route::get('confirm-access', [ConfirmAccessController::class, 'show'])->name('password.confirm');
         Route::post('confirm-access', [ConfirmAccessController::class, 'store'])->middleware('throttle:6,1')->name('password.confirm.store');

@@ -3,7 +3,7 @@ import { Page, Section } from '@/components/admin/page';
 import { SettingsTabs } from '@/components/admin/settings-tabs';
 import { StatusBadge } from '@/components/admin/status-badge';
 import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
+import { NewPasswordFields } from '@/components/new-password-fields';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -216,33 +216,6 @@ function CreateStaffDialog({
                 </>
             )}
         />
-    );
-}
-
-function NewPasswordFields({ passwordRules, error }: { passwordRules: string; error?: string }) {
-    return (
-        <>
-            <div className="grid gap-1.5">
-                <Label htmlFor="password">Password</Label>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    autoComplete="new-password"
-                    passwordrules={passwordRules}
-                    required
-                />
-                <InputError message={error} />
-            </div>
-            <div className="grid gap-1.5">
-                <Label htmlFor="password_confirmation">Repeat password</Label>
-                <PasswordInput
-                    id="password_confirmation"
-                    name="password_confirmation"
-                    autoComplete="new-password"
-                    required
-                />
-            </div>
-        </>
     );
 }
 

@@ -3,13 +3,13 @@
 namespace App\Queries\Admin;
 
 use App\Enums\AppRole;
+use App\Models\AuditLog;
 use App\Models\Province;
 use App\Models\Rider;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserRole;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Every account (customers, riders, store teams, operators, admins) for the Users pages (§9.5 step 3).
@@ -53,18 +53,18 @@ final class UserQueries
             'status' => $user->status,
             'created_at' => Present::date($user->created_at),
             'is_admin' => $user->isPlatformAdmin(),
-            'two_factor_enabled' => $user->two_factor_confirmed_at !== null,
+            'two_factor_enabled' => $user->hasEnabledTwoFactorAuthentication(),
             'roles' => array_values($user->roles->map(fn (UserRole $grant): array => [
                 'role' => $grant->role->value,
                 'province' => $grant->province_id === null ? null : ['id' => $grant->province_id, 'name' => $provinces[$grant->province_id] ?? null],
                 'store' => $grant->store_id === null ? null : ['id' => $grant->store_id, 'name' => $stores[$grant->store_id] ?? null],
             ])->all()),
             'rider' => $rider === null ? null : ['id' => $rider->id, 'status' => $rider->status],
-            'history' => array_values(DB::table('audit_logs')
+            'history' => array_values(AuditLog::query()
                 ->where('entity_type', 'user')->where('entity_id', $user->id)
-                ->orderByDesc('created_at')->orderByDesc('id')->limit(10)
+                ->orderByDesc('id')->limit(10)
                 ->get(['action', 'created_at', 'after'])
-                ->map(fn (object $row): array => ['action' => $row->action, 'at' => $row->created_at, 'after' => json_decode((string) $row->after, true)])
+                ->map(fn (AuditLog $entry): array => ['action' => $entry->action, 'at' => Present::date($entry->created_at), 'after' => $entry->after])
                 ->all()),
         ];
     }

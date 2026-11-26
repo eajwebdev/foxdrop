@@ -60,6 +60,43 @@ class ProvinceLicense extends Model
     }
 
     /**
+     * The running status the term allows today (§5.1): ACTIVE until `end_at`, then GRACE for [graceDays], then
+     * EXPIRED. The one place this rule lives: the daily job and lifting a suspension both use it.
+     */
+    public function statusForTerm(int $graceDays): string
+    {
+        $endAt = $this->end_at ?? now();
+
+        return match (true) {
+            $endAt->isFuture() => self::ACTIVE,
+            $endAt->copy()->addDays($graceDays)->isFuture() => self::GRACE,
+            default => self::EXPIRED,
+        };
+    }
+
+    /**
+     * Whether [userId] already holds a live license (or an application) for any province: one province per operator.
+     */
+    public static function heldLiveBy(string $userId): bool
+    {
+        return static::query()->where('operator_user_id', $userId)->whereIn('status', self::LIVE)->exists();
+    }
+
+    /**
+     * What an admin may do with this license now (the admin web shows only these buttons; the Actions check again).
+     *
+     * @return array{can_pay: bool, can_suspend: bool, can_reinstate: bool}
+     */
+    public function adminChanges(): array
+    {
+        return [
+            'can_pay' => in_array($this->status, self::PAYABLE, true),
+            'can_suspend' => in_array($this->status, self::OPERATING, true),
+            'can_reinstate' => $this->status === self::SUSPENDED,
+        ];
+    }
+
+    /**
      * @return BelongsTo<Province, $this>
      */
     public function province(): BelongsTo

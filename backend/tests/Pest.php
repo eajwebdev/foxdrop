@@ -1,12 +1,14 @@
 <?php
 
 use App\Contracts\SmsSender;
+use App\Enums\AdminPermission;
 use App\Enums\AppRole;
 use App\Models\User;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 pest()->extend(TestCase::class)
@@ -80,6 +82,48 @@ function fakeSms(): FakeSmsSender
     app()->instance(SmsSender::class, $fake);
 
     return $fake;
+}
+
+/** The authenticator secret every test admin uses (base32). */
+const ADMIN_TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
+const ADMIN_PASSWORD = 'Admin-password-2026';
+
+/**
+ * An admin-web account: super admin, or admin staff holding [permissions]; 2FA confirmed unless [twoFactor] is false.
+ *
+ * @param  list<AdminPermission>  $permissions
+ */
+function adminUser(bool $superAdmin = false, array $permissions = [], bool $twoFactor = true): User
+{
+    $factory = User::factory()->withEmail(ADMIN_PASSWORD)->withRole($superAdmin ? AppRole::SuperAdmin : AppRole::AdminStaff);
+    $admin = ($twoFactor ? $factory->withTwoFactor(ADMIN_TOTP_SECRET) : $factory)->create();
+    foreach ($permissions as $permission) {
+        DB::table('admin_permissions')->insert(['user_id' => $admin->id, 'permission' => $permission->value]);
+    }
+
+    return $admin->fresh() ?? $admin;
+}
+
+function superAdmin(): User
+{
+    return adminUser(superAdmin: true);
+}
+
+/** The current 6-digit code for ADMIN_TOTP_SECRET. */
+function totp(): string
+{
+    return (new Google2FA)->getCurrentOtp(ADMIN_TOTP_SECRET);
+}
+
+/**
+ * Session data for an admin who confirmed it was them a moment ago (DECISIONS 75).
+ *
+ * @return array<string, int>
+ */
+function confirmedSession(): array
+{
+    return ['auth.password_confirmed_at' => now()->unix()];
 }
 
 /**

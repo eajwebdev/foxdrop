@@ -39,6 +39,18 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Two-factor authentication confirmed with [secret] (base32), as an admin who finished the setup.
+     */
+    public function withTwoFactor(string $secret): static
+    {
+        return $this->state(fn (): array => [
+            'two_factor_secret' => encrypt($secret),
+            'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1', 'recovery-code-2'])),
+            'two_factor_confirmed_at' => now(),
+        ]);
+    }
+
     public function suspended(): static
     {
         return $this->state(fn (): array => ['status' => User::STATUS_SUSPENDED]);

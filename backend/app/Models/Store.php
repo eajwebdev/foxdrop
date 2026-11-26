@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasStatusChanges;
 use App\Models\Concerns\ReviewedByProvinceOperators;
 use App\Models\Concerns\VisibleToViewer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\DB;
  * @property string $name
  * @property string $status
  * @property string|null $rejection_reason
+ * @property string|null $status_reason
  * @property string $category
  * @property string $address_line
  * @property string $city
@@ -32,7 +34,7 @@ use Illuminate\Support\Facades\DB;
 ])]
 class Store extends Model
 {
-    use HasUuids, ReviewedByProvinceOperators, VisibleToViewer;
+    use HasStatusChanges, HasUuids, ReviewedByProvinceOperators, VisibleToViewer;
 
     public const string SUBMITTED = 'SUBMITTED';
 
@@ -40,11 +42,27 @@ class Store extends Model
 
     public const string REJECTED = 'REJECTED';
 
+    public const string SUSPENDED = 'SUSPENDED';
+
+    public const string CLOSED = 'CLOSED';
+
+    public const string PAUSED = 'PAUSED';
+
+    /** Admin / operator changes of a live store: target status => statuses it may come from (DECISIONS 79). */
+    public const array STATUS_CHANGES = [
+        self::SUSPENDED => [self::ACTIVE, self::PAUSED],
+        self::ACTIVE => [self::SUSPENDED],
+        self::CLOSED => [self::ACTIVE, self::PAUSED, self::SUSPENDED],
+    ];
+
+    /** Lifting a suspension returns the store here. */
+    public const string REINSTATED = self::ACTIVE;
+
     /** A storefront customers can see (§5.2). */
-    public const array PUBLISHED_STATUSES = ['ACTIVE', 'PAUSED'];
+    public const array PUBLISHED_STATUSES = [self::ACTIVE, self::PAUSED];
 
     /** Statuses a reviewer may list (§9.4 step 4). */
-    public const array REVIEW_FILTERS = [self::SUBMITTED, self::ACTIVE, 'PAUSED', 'SUSPENDED', self::REJECTED, 'CLOSED'];
+    public const array REVIEW_FILTERS = [self::SUBMITTED, self::ACTIVE, self::PAUSED, self::SUSPENDED, self::REJECTED, self::CLOSED];
 
     /**
      * @return BelongsTo<Province, $this>

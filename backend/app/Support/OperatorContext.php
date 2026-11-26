@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\AdminPermission;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 
@@ -34,7 +35,12 @@ final readonly class OperatorContext
      */
     public static function ensureReviewer(User $user): void
     {
-        abort_unless($user->isPlatformAdmin() || $user->operatorProvinceIds() !== [], 403, 'This needs a provincial operator account.');
+        if ($user->isPlatformAdmin()) {
+            abort_unless($user->hasAdminPermission(AdminPermission::PartnersView), 403, 'You do not have permission to do this.');
+
+            return;
+        }
+        abort_unless($user->operatorProvinceIds() !== [], 403, 'This needs a provincial operator account.');
     }
 
     /**
@@ -47,19 +53,5 @@ final readonly class OperatorContext
             403,
             'Your province license is not active. Renew it to make changes.',
         );
-    }
-
-    /**
-     * Partner reviews: platform admins may review anywhere (override); an operator team member only in the province
-     * they currently run, and only while its license is operating.
-     */
-    public static function ensureCanReview(User $reviewer, string $provinceId): void
-    {
-        if ($reviewer->isPlatformAdmin()) {
-            return;
-        }
-        $context = self::for($reviewer);
-        abort_unless($context->provinceId === $provinceId, 404);
-        $context->ensureCanChange();
     }
 }

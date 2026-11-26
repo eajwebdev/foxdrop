@@ -224,3 +224,65 @@ Format: **what** — why — revisit when.
 70. **Zones are not yet clipped to the province boundary** (Phase 2 security review, low risk now): coverage decides
     nothing until ordering. Phase 3 checks that a delivery address lies in a zone *of the store's province*, and
     province boundaries (PSGC shapes) are added if zones must be clipped.
+
+## Phase W1 (2026-11-26)
+
+71. **The admin web follows the current official Laravel React starter kit**: Inertia **v3** (the kit moved on from
+    v2 after MASTER_PROMPT was written; deferred props and `usePoll` are unchanged), React 19, TypeScript strict,
+    Tailwind v4, shadcn/ui, Fortify and Wayfinder. Its files are copied into `backend/` without registration,
+    passkeys or e-mail verification. The kit's Vite+ toolchain (`vp`) is **not** used: plain Vite 8 (already in
+    `backend/`) with ESLint + Prettier + Vitest, as §20.1/§20.7 name them.
+72. **Who is an admin stays in `user_roles`** (`super_admin`, `admin_staff`); **what an admin-staff account may do
+    is a row in `admin_permissions`** (user, permission; the database check lists the permissions of the
+    `AdminPermission` enum). Routes check them with `can:` middleware; every shared Action authorizes through a
+    model policy (`app/Policies`: licenses, provinces, operator applications, users, stores and riders; the store and
+    rider policies also hold the operator rule). `super_admin` passes every admin permission. spatie/laravel-permission (§20.1) was installed and removed:
+    its `roles` relation clashes with `User::roles()` (our `user_roles`), and it would keep a second set of roles.
+    Admin staff management is super-admin only.
+73. **`audit_logs` is the one audit trail** (append-only, written inside each Action's transaction).
+    spatie/laravel-activitylog is not added: it would be a second, editable log. Admin sign-in, sign-out, failed
+    sign-in and 2FA changes are audited too.
+74. **Admin sign-in is email + password for ACTIVE admin accounts only**; everyone else gets the same "credentials do
+    not match" answer. 2FA (TOTP) is required before any page opens; it cannot be turned off, only re-keyed after a
+    fresh confirmation. There is no registration and no e-mail password reset until mail is configured (Phase 7);
+    the super admin resets staff passwords, and `php artisan foxdrop:admin-password` resets anyone's on the server.
+    Sessions expire after 30 idle minutes.
+75. **Dangerous admin actions need "Confirm it's you" within 15 minutes**: password + a current authenticator code.
+    This covers license changes, suspensions, admin staff changes and re-keying 2FA. Signing in (password + code) is
+    such a confirmation too, so the first 15 minutes after sign-in need no second prompt. A password change or reset
+    also signs out the account's other sessions (`AuthenticateSession` on the admin routes).
+76. **Offline license payments** (bank transfer or cash to the platform) are recorded by an admin as a `manual`
+    payment and run through the same `SettlePayment` → `ActivateLicensePayment` path as PayMongo. The ledger debits
+    a new SYSTEM wallet `OFFLINE_RECEIPTS` instead of `GATEWAY_CLEARING`, so gateway reconciliation (Phase 5) stays
+    exact. The bank reference is the payment's `intent_id`, unique per provider, so one transfer cannot be
+    recorded twice.
+77. **A SUSPENDED license keeps the province exclusive**: the unique live-license index and `is_available` now
+    include SUSPENDED, so a suspension is not an opening for someone else. Customers cannot order there, and the
+    operator is read-only. Reinstating returns ACTIVE, or GRACE/EXPIRED if the term ran out meanwhile.
+78. **Assigning a province** (no application, e.g. a deal made offline) creates the license in `PENDING_PAYMENT` for
+    an existing user. The operator then pays in the app, or the admin records the offline payment.
+79. **Admin overrides for partners**:
+    - Stores can be suspended, reinstated or deactivated (`CLOSED`); riders can be suspended, reinstated or
+      deactivated. All of these carry a reason that the partner sees.
+    - Suspending a user account also revokes their API tokens and web sessions.
+    - Nobody can suspend themselves. Only the super admin can suspend another admin.
+80. **The operator application status screen polls while it waits** (every 10 s, slowing to 60 s, only while visible
+    and SUBMITTED or waiting for payment; a check still on its way is not repeated), so an approval in the web shows
+    in the app within seconds without push (FCM arrives in Phase 3/6).
+81. **Deferred W1 refactors** (from /simplify; working and tested as they are):
+    - Admin detail pages build their own shape instead of reusing the API review resources: the document URLs and the
+      person shape differ.
+    - A filter change costs two requests: the page shell, then its deferred list. Partial reloads (`only`) per list
+      follow in W2 together with saved filters.
+    - The cross-province lists filter by status alone. Status-first indexes are added when stores and riders reach
+      the thousands (Phase 6 load test).
+    - The province page reads its current license with one extra query.
+    - The dashboard shows each admin only the numbers their permissions cover (franchises, partners, users).
+82. **Admin accounts have no access to the app API** (Phase W1 security review). The API has no 2FA. So it refuses to
+    give an admin account a token, and refuses any token one already holds, with "Admin accounts sign in on the
+    FoxDrop Admin website". The admin override for stores and riders now lives only in the 2FA-protected web.
+    The apps already sent admins away (DECISIONS 20, 34).
+    - A password change, a password reset or a 2FA reset signs the account out everywhere: web sessions and API
+      tokens.
+    - `foxdrop:super-admin` refuses to promote an existing non-admin account (anyone can register an email through the
+      app) unless run with `--promote-existing`.

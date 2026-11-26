@@ -26,11 +26,16 @@ use RuntimeException;
  *   +63 917 000 0009  Teresa Montelibano  store owner, Bacolod Botika
  *   +63 917 000 0011  Nena Villareal      applied to open "Lola Nena's Bakery" (waiting for the operator)
  *   +63 917 000 0012  Jomar Tan           applied as a rider (waiting for the operator)
- *   admin@foxdrop.local / foxdrop-local-admin   super admin (web dashboard only)
+ *   +63 917 000 0013  Elena Ramos         applied to run Cebu (waiting for the admin)
+ *   admin@foxdrop.local / foxdrop-local-admin   super admin (web dashboard only; sets up 2FA at first sign-in)
+ *   staff@foxdrop.local / foxdrop-local-staff   admin staff: franchises (view), partners, users (view)
  */
 class DemoSeeder extends Seeder
 {
     public const string NEGROS_OCCIDENTAL = '0604500000';
+
+    /** Elena Ramos's application to run Cebu, waiting for the admin (Phase W1). */
+    public const string CEBU_APPLICATION = '00000000-0000-4000-b000-000000000013';
 
     public function run(): void
     {
@@ -47,6 +52,7 @@ class DemoSeeder extends Seeder
             $this->addresses($neg);
             $this->wallets($neg);
             $this->applicationsToReview($neg);
+            $this->operatorApplicationToReview();
         });
     }
 
@@ -103,6 +109,49 @@ class DemoSeeder extends Seeder
         DB::table('users')->insertOrIgnore($rows);
 
         DB::table('user_roles')->insertOrIgnore(['user_id' => self::userId(10), 'role' => 'super_admin']);
+
+        // Admin staff with a partial set of permissions (DECISIONS 72): can see franchises and handle partners.
+        DB::table('users')->insertOrIgnore([
+            'id' => self::userId(14),
+            'full_name' => 'Bea Santiago',
+            'email' => 'staff@foxdrop.local',
+            'email_verified_at' => now(),
+            'password' => Hash::make('foxdrop-local-staff'),
+        ]);
+        DB::table('user_roles')->insertOrIgnore(['user_id' => self::userId(14), 'role' => 'admin_staff']);
+        DB::table('admin_permissions')->insertOrIgnore(array_map(fn (string $permission): array => [
+            'user_id' => self::userId(14), 'permission' => $permission, 'granted_by' => self::userId(10),
+        ], ['franchises.view', 'partners.view', 'partners.manage', 'users.view']));
+    }
+
+    /**
+     * An operator application waiting for the admin (Phase W1): Elena Ramos wants Cebu.
+     */
+    private function operatorApplicationToReview(): void
+    {
+        DB::table('users')->insertOrIgnore([
+            'id' => self::userId(13), 'full_name' => 'Elena Ramos', 'phone' => '+639170000013', 'phone_verified_at' => now(),
+        ]);
+        $cebu = (string) DB::table('provinces')->where('psgc_code', '0702200000')->value('id');
+        $applicationId = self::CEBU_APPLICATION;
+        $folder = "operator-applications/{$applicationId}";
+        DB::table('operator_applications')->insertOrIgnore([
+            'id' => $applicationId,
+            'applicant_user_id' => self::userId(13),
+            'province_id' => $cebu,
+            'business_name' => 'Ramos Cebu Deliveries',
+            'registration_number' => 'DTI-2026-0013',
+            'contact_phone' => '+639170000013',
+            'valid_id_path' => $this->samplePhoto("{$folder}/valid_id.jpg", 'Valid ID'),
+            'business_permit_path' => $this->samplePhoto("{$folder}/business_permit.jpg", 'Business permit'),
+        ]);
+        DB::table('province_licenses')->insertOrIgnore([
+            'province_id' => $cebu,
+            'operator_user_id' => self::userId(13),
+            'application_id' => $applicationId,
+            'status' => 'APPLIED',
+            'fee_centavos' => (int) DB::table('platform_settings')->value('license_fee_centavos'),
+        ]);
     }
 
     private function licenseAndTerritory(string $neg): void

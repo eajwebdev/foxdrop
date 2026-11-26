@@ -4,11 +4,12 @@ namespace App\Actions\Licensing;
 
 use App\Actions\Audit\RecordAudit;
 use App\Models\ProvinceLicense;
-use Illuminate\Support\Facades\DB;
+use App\Support\PlatformSettings;
 
 /**
  * Daily license status changes (§5.1, §12): ACTIVE past its end date → GRACE (operations continue, banner shown);
- * GRACE past the grace days → EXPIRED (province hidden from customers, operator read-only).
+ * GRACE past the grace days → EXPIRED (province hidden from customers, operator read-only). The rule itself is
+ * ProvinceLicense::statusForTerm().
  */
 final class AdvanceLicenseLifecycle
 {
@@ -19,18 +20,20 @@ final class AdvanceLicenseLifecycle
      */
     public function __invoke(): array
     {
-        $graceDays = (int) DB::table('platform_settings')->value('license_grace_days');
+        $graceDays = PlatformSettings::licenseGraceDays();
+        $counts = [ProvinceLicense::GRACE => 0, ProvinceLicense::EXPIRED => 0];
 
-        $toGrace = ProvinceLicense::query()->where('status', ProvinceLicense::ACTIVE)->where('end_at', '<', now())->get();
-        $toExpired = ProvinceLicense::query()->where('status', ProvinceLicense::GRACE)->where('end_at', '<', now()->subDays($graceDays))->get();
-
-        foreach ([[$toGrace, ProvinceLicense::GRACE], [$toExpired, ProvinceLicense::EXPIRED]] as [$licenses, $status]) {
-            foreach ($licenses as $license) {
-                $license->forceFill(['status' => $status])->save();
-                ($this->audit)(null, 'license.'.strtolower($status), 'province_license', $license->id, $license->province_id);
+        $due = ProvinceLicense::query()->whereIn('status', ProvinceLicense::OPERATING)->where('end_at', '<', now())->get();
+        foreach ($due as $license) {
+            $status = $license->statusForTerm($graceDays);
+            if ($status === $license->status) {
+                continue;
             }
+            $license->forceFill(['status' => $status])->save();
+            $counts[$status]++;
+            ($this->audit)(null, 'license.'.strtolower($status), 'province_license', $license->id, $license->province_id);
         }
 
-        return ['grace' => $toGrace->count(), 'expired' => $toExpired->count()];
+        return ['grace' => $counts[ProvinceLicense::GRACE], 'expired' => $counts[ProvinceLicense::EXPIRED]];
     }
 }

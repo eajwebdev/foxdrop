@@ -13,7 +13,7 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
   | Status | Meaning |
   |---|---|
   | 401 | token missing, expired or revoked |
-  | 403 | not allowed (also a suspended account) |
+  | 403 | not allowed (also a suspended account, or an admin account: admins use the web, DECISIONS 82) |
   | 404 | not found or not visible to you |
   | 409 | conflict with current state, e.g. province already taken |
   | 422 | validation |
@@ -42,7 +42,8 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
 | GET | `provinces` *public* | `{data: [{id, psgc_code, name, region_name, is_serviceable, is_available}]}` |
 
 - `is_serviceable`: customers can order there (enabled, with an ACTIVE or GRACE license).
-- `is_available`: an operator can apply (enabled, with no live license).
+- `is_available`: an operator can apply (enabled, with no live license; a SUSPENDED license still holds the province,
+  DECISIONS 77).
 
 ## Operator license (Phase 2)
 | Method | Path | Body | Result |
@@ -57,6 +58,8 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
 - **`License`**: `{id, province: {id, name}, status: APPLIED|PENDING_PAYMENT|ACTIVE|GRACE|EXPIRED|SUSPENDED|REJECTED, start_at, end_at, days_left, fee_centavos, can_pay}`.
   - `days_left` is the number of whole days until `end_at` (negative in GRACE), or null.
   - `can_pay` is true when a payment would be accepted now.
+  - `SUSPENDED` (set by an admin, with a reason) keeps the province but makes the operator read-only and hides the
+    province from customers.
 - **`Payment`**: `{id, purpose: LICENSE|TOPUP|ORDER, status: PENDING|PAID|FAILED|EXPIRED, amount_centavos, checkout_url, expires_at}`.
 
 ### How a payment finishes
@@ -125,7 +128,8 @@ Base URL: `{FOXDROP_API_URL}` = `https://<host>/api/v1/` (local emulator: `http:
 
 ### Who may review
 - The operator team of the store's or rider's province reviews.
-- Platform admins may review any province (override).
+- Platform admins review any province (override) in the admin web, which uses the same Actions. Admin accounts get
+  403 from every API route and from API sign-in (DECISIONS 82).
 - Every review writes an `audit_logs` row.
 - Approval grants the role (`store_owner` with the store, `rider` with the province) and creates the wallets.
 - The apps pick up the new role from `/me`.

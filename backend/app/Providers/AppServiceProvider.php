@@ -5,6 +5,10 @@ namespace App\Providers;
 use App\Contracts\GoogleIdTokenVerifier;
 use App\Contracts\PaymentProvider;
 use App\Contracts\SmsSender;
+use App\Enums\AdminPermission;
+use App\Models\OperatorApplication;
+use App\Models\ProvinceLicense;
+use App\Models\User;
 use App\Services\Auth\JwksGoogleIdTokenVerifier;
 use App\Services\Payments\FakeCheckoutProvider;
 use App\Services\Payments\PayMongoCheckoutProvider;
@@ -12,8 +16,11 @@ use App\Services\Sms\LogSmsSender;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
@@ -46,6 +53,38 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->refuseUnsafeProductionConfig();
         $this->configureRateLimits();
+        $this->configureAdminGates();
+        $this->configureRouteParameters();
+        // Admin passwords (§20.6): long, mixed case with a number. Breach checks would send hashes to a third party.
+        Password::defaults(fn (): Password => Password::min(12)->letters()->mixedCase()->numbers());
+    }
+
+    /**
+     * Admin web permissions (DECISIONS 72): every AdminPermission is a Gate ability (`can:partners.view`), and
+     * admin staff management is the super admin's alone.
+     */
+    private function configureAdminGates(): void
+    {
+        Gate::before(function (User $user, string $ability): ?bool {
+            $permission = AdminPermission::tryFrom($ability);
+
+            return $permission === null ? null : $user->hasAdminPermission($permission);
+        });
+        Gate::define('admin.staff', fn (User $user): bool => $user->isSuperAdmin());
+    }
+
+    /**
+     * Ids are UUIDs: anything else is a 404 before it reaches PostgreSQL. Admin routes name their models here.
+     */
+    private function configureRouteParameters(): void
+    {
+        $uuid = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+        foreach (['province', 'application', 'license', 'store', 'rider', 'user', 'staff', 'document', 'payment', 'zone'] as $parameter) {
+            Route::pattern($parameter, $uuid);
+        }
+        Route::model('application', OperatorApplication::class);
+        Route::model('license', ProvinceLicense::class);
+        Route::model('staff', User::class);
     }
 
     /**

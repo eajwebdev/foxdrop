@@ -216,4 +216,35 @@ class OperatorLicenseViewModelTest {
         runCurrent()
         assertTrue(vm.state.value is State.Apply)
     }
+
+    @Test
+    fun `while the admin decides the status re-checks quietly and moves on to payment`() = runTest(main.dispatcher) {
+        licenses.application = SampleData.application(ApplicationStatus.Submitted, null)
+        val vm = viewModel()
+        runCurrent()
+        assertTrue((vm.state.value as State.Status).waitingForAdmin)
+
+        // The admin approves in the web; the next automatic check shows it without a spinner.
+        licenses.application = SampleData.application(
+            ApplicationStatus.Approved,
+            SampleData.license(LicenseStatus.PendingPayment, daysLeft = null),
+        )
+        vm.onAction(Action.Poll)
+        assertEquals(false, (vm.state.value as State.Status).refreshing)
+        runCurrent()
+
+        val status = vm.state.value as State.Status
+        assertEquals(ApplicationStatus.Approved, status.application.status)
+        assertTrue(status.waitingForAdmin) // an offline payment may still be recorded by the admin
+    }
+
+    @Test
+    fun `an active license is not waiting for anyone`() = runTest(main.dispatcher) {
+        licenses.application =
+            SampleData.application(ApplicationStatus.Approved, SampleData.license(LicenseStatus.Active))
+        val vm = viewModel()
+        runCurrent()
+
+        assertEquals(false, (vm.state.value as State.Status).waitingForAdmin)
+    }
 }

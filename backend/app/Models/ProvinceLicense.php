@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $end_at
  * @property int $fee_centavos
  * @property string|null $application_id
+ * @property string|null $status_reason
  */
 #[Fillable(['province_id', 'operator_user_id', 'application_id', 'status', 'start_at', 'end_at', 'fee_centavos', 'payment_id'])]
 class ProvinceLicense extends Model
@@ -39,14 +40,16 @@ class ProvinceLicense extends Model
 
     public const string REJECTED = 'REJECTED';
 
+    public const string SUSPENDED = 'SUSPENDED';
+
     /** A payment is accepted in these states (first payment, or renewal). */
     public const array PAYABLE = [self::PENDING_PAYMENT, self::ACTIVE, self::GRACE];
 
     /** The operator runs the province (GRACE: operations continue, §5.1). */
     public const array OPERATING = [self::ACTIVE, self::GRACE];
 
-    /** At most one license per province may be in these states (unique index province_licenses_one_live). */
-    public const array LIVE = [self::APPLIED, self::PENDING_PAYMENT, self::ACTIVE, self::GRACE];
+    /** At most one license per province may be in these states (unique index province_licenses_one_live, DECISIONS 77). */
+    public const array LIVE = [self::APPLIED, self::PENDING_PAYMENT, self::ACTIVE, self::GRACE, self::SUSPENDED];
 
     /**
      * @return array<string, string>
@@ -54,6 +57,43 @@ class ProvinceLicense extends Model
     protected function casts(): array
     {
         return ['start_at' => 'datetime', 'end_at' => 'datetime', 'fee_centavos' => 'integer'];
+    }
+
+    /**
+     * The running status the term allows today (§5.1): ACTIVE until `end_at`, then GRACE for [graceDays], then
+     * EXPIRED. The one place this rule lives: the daily job and lifting a suspension both use it.
+     */
+    public function statusForTerm(int $graceDays): string
+    {
+        $endAt = $this->end_at ?? now();
+
+        return match (true) {
+            $endAt->isFuture() => self::ACTIVE,
+            $endAt->copy()->addDays($graceDays)->isFuture() => self::GRACE,
+            default => self::EXPIRED,
+        };
+    }
+
+    /**
+     * Whether [userId] already holds a live license (or an application) for any province: one province per operator.
+     */
+    public static function heldLiveBy(string $userId): bool
+    {
+        return static::query()->where('operator_user_id', $userId)->whereIn('status', self::LIVE)->exists();
+    }
+
+    /**
+     * What an admin may do with this license now (the admin web shows only these buttons; the Actions check again).
+     *
+     * @return array{can_pay: bool, can_suspend: bool, can_reinstate: bool}
+     */
+    public function adminChanges(): array
+    {
+        return [
+            'can_pay' => in_array($this->status, self::PAYABLE, true),
+            'can_suspend' => in_array($this->status, self::OPERATING, true),
+            'can_reinstate' => $this->status === self::SUSPENDED,
+        ];
     }
 
     /**

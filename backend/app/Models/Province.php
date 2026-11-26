@@ -40,6 +40,15 @@ class Province extends Model
     }
 
     /**
+     * An operator can apply for (or be assigned) this province: enabled and without a live license (the
+     * province_directory view defines it once; DECISIONS 77).
+     */
+    public static function isAvailable(string $provinceId): bool
+    {
+        return DB::table('province_directory')->where('id', $provinceId)->value('is_available') === true;
+    }
+
+    /**
      * @return HasMany<ProvinceLicense, $this>
      */
     public function licenses(): HasMany

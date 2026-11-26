@@ -8,6 +8,8 @@ import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.domain.media.PhotoUpload
 import ph.foxdrop.core.domain.onboarding.OperatorApplicationRules.Field
 import ph.foxdrop.core.domain.onboarding.Problem
+import ph.foxdrop.core.domain.operator.ApplicationStatus
+import ph.foxdrop.core.domain.operator.LicenseStatus
 import ph.foxdrop.core.domain.operator.OperatorApplication
 import ph.foxdrop.core.domain.province.ProvinceOption
 
@@ -61,7 +63,18 @@ sealed interface OperatorLicenseState {
         val application: OperatorApplication,
         val pay: PayState = PayState.Idle,
         val refreshing: Boolean = false,
-    ) : OperatorLicenseState
+    ) : OperatorLicenseState {
+        /**
+         * Waiting on someone else: the admin's review, or an offline payment the admin will record. The screen then
+         * checks again every few seconds while it is visible (DECISIONS 80).
+         */
+        val waitingForAdmin: Boolean
+            get() = pay == PayState.Idle &&
+                (
+                    application.status == ApplicationStatus.Submitted ||
+                        application.license?.status == LicenseStatus.PendingPayment
+                    )
+    }
 }
 
 enum class DocumentSlot { ValidId, BusinessPermit }
@@ -70,6 +83,9 @@ sealed interface OperatorLicenseAction {
     data object Retry : OperatorLicenseAction
 
     data object Refresh : OperatorLicenseAction
+
+    /** A quiet automatic re-check while waiting for the admin (no spinner, errors ignored). */
+    data object Poll : OperatorLicenseAction
 
     data class ProvinceSelected(val provinceId: String) : OperatorLicenseAction
 

@@ -3,9 +3,7 @@
 use App\Http\Controllers\Dev\FakeCheckoutController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/admin');
 
 // Where PayMongo sends the payer back after checkout; the app itself polls the payment.
 Route::get('payments/return', fn () => view('payments.return', ['result' => request()->string('result')->toString()]))
@@ -19,3 +17,5 @@ if (app()->environment(['local', 'testing'])) {
         Route::post('cancel', [FakeCheckoutController::class, 'cancel'])->name('cancel');
     });
 }
+
+require __DIR__.'/admin.php';

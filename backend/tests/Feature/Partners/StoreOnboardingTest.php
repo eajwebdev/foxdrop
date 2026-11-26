@@ -154,8 +154,9 @@ it('lets a platform admin approve a store in any province', function () {
     applyForStore($owner, ['province_id' => provinceId(ILOILO), 'latitude' => 10.72, 'longitude' => 122.56])->assertCreated();
     $store = Store::query()->where('owner_user_id', $owner->id)->sole();
 
-    $this->withHeaders(bearer(demoUser(10)))->postJson(route('api.v1.operator.stores.approve', $store->id))
-        ->assertOk()->assertJsonPath('data.status', 'ACTIVE');
+    $this->actingAs(superAdmin(), 'web')->post(route('admin.stores.approve', $store->id))->assertRedirect(); // admins use the web
+
+    expect($store->refresh()->status)->toBe('ACTIVE');
     expect(DB::table('audit_logs')->where('action', 'store.approved')->where('actor_role', 'super_admin')->exists())->toBeTrue();
 });
 

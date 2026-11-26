@@ -78,7 +78,11 @@ Android apps ──HTTPS──▶ /api/v1 (routes/api.php)
                           ├─ enums, checks, composite province FKs
                           ├─ ledger: append-only triggers + deferred zero-sum check, balances by trigger
                           └─ one live license per province (unique partial index)
-Admin web (Phase W1) ──▶ Inertia + React in backend/resources/js (same app, same database)
+Admin web (browser) ──▶ /admin (routes/admin.php, session + CSRF, CSP with nonces)
+                          ├─ Fortify sign-in (admins only) → required TOTP 2FA → "confirm it's you" for dangerous actions
+                          ├─ can:<permission> middleware (admin_permissions; super_admin has all)
+                          ├─ Controllers/Admin (thin) → the same Actions as the API (permission checks + audit_logs)
+                          └─ Queries/Admin (reads) → Inertia v3 pages in resources/js (React 19 + TS + shadcn/ui)
 Reverb (Phase 3/4)   ──▶ live order status and rider location
 ```
 
@@ -90,3 +94,6 @@ Reverb (Phase 3/4)   ──▶ live order status and rider location
 | Database rules | `database/schema/*.sql`; tests in `tests/Feature/Data/DatabaseRulesTest.php` |
 | Seed | `ProvinceSeeder` (83 PSGC provinces), `DemoSeeder` (local/testing only) |
 | Config | `config/foxdrop.php` (OTP, test codes, token lifetime, Google client IDs, SMS driver) |
+| Admin web | `routes/admin.php`, `app/Http/Controllers/Admin/*`, `app/Queries/Admin/*`, `app/Http/Middleware/Admin/*`, `app/Providers/FortifyServiceProvider.php`, pages in `resources/js/pages`, shared pieces in `resources/js/components/admin` |
+| Admin permissions | `App\Enums\AdminPermission`, `admin_permissions` table, `User::hasAdminPermission()`, `Gate::before` in `AppServiceProvider`, `App\Support\AdminGuard` inside Actions |
+| Admin tests | `tests/Feature/Admin/*` (access + generated 403 test, architecture, Actions), `resources/js/**/*.test.ts` (Vitest), `tests/e2e/*` (Playwright) |

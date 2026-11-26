@@ -29,6 +29,13 @@ set up in `D:\devtools` (see `docs/DEVELOPMENT.md`); keep that folder.
 - [ ] SMS provider for real phones (before real users test), for example Semaphore (PH) or Twilio. Local development
       does not need it: codes for the demo numbers are fixed, and other codes are written to the backend log.
 
+## Admin web
+
+- [ ] Install an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, 1Password…). The
+      admin web requires it at the first sign-in. Keep the 8 recovery codes it shows somewhere safe, offline.
+- [ ] On the VPS (Phase 7) the agent creates your super admin account with `php artisan foxdrop:super-admin`; you
+      choose the password there yourself.
+
 ## Optional
 
 - [ ] Android SDK command-line tools (Android Studio › SDK Manager › SDK Tools › "Android SDK Command-line Tools").

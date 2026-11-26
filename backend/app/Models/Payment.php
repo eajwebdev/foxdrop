@@ -21,6 +21,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $payer_user_id
  * @property string|null $license_id
  * @property Carbon|null $expires_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 #[Fillable(['province_id', 'purpose', 'provider', 'intent_id', 'checkout_url', 'amount_centavos', 'status', 'payer_user_id', 'license_id', 'expires_at', 'raw'])]
 class Payment extends Model
@@ -36,6 +38,18 @@ class Payment extends Model
     public const string EXPIRED = 'EXPIRED';
 
     public const string PURPOSE_LICENSE = 'LICENSE';
+
+    /** Recorded by an admin for money received outside the gateway (DECISIONS 76). */
+    public const string PROVIDER_MANUAL = 'manual';
+
+    /**
+     * The SYSTEM wallet this money came in through: offline receipts keep the gateway clearing account matching
+     * PayMongo exactly (DECISIONS 76). Every ledger rule that settles a payment debits this wallet.
+     */
+    public function clearingWalletKind(): string
+    {
+        return $this->provider === self::PROVIDER_MANUAL ? 'OFFLINE_RECEIPTS' : 'GATEWAY_CLEARING';
+    }
 
     /**
      * @return array<string, string>

@@ -4,8 +4,10 @@ namespace App\Actions\Licensing;
 
 use App\Actions\Documents\StoreKycImage;
 use App\Models\OperatorApplication;
+use App\Models\Province;
 use App\Models\ProvinceLicense;
 use App\Models\User;
+use App\Support\PlatformSettings;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +26,7 @@ final class SubmitOperatorApplication
      */
     public function __invoke(User $applicant, array $details, UploadedFile $validId, ?UploadedFile $businessPermit): OperatorApplication
     {
-        $province = DB::table('province_directory')->where('id', $details['province_id'])->first(['is_available']);
-        abort_if($province === null || ! $province->is_available, 409, 'This province already has an operator.');
+        abort_unless(Province::isAvailable($details['province_id']), 409, 'This province already has an operator.');
         abort_if($this->hasOpenApplicationOrLicense($applicant), 409, 'You already have an open application or a license.');
 
         $folder = 'operator-applications/'.$applicant->id;
@@ -51,7 +52,7 @@ final class SubmitOperatorApplication
                     'operator_user_id' => $applicant->id,
                     'application_id' => $application->id,
                     'status' => ProvinceLicense::APPLIED,
-                    'fee_centavos' => (int) DB::table('platform_settings')->value('license_fee_centavos'),
+                    'fee_centavos' => PlatformSettings::licenseFeeCentavos(),
                 ]);
 
                 return $application;
@@ -68,9 +69,6 @@ final class SubmitOperatorApplication
             ->where('applicant_user_id', $applicant->id)
             ->where('status', OperatorApplication::SUBMITTED)
             ->exists()
-            || ProvinceLicense::query()
-                ->where('operator_user_id', $applicant->id)
-                ->whereIn('status', [ProvinceLicense::APPLIED, ...ProvinceLicense::PAYABLE])
-                ->exists();
+            || ProvinceLicense::heldLiveBy($applicant->id);
     }
 }

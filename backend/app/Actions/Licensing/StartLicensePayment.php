@@ -6,7 +6,7 @@ use App\Contracts\PaymentProvider;
 use App\Models\Payment;
 use App\Models\ProvinceLicense;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Support\PlatformSettings;
 use Throwable;
 
 /**
@@ -37,7 +37,7 @@ final class StartLicensePayment
             'province_id' => $license->province_id,
             'purpose' => Payment::PURPOSE_LICENSE,
             'provider' => $this->provider->name(),
-            'amount_centavos' => (int) DB::table('platform_settings')->value('license_fee_centavos'),
+            'amount_centavos' => PlatformSettings::licenseFeeCentavos(),
             'status' => Payment::PENDING,
             'payer_user_id' => $payer->id,
             'license_id' => $license->id,

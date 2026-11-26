@@ -18,6 +18,13 @@ use Illuminate\Support\Carbon;
  * @property string $business_name
  * @property string $status
  * @property string|null $rejection_reason
+ * @property string|null $registration_number
+ * @property string $contact_phone
+ * @property string|null $contact_email
+ * @property string|null $valid_id_path
+ * @property string|null $business_permit_path
+ * @property string|null $reviewed_by
+ * @property Carbon|null $reviewed_at
  * @property Carbon|null $created_at
  */
 #[Fillable(['applicant_user_id', 'province_id', 'business_name', 'registration_number', 'contact_phone', 'contact_email', 'valid_id_path', 'business_permit_path', 'status'])]
@@ -45,6 +52,14 @@ class OperatorApplication extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'applicant_user_id');
     }
 
     /**

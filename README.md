@@ -108,10 +108,12 @@ Tested on Windows 11 with Android Studio 2025.3. Commands are for PowerShell; on
 | Fix formatting | `.\gradlew spotlessApply` |
 | Local backend (portable PHP + PostgreSQL) | `. .\tools\dev\backend-env.ps1`, then in `backend/`: `php artisan migrate:fresh --seed --drop-types --drop-views` and `php artisan serve --host=127.0.0.1` |
 | Backend checks | in `backend/`: `vendor/bin/pest`, `vendor/bin/phpstan analyse`, `vendor/bin/pint --test` |
+| Admin web (Super Admin) | in `backend/`: `npm install`, `npm run build`, then open <http://127.0.0.1:8000/admin> (`admin@foxdrop.local` / `foxdrop-local-admin`, set up 2FA at first sign-in); checks `npm run lint`, `npm run types`, `npm run test`, `npm run e2e` |
 | Regenerate icons/splash from `reference/logos` | `tools\assets\.venv\Scripts\python tools\assets\make_assets.py` (create the venv from `tools/assets/requirements.txt` first) |
 
 Local phone login (once the local backend runs): demo numbers `0917 000 0001` to `0917 000 0009`, code `123456`.
-Customers 0001–0002, riders 0003–0005, operator 0006 (business app), store owners 0007–0009 (business app).
+Customers 0001–0002, riders 0003–0005, operator 0006 (business app), store owners 0007–0009 (business app),
+applicants 0011 (store), 0012 (rider) and 0013 (operator of Cebu, waiting for the admin).
 
 ## Main decisions (most can be changed later in Platform Settings)
 

@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\AppRole;
+use App\Models\Concerns\VisibleToViewer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['user_id', 'role', 'province_id', 'store_id', 'granted_by'])]
 class UserRole extends Model
 {
-    use HasUuids;
+    use HasUuids, VisibleToViewer;
 
     public const null UPDATED_AT = null;
 
@@ -46,16 +46,10 @@ class UserRole extends Model
     /**
      * Own grants, grants inside the operator's provinces, or everything for platform admins.
      *
-     * @param  Builder<self>  $query
+     * @param  Builder<static>  $query
      */
-    #[Scope]
-    protected function visibleTo(Builder $query, User $user): void
+    protected function visibilityRule(Builder $query, User $user): void
     {
-        if ($user->isPlatformAdmin()) {
-            return;
-        }
-        $query->where(fn (Builder $q) => $q
-            ->where('user_id', $user->id)
-            ->orWhereIn('province_id', $user->operatorProvinceIds()));
+        $query->where('user_id', $user->id)->orWhereIn('province_id', $user->operatorProvinceIds());
     }
 }

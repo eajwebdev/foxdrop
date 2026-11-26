@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\VisibleToViewer;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -17,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Store extends Model
 {
-    use HasUuids;
+    use HasUuids, VisibleToViewer;
 
     /** A storefront customers can see (§5.2). */
     public const array PUBLISHED_STATUSES = ['ACTIVE', 'PAUSED'];
@@ -38,27 +40,20 @@ class Store extends Model
     #[Scope]
     protected function published(Builder $query): void
     {
+        // "Serviceable" is defined once, in the province_directory view (05_licensing.sql).
         $query->whereIn('status', self::PUBLISHED_STATUSES)
-            ->whereIn('province_id', Province::query()
-                ->where('is_enabled', true)
-                ->whereHas('licenses', fn (Builder $l) => $l->whereIn('status', ['ACTIVE', 'GRACE']))
-                ->select('id'));
+            ->whereIn('province_id', DB::table('province_directory')->where('is_serviceable', true)->select('id'));
     }
 
     /**
      * Every store a team member, the province's operators, or a platform admin may manage, plus published stores.
      *
-     * @param  Builder<self>  $query
+     * @param  Builder<static>  $query
      */
-    #[Scope]
-    protected function visibleTo(Builder $query, User $user): void
+    protected function visibilityRule(Builder $query, User $user): void
     {
-        if ($user->isPlatformAdmin()) {
-            return;
-        }
-        $query->where(fn (Builder $q) => $q
-            ->whereIn('id', $user->memberStoreIds())
+        $query->whereIn('id', $user->memberStoreIds())
             ->orWhereIn('province_id', $user->operatorProvinceIds())
-            ->orWhere(fn (Builder $p) => $p->published()));
+            ->orWhere(fn (Builder $published) => $published->published());
     }
 }

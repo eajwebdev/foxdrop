@@ -105,8 +105,8 @@ class ApiDataSourcesTest {
         }
         val auth = ApiAuthRemoteDataSource(api, store, deviceName = "Pixel 9 · FoxDrop Business")
 
-        assertEquals(FoxResult.Success(Unit), auth.requestPhoneOtp("+639170000006", "Liza Gonzaga"))
-        assertEquals(FoxResult.Success(Unit), auth.verifyPhoneOtp("+639170000006", "123456"))
+        assertEquals(FoxResult.Success(Unit), auth.requestPhoneOtp("+639170000006"))
+        assertEquals(FoxResult.Success(Unit), auth.verifyPhoneOtp("+639170000006", "123456", "Liza Gonzaga"))
 
         val verify = requests.last()
         assertEquals("application/json", verify.headers[HttpHeaders.Accept])
@@ -126,7 +126,7 @@ class ApiDataSourcesTest {
             )
         }
 
-        val result = ApiAuthRemoteDataSource(api, store, "Pixel").verifyPhoneOtp("+639170000006", "000000")
+        val result = ApiAuthRemoteDataSource(api, store, "Pixel").verifyPhoneOtp("+639170000006", "000000", null)
 
         assertEquals(FoxResult.Failure(DomainError.Validation("code", "That code is wrong or has expired.")), result)
         assertNull(store.load())
@@ -137,7 +137,7 @@ class ApiDataSourcesTest {
         val store = InMemorySessionStore(signedIn)
         val api = client(store) { json("""{"message":"Unauthenticated."}""", HttpStatusCode.Unauthorized) }
 
-        val result = ApiRolesRemoteDataSource(api, store).myRoles()
+        val result = ApiRolesRemoteDataSource(api, store).fetchRoles()
 
         assertEquals("Bearer 1|old-token", requests.single().headers[HttpHeaders.Authorization])
         assertEquals(FoxResult.Failure(DomainError.Unauthorized), result)
@@ -149,21 +149,19 @@ class ApiDataSourcesTest {
         val store = InMemorySessionStore(signedIn)
         val api = client(store) { json("""{"data":$USER_JSON}""") }
 
-        val roles = ApiRolesRemoteDataSource(api, store).myRoles()
+        val roles = ApiRolesRemoteDataSource(api, store).fetchRoles()
 
         assertEquals(FoxResult.Success(listOf(RoleGrant(AppRole.Customer), RoleGrant(AppRole.Operator, "neg"))), roles)
         assertEquals(2, store.load()?.user?.roles?.size)
     }
 
     @Test
-    fun `offline, roles come from the copy saved at sign-in`() = runTest(dispatcher) {
+    fun `offline, the saved roles are still there`() = runTest(dispatcher) {
         val store = InMemorySessionStore(signedIn)
-        val api = client(store) { throw IOException("no signal") }
+        val roles = ApiRolesRemoteDataSource(client(store) { throw IOException("no signal") }, store)
 
-        assertEquals(
-            FoxResult.Success(listOf(RoleGrant(AppRole.Customer))),
-            ApiRolesRemoteDataSource(api, store).myRoles(),
-        )
+        assertEquals(FoxResult.Failure(DomainError.Network), roles.fetchRoles())
+        assertEquals(listOf(RoleGrant(AppRole.Customer)), roles.savedRoles())
     }
 
     @Test
@@ -172,7 +170,7 @@ class ApiDataSourcesTest {
 
         assertEquals(
             FoxResult.Failure(DomainError.Unauthorized),
-            ApiRolesRemoteDataSource(api, InMemorySessionStore()).myRoles(),
+            ApiRolesRemoteDataSource(api, InMemorySessionStore()).fetchRoles(),
         )
     }
 
@@ -208,7 +206,7 @@ class ApiDataSourcesTest {
             json("""{"message":"Unauthenticated."}""", HttpStatusCode.Unauthorized)
         }
 
-        ApiRolesRemoteDataSource(api, store).myRoles()
+        ApiRolesRemoteDataSource(api, store).fetchRoles()
 
         assertEquals("3|newer-token", store.load()?.token)
     }
@@ -221,7 +219,7 @@ class ApiDataSourcesTest {
             json("""{"data":$USER_JSON}""")
         }
 
-        ApiRolesRemoteDataSource(api, store).myRoles()
+        ApiRolesRemoteDataSource(api, store).fetchRoles()
 
         assertNull(store.load())
     }

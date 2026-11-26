@@ -27,6 +27,7 @@ class ApiErrorsTest {
         assertEquals(DomainError.NotFound, httpStatusToDomainError(404))
         assertEquals(DomainError.RateLimited, httpStatusToDomainError(429))
         assertEquals(DomainError.NotConfigured, httpStatusToDomainError(503))
+        assertEquals(DomainError.Network, httpStatusToDomainError(502))
         assertEquals(DomainError.Unknown("boom"), httpStatusToDomainError(500, ApiErrorBody(null, "boom")))
     }
 

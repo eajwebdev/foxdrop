@@ -161,3 +161,15 @@ Format: **what** — why — revisit when.
 50. **The schema files were corrected in place** (ledger entries must carry their wallet's province; favourites and
     reviews tie to their store / product / rider province). Allowed only because no database outside development
     exists yet; from the first deploy on, schema files are forward-only.
+51. **Routing uses the saved roles first, then the server's** (Phase 1b /simplify; refines 42): the app opens straight
+    to its home from the roles saved with the session (no wait on a slow provincial network), then `/me` updates
+    them and re-routes only if they lead elsewhere; a rejected session still signs out.
+52. **Province isolation stays an explicit `visibleTo($user)` scope** (one `VisibleToViewer` trait holds the admin
+    bypass; each model states only its rule). A global scope was considered and rejected for now: queues, the
+    scheduler and admin actions have no request user, and a deny-by-default global scope would make every job opt
+    out. From Phase 2 every endpoint that reads provincial rows gets a Pest test proving another province sees 0 rows.
+53. **The 60-second OTP resend wait is a rate limit** (`otp-send`, per phone, with the remaining seconds in the 429
+    body), not a database query; the app's countdown uses the same 60 s. Rate limits and the Google nonce use the
+    cache store: `database` locally, **Redis on the VPS** (§20.6).
+54. **Sanctum does not track `last_used_at`** (it would write the token row on every API call); expired tokens and
+    old OTP codes are pruned daily by the scheduler.

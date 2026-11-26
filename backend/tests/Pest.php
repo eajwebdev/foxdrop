@@ -2,7 +2,9 @@
 
 use App\Contracts\SmsSender;
 use App\Models\User;
+use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 pest()->extend(TestCase::class)
@@ -32,6 +34,20 @@ final class FakeSmsSender implements SmsSender
 
         return null;
     }
+}
+
+/** Iloilo: the second province in isolation tests (province B; Negros Occidental is the demo province A). */
+const ILOILO = '0603000000';
+
+function provinceId(string $psgcCode): string
+{
+    return (string) DB::table('provinces')->where('psgc_code', $psgcCode)->value('id');
+}
+
+/** A seeded demo account (database/seeders/DemoSeeder.php): 1–2 customers, 3–5 riders, 6 operator, 7–9 store owners, 10 admin. */
+function demoUser(int $n): User
+{
+    return User::query()->findOrFail(DemoSeeder::userId($n));
 }
 
 function fakeSms(): FakeSmsSender

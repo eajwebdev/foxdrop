@@ -20,17 +20,8 @@ class PhoneOtpController extends Controller
 
     public function send(SendOtpRequest $request): JsonResponse
     {
-        $phone = $request->string('phone')->toString();
-        $wait = $this->otp->secondsUntilResend($phone);
-        if ($wait > 0) {
-            return response()->json(
-                ['message' => "Please wait {$wait} seconds before asking for a new code.", 'retry_after_seconds' => $wait],
-                429,
-                ['Retry-After' => (string) $wait],
-            );
-        }
-
-        $this->otp->send($phone);
+        // The wait between codes is the `otp-send` rate limit (AppServiceProvider).
+        $this->otp->send($request->string('phone')->toString());
 
         return response()->json([
             'expires_in_seconds' => (int) config('foxdrop.auth.otp.ttl_seconds'),
@@ -45,8 +36,8 @@ class PhoneOtpController extends Controller
             throw ValidationException::withMessages(['code' => 'That code is wrong or has expired.']);
         }
 
-        // createOrFirst: a parallel verify of the same new number (retry, double tap) finds the row instead of failing.
-        $user = User::query()->createOrFirst(
+        // firstOrCreate = one SELECT for returning numbers; a parallel first sign-in falls back to createOrFirst.
+        $user = User::query()->firstOrCreate(
             ['phone' => $phone],
             ['full_name' => $request->input('full_name'), 'phone_verified_at' => now()],
         );

@@ -6,7 +6,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ph.foxdrop.core.common.result.DomainError
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 
 class AuthReducerTest {
     private fun reduce(state: AuthState, vararg actions: AuthAction): AuthNext =
@@ -17,7 +16,7 @@ class AuthReducerTest {
         val next = reduce(AuthState(), AuthAction.PhoneChanged("0917 123 4567"), AuthAction.Submit)
         assertEquals("9171234567", next.state.phone)
         assertEquals(SubmitStatus.Loading, next.state.submit)
-        assertEquals(AuthCommand.RequestOtp("+639171234567", fullName = null), next.command)
+        assertEquals(AuthCommand.RequestOtp("+639171234567"), next.command)
     }
 
     @Test
@@ -60,7 +59,7 @@ class AuthReducerTest {
                 AuthAction.TermsChanged(true),
                 AuthAction.Submit,
             )
-        assertEquals(AuthCommand.RequestOtp("+639171234567", "Juan Dela Cruz"), ok.command)
+        assertEquals(AuthCommand.RequestOtp("+639171234567"), ok.command)
     }
 
     @Test
@@ -163,7 +162,7 @@ class AuthReducerTest {
         assertNull(reduce(waiting, AuthAction.ResendOtp).command)
         val ticked = reduce(waiting, AuthAction.ResendTick, AuthAction.ResendTick, AuthAction.ResendTick).state
         assertEquals(0, ticked.resendSecondsLeft)
-        assertEquals(AuthCommand.RequestOtp("+639171234567", null), reduce(ticked, AuthAction.ResendOtp).command)
+        assertEquals(AuthCommand.RequestOtp("+639171234567"), reduce(ticked, AuthAction.ResendOtp).command)
     }
 
     @Test
@@ -185,7 +184,7 @@ class AuthReducerTest {
         assertNull(same.command)
 
         val other = reduce(back, AuthAction.PhoneChanged("9181234567"), AuthAction.Submit)
-        assertEquals(AuthCommand.RequestOtp("+639181234567", null), other.command)
+        assertEquals(AuthCommand.RequestOtp("+639181234567"), other.command)
     }
 
     @Test
@@ -212,15 +211,10 @@ class AuthReducerTest {
                 password = "foxdrop2026",
                 submit = SubmitStatus.Loading,
             )
-        val next = reduce(loading, AuthAction.EmailSignedUp(null, EmailSignUpOutcome.ConfirmationEmailSent)).state
-        assertEquals(AuthMode.Login, next.mode)
-        assertEquals("", next.password)
-        assertEquals(AuthMessage.ConfirmEmail, next.message)
-
-        val signedIn = reduce(loading, AuthAction.EmailSignedUp(null, EmailSignUpOutcome.SignedIn))
+        val signedIn = reduce(loading, AuthAction.EmailSignedIn(null))
         assertEquals(AuthCommand.FinishSignIn, signedIn.command)
 
-        val failed = reduce(loading, AuthAction.EmailSignedUp(DomainError.Conflict("exists"), null)).state
+        val failed = reduce(loading, AuthAction.EmailSignedIn(DomainError.Conflict("exists"))).state
         assertEquals(AuthMessage.Unknown, failed.message)
     }
 

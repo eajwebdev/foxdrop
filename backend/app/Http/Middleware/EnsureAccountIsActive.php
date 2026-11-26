@@ -15,7 +15,9 @@ class EnsureAccountIsActive
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        abort_if($user instanceof User && $user->isSuspended(), 403, 'This account is suspended. Please contact FoxDrop support.');
+        if ($user instanceof User) {
+            $user->ensureActive();
+        }
 
         return $next($request);
     }

@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // through the proxy).
         $proxies = env('TRUSTED_PROXIES');
         if (is_string($proxies) && $proxies !== '') {
-            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map(trim(...), explode(',', $proxies)));
+            $middleware->trustProxies(at: $proxies); // the middleware parses "*" and comma lists itself
         }
     })
     ->withExceptions(function (Exceptions $exceptions): void {

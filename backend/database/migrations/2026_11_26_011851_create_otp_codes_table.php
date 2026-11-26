@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -20,8 +21,9 @@ return new class extends Migration
             $table->timestampTz('expires_at');
             $table->timestampTz('consumed_at')->nullable();
             $table->timestampTz('created_at')->useCurrent();
-            $table->index(['phone', 'created_at']);
         });
+        // Send and verify only look at a phone's unused codes.
+        DB::statement('create index otp_codes_live_idx on otp_codes (phone, created_at desc) where consumed_at is null');
     }
 
     public function down(): void

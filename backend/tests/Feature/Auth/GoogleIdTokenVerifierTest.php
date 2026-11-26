@@ -36,6 +36,21 @@ function newRsaKey(): array
 }
 
 /**
+ * Google's JWKS document publishing [key] under [kid].
+ *
+ * @return array{keys: list<array<string, string>>}
+ */
+function jwksFor(string $kid, OpenSSLAsymmetricKey $key): array
+{
+    $details = openssl_pkey_get_details($key) ?: throw new RuntimeException('no key details');
+
+    return ['keys' => [[
+        'kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => $kid,
+        'n' => JWT::urlsafeB64Encode($details['rsa']['n']), 'e' => JWT::urlsafeB64Encode($details['rsa']['e']),
+    ]]];
+}
+
+/**
  * Publishes a throwaway RSA key as Google's JWKS and returns a signer for test ID tokens.
  *
  * @return Closure(array<string, mixed>): string
@@ -43,12 +58,7 @@ function newRsaKey(): array
 function fakeGoogleKeys(): Closure
 {
     [$key, $pem] = newRsaKey();
-    $details = openssl_pkey_get_details($key);
-    $b64 = fn (string $bin): string => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
-    Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response(['keys' => [[
-        'kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => 'test-key',
-        'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e']),
-    ]]])]);
+    Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response(jwksFor('test-key', $key))]);
     config(['foxdrop.google.client_ids' => [CLIENT_ID]]);
 
     return fn (array $overrides): string => JWT::encode(array_merge([
@@ -108,17 +118,11 @@ it('accepts each Google token only once', function () {
 
 it('fetches Google\'s keys again when a token uses a key it has not seen', function () {
     config(['foxdrop.google.client_ids' => [CLIENT_ID]]);
-    $jwks = function (string $kid, OpenSSLAsymmetricKey $key): array {
-        $details = openssl_pkey_get_details($key) ?: throw new RuntimeException('no key details');
-        $b64 = fn (string $bin): string => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
-
-        return ['keys' => [['kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => $kid, 'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e'])]]];
-    };
     [$oldKey] = newRsaKey();
     [$newKey, $newPem] = newRsaKey();
     // After the cached (old) key set fails, the verifier fetches once more and gets the rotated set.
-    Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response($jwks('rotated-key', $newKey))]);
-    Cache::put('google-id-token-jwks', $jwks('old-key', $oldKey), now()->addHour()); // what we cached before rotation
+    Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response(jwksFor('rotated-key', $newKey))]);
+    Cache::put('google-id-token-jwks', ['jwks' => jwksFor('old-key', $oldKey), 'fetched_at' => time() - 600], now()->addHour()); // what we cached before rotation
     $token = JWT::encode([
         'iss' => 'https://accounts.google.com', 'aud' => CLIENT_ID, 'sub' => '42', 'nonce' => hash('sha256', RAW_NONCE),
         'iat' => time(), 'exp' => time() + 600,
@@ -126,11 +130,14 @@ it('fetches Google\'s keys again when a token uses a key it has not seen', funct
 
     expect(app(JwksGoogleIdTokenVerifier::class)->verify($token, RAW_NONCE)->subject)->toBe('42');
 });
-it('tells the app to retry later when Google\'s keys cannot be fetched', function () {
+it('tells the app to retry later when Google\'s keys cannot be fetched, without hammering Google', function () {
     config(['foxdrop.google.client_ids' => [CLIENT_ID]]);
     Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response('down', 500)]);
+    $signIn = fn () => $this->postJson(route('api.v1.auth.google'), ['id_token' => 'a.b.c', 'nonce' => str_repeat('n', 32), 'device_name' => 'Pixel']);
 
-    $this->postJson(route('api.v1.auth.google'), ['id_token' => 'a.b.c', 'nonce' => str_repeat('n', 32), 'device_name' => 'Pixel'])
-        ->assertServiceUnavailable()
-        ->assertJsonPath('message', 'Google sign-in is unavailable right now. Please try again in a moment.');
+    $signIn()->assertStatus(502)->assertJsonPath('message', 'Google sign-in is unavailable right now. Please try again in a moment.');
+    $calls = count(Http::recorded());
+    $signIn()->assertStatus(502);
+
+    expect(Http::recorded())->toHaveCount($calls);
 });

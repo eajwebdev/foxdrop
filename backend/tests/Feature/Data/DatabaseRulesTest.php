@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -12,8 +11,7 @@ use Illuminate\Support\Facades\DB;
 */
 
 beforeEach(function () {
-    $this->seed(DatabaseSeeder::class);
-    $this->neg = (string) DB::table('provinces')->where('psgc_code', DemoSeeder::NEGROS_OCCIDENTAL)->value('id');
+    $this->neg = provinceId(DemoSeeder::NEGROS_OCCIDENTAL);
 });
 
 /**
@@ -92,13 +90,13 @@ it('refuses an order whose total does not add up', function () {
 })->throws(QueryException::class, 'orders_total');
 
 it('refuses a store-owned row that claims another province', function () {
-    $ilo = (string) DB::table('provinces')->where('psgc_code', '0603000000')->value('id');
+    $ilo = provinceId(ILOILO);
 
     DB::table('products')->insert(['store_id' => DemoSeeder::storeId(1), 'province_id' => $ilo, 'name' => 'Smuggled', 'price_centavos' => 100]);
 })->throws(QueryException::class, 'products_store_fk');
 
 it('refuses a ledger entry that claims another province than its wallet', function () {
-    $ilo = (string) DB::table('provinces')->where('psgc_code', '0603000000')->value('id');
+    $ilo = provinceId(ILOILO);
     $wallet = DB::table('wallets')->where('province_id', $this->neg)->where('kind', 'RIDER_CASH')->value('id');
     $txn = DB::table('ledger_txns')->insertGetId(['type' => 'TEST_POSTING', 'idempotency_key' => 'test-txn-province', 'province_id' => $ilo], 'id');
 
@@ -106,7 +104,7 @@ it('refuses a ledger entry that claims another province than its wallet', functi
 })->throws(QueryException::class, 'does not match wallet province');
 
 it('refuses a favourite that claims another province than its store', function () {
-    $ilo = (string) DB::table('provinces')->where('psgc_code', '0603000000')->value('id');
+    $ilo = provinceId(ILOILO);
 
     DB::table('favorites')->insert(['user_id' => DemoSeeder::userId(1), 'province_id' => $ilo, 'store_id' => DemoSeeder::storeId(1)]);
 })->throws(QueryException::class, 'favorites_store_fk');

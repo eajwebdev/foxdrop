@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Api\V1\Auth;
 
+use App\Http\Requests\Api\V1\Auth\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 
 class EmailLoginRequest extends FormRequest
 {
+    use NormalizesEmail;
+
     public function authorize(): bool
     {
         return true;
@@ -21,13 +24,5 @@ class EmailLoginRequest extends FormRequest
             'password' => ['required', 'string', 'max:255'],
             'device_name' => ['required', 'string', 'max:120'],
         ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $email = $this->input('email');
-        if (is_string($email)) {
-            $this->merge(['email' => mb_strtolower(trim($email))]);
-        }
     }
 }

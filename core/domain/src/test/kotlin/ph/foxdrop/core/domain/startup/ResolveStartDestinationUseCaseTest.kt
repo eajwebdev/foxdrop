@@ -11,7 +11,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.domain.auth.AuthRepository
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.domain.preferences.AppPreferencesRepository
 
@@ -70,14 +69,16 @@ class ResolveStartDestinationUseCaseTest {
         val status = MutableStateFlow<SessionStatus>(SessionStatus.Unknown)
         override val sessionStatus: Flow<SessionStatus> = status
 
-        override suspend fun requestPhoneOtp(phoneE164: String, fullName: String?) = FoxResult.Success(Unit)
+        override suspend fun requestPhoneOtp(phoneE164: String) = FoxResult.Success(Unit)
 
-        override suspend fun verifyPhoneOtp(phoneE164: String, code: String) = FoxResult.Success(Unit)
+        override suspend fun verifyPhoneOtp(phoneE164: String, code: String, fullName: String?) = FoxResult.Success(
+            Unit,
+        )
 
         override suspend fun signInWithEmail(email: String, password: String) = FoxResult.Success(Unit)
 
         override suspend fun signUpWithEmail(fullName: String, email: String, password: String) =
-            FoxResult.Success(EmailSignUpOutcome.SignedIn)
+            FoxResult.Success(Unit)
 
         override suspend fun signInWithGoogle(idToken: String, rawNonce: String) = FoxResult.Success(Unit)
 

@@ -11,7 +11,6 @@ import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.data.preferences.DefaultAppPreferencesRepository
 import ph.foxdrop.core.datastore.AppPreferencesDataSource
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.network.auth.AuthRemoteDataSource
 
@@ -21,21 +20,20 @@ class DefaultAuthRepositoryTest {
 
     @Test
     fun `cleans input before calling the backend`() = runTest {
-        repository.requestPhoneOtp("+639171234567", "  Juan Dela Cruz ")
-        assertEquals("+639171234567|Juan Dela Cruz", remote.calls.last())
+        repository.requestPhoneOtp("+639171234567")
+        assertEquals("otp|+639171234567", remote.calls.last())
 
-        repository.requestPhoneOtp("+639171234567", "   ")
-        assertEquals("+639171234567|null", remote.calls.last())
+        repository.verifyPhoneOtp("+639171234567", " 123456 ", "  Juan Dela Cruz ")
+        assertEquals("verify|+639171234567|123456|Juan Dela Cruz", remote.calls.last())
 
-        repository.verifyPhoneOtp("+639171234567", " 123456 ")
-        assertEquals("verify|+639171234567|123456", remote.calls.last())
+        repository.verifyPhoneOtp("+639171234567", "123456", "   ")
+        assertEquals("verify|+639171234567|123456|null", remote.calls.last())
 
         repository.signInWithEmail(" Juan@Example.PH ", "pass1234")
         assertEquals("signin|juan@example.ph", remote.calls.last())
 
-        val outcome = repository.signUpWithEmail(" Juan ", "Juan@Example.PH", "pass1234")
+        repository.signUpWithEmail(" Juan ", "Juan@Example.PH", "pass1234")
         assertEquals("signup|Juan|juan@example.ph", remote.calls.last())
-        assertEquals(FoxResult.Success(EmailSignUpOutcome.ConfirmationEmailSent), outcome)
     }
 
     @Test
@@ -80,13 +78,13 @@ class DefaultAuthRepositoryTest {
         private fun <T> result(value: T): FoxResult<T> =
             failure?.let { FoxResult.Failure(it) } ?: FoxResult.Success(value)
 
-        override suspend fun requestPhoneOtp(phoneE164: String, fullName: String?): FoxResult<Unit> {
-            calls += "$phoneE164|$fullName"
+        override suspend fun requestPhoneOtp(phoneE164: String): FoxResult<Unit> {
+            calls += "otp|$phoneE164"
             return result(Unit)
         }
 
-        override suspend fun verifyPhoneOtp(phoneE164: String, code: String): FoxResult<Unit> {
-            calls += "verify|$phoneE164|$code"
+        override suspend fun verifyPhoneOtp(phoneE164: String, code: String, fullName: String?): FoxResult<Unit> {
+            calls += "verify|$phoneE164|$code|$fullName"
             return result(Unit)
         }
 
@@ -99,9 +97,9 @@ class DefaultAuthRepositoryTest {
             fullName: String,
             email: String,
             password: String,
-        ): FoxResult<EmailSignUpOutcome> {
+        ): FoxResult<Unit> {
             calls += "signup|$fullName|$email"
-            return result(EmailSignUpOutcome.ConfirmationEmailSent)
+            return result(Unit)
         }
 
         override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> {

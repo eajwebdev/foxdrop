@@ -7,9 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 import ph.foxdrop.core.datastore.SecureStore
+import ph.foxdrop.core.network.ApiJson
 
 /** Whether a session has been read from storage yet, and what it is. */
 sealed interface SessionState {
@@ -47,7 +46,6 @@ interface SessionStore {
  */
 @Singleton
 internal class EncryptedSessionStore @Inject constructor(private val secureStore: SecureStore) : SessionStore {
-    private val json = Json { ignoreUnknownKeys = true }
     private val mutex = Mutex()
     private val _state = MutableStateFlow<SessionState>(SessionState.Loading)
     override val state: StateFlow<SessionState> = _state.asStateFlow()
@@ -62,20 +60,16 @@ internal class EncryptedSessionStore @Inject constructor(private val secureStore
         }
 
     override suspend fun save(session: StoredSession) {
-        mutex.withLock {
-            secureStore.write(KEY, json.encodeToString(StoredSession.serializer(), session))
-            _state.value = SessionState.Present(session)
-        }
+        mutex.withLock { writeLocked(session) }
     }
 
     override suspend fun updateUser(token: String, user: ApiUser) {
         load()
         mutex.withLock {
             val current = (_state.value as? SessionState.Present)?.session ?: return
-            if (current.token != token) return
-            val updated = current.copy(user = user)
-            secureStore.write(KEY, json.encodeToString(StoredSession.serializer(), updated))
-            _state.value = SessionState.Present(updated)
+            // Another session (signed out / in meanwhile), or nothing new: no encrypted rewrite.
+            if (current.token != token || current.user == user) return
+            writeLocked(current.copy(user = user))
         }
     }
 
@@ -90,6 +84,11 @@ internal class EncryptedSessionStore @Inject constructor(private val secureStore
         }
     }
 
+    private suspend fun writeLocked(session: StoredSession) {
+        secureStore.write(KEY, ApiJson.encodeToString(StoredSession.serializer(), session))
+        _state.value = SessionState.Present(session)
+    }
+
     private suspend fun clearLocked() {
         secureStore.remove(KEY)
         _state.value = SessionState.Absent
@@ -98,11 +97,8 @@ internal class EncryptedSessionStore @Inject constructor(private val secureStore
     private suspend fun readStored(): StoredSession? {
         val stored = secureStore.read(KEY) ?: return null
         return try {
-            json.decodeFromString(StoredSession.serializer(), stored)
-        } catch (_: SerializationException) {
-            secureStore.remove(KEY)
-            null
-        } catch (_: IllegalArgumentException) {
+            ApiJson.decodeFromString(StoredSession.serializer(), stored)
+        } catch (_: IllegalArgumentException) { // includes SerializationException
             secureStore.remove(KEY)
             null
         }

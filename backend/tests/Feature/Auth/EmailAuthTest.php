@@ -10,7 +10,7 @@ it('registers an email account and signs it in', function () {
         ->assertJsonPath('data.email', 'maria@example.com')
         ->assertJsonPath('data.roles.0.role', 'customer');
 
-    expect(User::query()->sole()->password)->not->toBe('secret123');
+    expect(User::query()->where('email', 'maria@example.com')->sole()->password)->not->toBe('secret123');
 });
 
 it('refuses a taken email, regardless of letter case', function () {

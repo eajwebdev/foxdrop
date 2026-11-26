@@ -2,10 +2,10 @@ package ph.foxdrop.core.testing.fake
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.domain.auth.AuthRepository
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 import ph.foxdrop.core.domain.auth.RoleRepository
 import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.domain.preferences.AppPreferencesRepository
@@ -23,15 +23,14 @@ class FakeAuthRepository : AuthRepository {
     var requestOtpError: DomainError? = null
     var verifyError: DomainError? = null
     var emailError: DomainError? = null
-    var signUpOutcome: EmailSignUpOutcome = EmailSignUpOutcome.SignedIn
 
-    override suspend fun requestPhoneOtp(phoneE164: String, fullName: String?): FoxResult<Unit> {
-        calls += "otp:$phoneE164:$fullName"
+    override suspend fun requestPhoneOtp(phoneE164: String): FoxResult<Unit> {
+        calls += "otp:$phoneE164"
         return requestOtpError.toResult(Unit)
     }
 
-    override suspend fun verifyPhoneOtp(phoneE164: String, code: String): FoxResult<Unit> {
-        calls += "verify:$phoneE164:$code"
+    override suspend fun verifyPhoneOtp(phoneE164: String, code: String, fullName: String?): FoxResult<Unit> {
+        calls += "verify:$phoneE164:$code:$fullName"
         val result = verifyError.toResult(Unit)
         if (result is FoxResult.Success) status.value = SessionStatus.SignedIn("user-phone")
         return result
@@ -48,9 +47,11 @@ class FakeAuthRepository : AuthRepository {
         fullName: String,
         email: String,
         password: String,
-    ): FoxResult<EmailSignUpOutcome> {
+    ): FoxResult<Unit> {
         calls += "signup:$fullName:$email"
-        return emailError.toResult(signUpOutcome)
+        val result = emailError.toResult(Unit)
+        if (result is FoxResult.Success) status.value = SessionStatus.SignedIn("user-email")
+        return result
     }
 
     override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> {
@@ -77,10 +78,11 @@ class FakeRoleRepository(
     RoleRepository {
     var calls = 0
 
-    override suspend fun myRoles(): FoxResult<List<RoleGrant>> {
-        calls++
-        return result
-    }
+    override fun roles(): Flow<FoxResult<List<RoleGrant>>> =
+        flow {
+            calls++
+            emit(result)
+        }
 }
 
 class FakeAppPreferencesRepository(onboarded: Boolean = false) : AppPreferencesRepository {

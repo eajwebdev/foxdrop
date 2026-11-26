@@ -2,14 +2,13 @@
 
 use App\Enums\AppRole;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 it('requires a token for the profile', function () {
     $this->getJson(route('api.v1.me'))->assertUnauthorized();
 });
 
 it('returns the user with every role, oldest first', function () {
-    $province = DB::table('provinces')->insertGetId(['psgc_code' => '0604500000', 'name' => 'Negros Occidental', 'region_code' => '0600000000', 'region_name' => 'Region VI'], 'id');
+    $province = provinceId(ILOILO);
     $user = User::factory()->withRole(AppRole::Operator, $province)->create();
 
     $this->withHeaders(bearer($user))->getJson(route('api.v1.me'))

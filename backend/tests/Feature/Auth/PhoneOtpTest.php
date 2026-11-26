@@ -26,7 +26,7 @@ it('texts a 6-digit code and stores only its hash', function () {
 
     $code = $sms->lastCodeFor(PHONE);
     expect($code)->toMatch('/^\d{6}$/')
-        ->and(OtpCode::query()->sole()->code_hash)->not->toContain($code);
+        ->and(OtpCode::query()->where('phone', PHONE)->sole()->code_hash)->not->toContain($code);
 });
 
 it('rejects numbers that are not Philippine mobiles', function () {

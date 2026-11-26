@@ -14,8 +14,8 @@ use Throwable;
 use UnexpectedValueException;
 
 /**
- * Verifies Google ID tokens against Google's published signing keys (cached for an hour, refetched once when a token
- * names a key we have not seen). Each token is accepted once: its nonce is remembered until the token expires, so a
+ * Verifies Google ID tokens against Google's published signing keys (cached for an hour, refetched when a token names a
+ * key we have not seen and the cached keys are over 5 minutes old). Each token is accepted once: its nonce is remembered until the token expires, so a
  * captured request cannot be replayed for more API tokens.
  */
 final class JwksGoogleIdTokenVerifier implements GoogleIdTokenVerifier
@@ -23,6 +23,10 @@ final class JwksGoogleIdTokenVerifier implements GoogleIdTokenVerifier
     private const array ISSUERS = ['accounts.google.com', 'https://accounts.google.com'];
 
     private const string KEYS_CACHE = 'google-id-token-jwks';
+
+    private const string UNAVAILABLE_CACHE = 'google-id-token-jwks-unavailable';
+
+    private const int REFETCH_AFTER_SECONDS = 300;
 
     public function verify(string $idToken, string $rawNonce): GoogleIdentity
     {
@@ -62,46 +66,51 @@ final class JwksGoogleIdTokenVerifier implements GoogleIdTokenVerifier
     /**
      * @return array<string, mixed>
      */
-    private function decode(string $idToken): array
+    private function decode(string $idToken, bool $mayRefetchKeys = true): array
     {
         try {
-            return (array) JWT::decode($idToken, JWK::parseKeySet($this->signingKeys(), 'RS256'));
+            return (array) JWT::decode($idToken, JWK::parseKeySet($this->signingKeys()['jwks'], 'RS256'));
+        } catch (GoogleSignInException $e) {
+            throw $e;
         } catch (UnexpectedValueException $e) {
-            if (! str_contains($e->getMessage(), '"kid"')) {
-                throw GoogleSignInException::invalidToken();
-            }
-            // Google rotated its keys since we cached them: fetch once more.
-            Cache::forget(self::KEYS_CACHE);
-        } catch (GoogleSignInException $e) {
-            throw $e;
-        } catch (Throwable) {
-            throw GoogleSignInException::invalidToken();
-        }
+            // An unknown key id: Google may have rotated its keys since we cached them. Refetch at most every
+            // 5 minutes, so forged key ids cannot make every request call Google.
+            $unknownKey = str_contains($e->getMessage(), '"kid"');
+            if ($mayRefetchKeys && $unknownKey && $this->signingKeys()['fetched_at'] < time() - self::REFETCH_AFTER_SECONDS) {
+                Cache::forget(self::KEYS_CACHE);
 
-        try {
-            return (array) JWT::decode($idToken, JWK::parseKeySet($this->signingKeys(), 'RS256'));
-        } catch (GoogleSignInException $e) {
-            throw $e;
+                return $this->decode($idToken, mayRefetchKeys: false);
+            }
+            throw GoogleSignInException::invalidToken();
         } catch (Throwable) {
             throw GoogleSignInException::invalidToken();
         }
     }
 
     /**
-     * Google's JWKS document, e.g. `{"keys": [{"kty": "RSA", ...}]}`.
+     * Google's JWKS document (`{"keys": [...]}`) and when we fetched it. While Google cannot be reached, the failure is
+     * remembered for 30 seconds so waiting requests do not pile up on it.
      *
-     * @return array<string, mixed>
+     * @return array{jwks: array<string, mixed>, fetched_at: int}
      */
     private function signingKeys(): array
     {
+        if (Cache::has(self::UNAVAILABLE_CACHE)) {
+            throw GoogleSignInException::unavailable();
+        }
+
         return Cache::remember(self::KEYS_CACHE, now()->addHour(), function (): array {
             try {
                 $jwks = Http::timeout(5)->retry(2, 200)->get((string) config('foxdrop.google.jwks_url'))->throw()->json();
             } catch (ConnectionException|RequestException) {
+                $jwks = null;
+            }
+            if (! is_array($jwks) || ! is_array($jwks['keys'] ?? null)) {
+                Cache::put(self::UNAVAILABLE_CACHE, true, now()->addSeconds(30));
                 throw GoogleSignInException::unavailable();
             }
 
-            return is_array($jwks) && is_array($jwks['keys'] ?? null) ? $jwks : throw GoogleSignInException::unavailable();
+            return ['jwks' => $jwks, 'fetched_at' => time()];
         });
     }
 }

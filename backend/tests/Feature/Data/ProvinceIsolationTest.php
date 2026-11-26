@@ -8,7 +8,6 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\UserRole;
 use App\Models\Wallet;
-use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +17,8 @@ use Illuminate\Support\Facades\DB;
 */
 
 beforeEach(function () {
-    $this->seed(DatabaseSeeder::class);
-    $this->neg = (string) DB::table('provinces')->where('psgc_code', DemoSeeder::NEGROS_OCCIDENTAL)->value('id');
-    $this->ilo = (string) DB::table('provinces')->where('psgc_code', '0603000000')->value('id');
+    $this->neg = provinceId(DemoSeeder::NEGROS_OCCIDENTAL);
+    $this->ilo = provinceId(ILOILO);
 
     $this->operatorB = User::factory()->withRole(AppRole::Operator, $this->ilo)->create();
     DB::table('province_licenses')->insert(['province_id' => $this->ilo, 'operator_user_id' => $this->operatorB->id, 'status' => 'ACTIVE', 'start_at' => now(), 'end_at' => now()->addYear(), 'fee_centavos' => 1_500_000]);
@@ -41,11 +39,6 @@ beforeEach(function () {
     $order('FD-NEG-000001', $this->neg, DemoSeeder::storeId(1), DemoSeeder::riderId(1));
     $order('FD-ILO-000001', $this->ilo, $this->storeB, null);
 });
-
-function demoUser(int $n): User
-{
-    return User::query()->findOrFail(DemoSeeder::userId($n));
-}
 
 it('shows operator A nothing from province B', function () {
     $operatorA = demoUser(6);

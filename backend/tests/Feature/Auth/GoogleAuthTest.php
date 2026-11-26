@@ -30,7 +30,7 @@ it('creates an account for a new Google user', function () {
     fakeGoogle(new GoogleIdentity('google-sub-1', 'ana@gmail.com', 'Ana Villanueva', 'https://example.com/a.png'));
 
     signInWithGoogle()->assertCreated()->assertJsonPath('data.email', 'ana@gmail.com')->assertJsonPath('data.full_name', 'Ana Villanueva');
-    expect(User::query()->sole()->email_verified_at)->not->toBeNull();
+    expect(User::query()->where('google_sub', 'google-sub-1')->sole()->email_verified_at)->not->toBeNull();
 });
 
 it('signs a returning Google user into the same account', function () {
@@ -79,4 +79,12 @@ it('refuses to move an email to a second Google account', function () {
 
     signInWithGoogle()->assertConflict();
     expect($user->refresh()->google_sub)->toBe('google-sub-1');
+});
+
+it('does not share one rate-limit bucket between all Google users', function () {
+    fakeGoogle(new GoogleIdentity('google-sub-1', null, null, null));
+
+    foreach (range(1, 60) as $i) {
+        signInWithGoogle()->assertSuccessful();
+    }
 });

@@ -7,6 +7,7 @@ use Closure;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -31,8 +32,6 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasUuids, Notifiable;
-
-    public const string STATUS_ACTIVE = 'ACTIVE';
 
     public const string STATUS_SUSPENDED = 'SUSPENDED';
 
@@ -64,9 +63,12 @@ class User extends Authenticatable
         return $this->hasOne(Rider::class);
     }
 
-    public function isSuspended(): bool
+    /**
+     * Stops a suspended account at sign-in and on every API call (403 with a message the apps show).
+     */
+    public function ensureActive(): void
     {
-        return $this->status === self::STATUS_SUSPENDED;
+        abort_if($this->status === self::STATUS_SUSPENDED, 403, 'This account is suspended. Please contact FoxDrop support.');
     }
 
     public function isPlatformAdmin(): bool
@@ -82,6 +84,16 @@ class User extends Authenticatable
     public function operatorProvinceIds(): array
     {
         return $this->scopeIds(AppRole::operatorTeam(), fn (UserRole $grant): ?string => $grant->province_id);
+    }
+
+    /**
+     * The id of this user's rider record, as a subquery (empty when they are not a rider).
+     *
+     * @return Builder<Rider>
+     */
+    public function riderIdsQuery(): Builder
+    {
+        return Rider::query()->where('user_id', $this->id)->select('id');
     }
 
     /**

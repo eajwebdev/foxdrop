@@ -6,7 +6,6 @@ import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.validation.EmailAddress
 import ph.foxdrop.core.common.validation.Password
 import ph.foxdrop.core.common.validation.PhMobileNumber
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 
 /** New state plus optional work for the ViewModel. */
 data class AuthNext(val state: AuthState, val command: AuthCommand? = null)
@@ -51,7 +50,7 @@ object AuthReducer {
                 } else {
                     AuthNext(
                         state.copy(submit = SubmitStatus.Loading, message = null),
-                        AuthCommand.RequestOtp(state.otpPhone, nameForSignUp(state)),
+                        AuthCommand.RequestOtp(state.otpPhone),
                     )
                 }
 
@@ -89,8 +88,6 @@ object AuthReducer {
             is AuthAction.OtpVerified -> otpVerified(state, action.error)
 
             is AuthAction.EmailSignedIn -> signedIn(state, action.error)
-
-            is AuthAction.EmailSignedUp -> emailSignedUp(state, action)
 
             AuthAction.ResendTick -> AuthNext(
                 state.copy(resendSecondsLeft = (state.resendSecondsLeft - 1).coerceAtLeast(0)),
@@ -141,7 +138,6 @@ object AuthReducer {
             AuthMethod.Phone ->
                 AuthCommand.RequestOtp(
                     checkNotNull(phoneE164(state)) { "validate() accepts only valid numbers" },
-                    nameForSignUp(state),
                 )
 
             AuthMethod.Email ->
@@ -206,7 +202,7 @@ object AuthReducer {
         } else {
             AuthNext(
                 state.copy(submit = SubmitStatus.Loading, otpError = false, message = null),
-                AuthCommand.VerifyOtp(state.otpPhone, state.otp),
+                AuthCommand.VerifyOtp(state.otpPhone, state.otp, nameForSignUp(state)),
             )
         }
 
@@ -245,23 +241,6 @@ object AuthReducer {
                 )
 
             else -> AuthNext(state.copy(submit = SubmitStatus.Idle, message = error.toMessage()))
-        }
-
-    private fun emailSignedUp(state: AuthState, action: AuthAction.EmailSignedUp): AuthNext =
-        when {
-            action.error != null -> AuthNext(state.copy(submit = SubmitStatus.Idle, message = action.error.toMessage()))
-
-            action.outcome == EmailSignUpOutcome.ConfirmationEmailSent ->
-                AuthNext(
-                    state.copy(
-                        submit = SubmitStatus.Idle,
-                        mode = AuthMode.Login,
-                        password = "",
-                        message = AuthMessage.ConfirmEmail,
-                    ),
-                )
-
-            else -> AuthNext(state.copy(submit = SubmitStatus.Success), AuthCommand.FinishSignIn)
         }
 }
 

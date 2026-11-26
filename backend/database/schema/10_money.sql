@@ -71,7 +71,7 @@ create table public.wallets (
     end
   )
 );
-create index wallets_owner_idx on public.wallets (owner_type, owner_id);
+-- Lookups by owner use wallets_unique (owner_type, owner_id are its leading columns).
 create index wallets_province_idx on public.wallets (province_id);
 
 create table public.ledger_txns (

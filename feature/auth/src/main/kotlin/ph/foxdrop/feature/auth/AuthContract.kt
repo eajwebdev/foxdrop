@@ -4,7 +4,6 @@ import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import ph.foxdrop.core.common.result.DomainError
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 
 enum class AuthMode { Login, SignUp }
 
@@ -26,7 +25,6 @@ enum class AuthMessage {
     InvalidCredentials,
     WrongCode,
     CodeNotSent,
-    ConfirmEmail,
     GoogleSoon,
     GoogleFailed,
     Unknown,
@@ -104,8 +102,6 @@ sealed interface AuthAction {
 
     data class EmailSignedIn(val error: DomainError?) : AuthAction
 
-    data class EmailSignedUp(val error: DomainError?, val outcome: EmailSignUpOutcome?) : AuthAction
-
     data class GoogleSignedIn(val error: DomainError?) : AuthAction
 
     data object ResendTick : AuthAction
@@ -113,9 +109,10 @@ sealed interface AuthAction {
 
 /** Work the reducer asks the ViewModel to do. */
 sealed interface AuthCommand {
-    data class RequestOtp(val phoneE164: String, val fullName: String?) : AuthCommand
+    data class RequestOtp(val phoneE164: String) : AuthCommand
 
-    data class VerifyOtp(val phoneE164: String, val code: String) : AuthCommand
+    /** [fullName] is set on sign-up: the account is created with it when the code is right. */
+    data class VerifyOtp(val phoneE164: String, val code: String, val fullName: String? = null) : AuthCommand
 
     data class SignInWithEmail(val email: String, val password: String) : AuthCommand
 

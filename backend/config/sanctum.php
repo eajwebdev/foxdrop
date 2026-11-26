@@ -53,6 +53,11 @@ return [
     'expiration' => null,
 
     /*
+    | Not tracked: it would UPDATE the token row on every API call. Expiry is per token (90 days, set at sign-in).
+    */
+    'last_used_at' => false,
+
+    /*
     |--------------------------------------------------------------------------
     | Token Prefix
     |--------------------------------------------------------------------------

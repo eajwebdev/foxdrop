@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\VisibleToViewer;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -22,23 +22,18 @@ use Illuminate\Database\Eloquent\Model;
 #[Hidden(['pickup_code', 'delivery_otp'])]
 class Order extends Model
 {
-    use HasUuids;
+    use HasUuids, VisibleToViewer;
 
     /**
      * Its customer, the store team, the assigned rider, the province's operator team, or platform admins.
      *
-     * @param  Builder<self>  $query
+     * @param  Builder<static>  $query
      */
-    #[Scope]
-    protected function visibleTo(Builder $query, User $user): void
+    protected function visibilityRule(Builder $query, User $user): void
     {
-        if ($user->isPlatformAdmin()) {
-            return;
-        }
-        $query->where(fn (Builder $q) => $q
-            ->where('customer_id', $user->id)
+        $query->where('customer_id', $user->id)
             ->orWhereIn('store_id', $user->memberStoreIds())
-            ->orWhereIn('rider_id', Rider::query()->where('user_id', $user->id)->select('id'))
-            ->orWhereIn('province_id', $user->operatorProvinceIds()));
+            ->orWhereIn('rider_id', $user->riderIdsQuery())
+            ->orWhereIn('province_id', $user->operatorProvinceIds());
     }
 }

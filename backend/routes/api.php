@@ -18,9 +18,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::post('otp/send', [PhoneOtpController::class, 'send'])->middleware('throttle:otp-send')->name('otp.send');
         Route::post('otp/verify', [PhoneOtpController::class, 'verify'])->middleware('throttle:otp-verify')->name('otp.verify');
-        Route::post('email/register', [EmailAuthController::class, 'register'])->middleware('throttle:sign-in')->name('email.register');
-        Route::post('email/login', [EmailAuthController::class, 'login'])->middleware('throttle:sign-in')->name('email.login');
-        Route::post('google', GoogleAuthController::class)->middleware('throttle:sign-in')->name('google');
+        Route::post('email/register', [EmailAuthController::class, 'register'])->middleware('throttle:email-sign-in')->name('email.register');
+        Route::post('email/login', [EmailAuthController::class, 'login'])->middleware('throttle:email-sign-in')->name('email.login');
+        Route::post('google', GoogleAuthController::class)->middleware('throttle:google-sign-in')->name('google');
     });
 
     Route::middleware(['auth:sanctum', EnsureAccountIsActive::class])->group(function (): void {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Auth;
 
+use App\Rules\PhilippineMobile;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SendOtpRequest extends FormRequest
@@ -17,15 +18,7 @@ class SendOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'phone' => ['required', 'string', 'regex:/^\+63\d{10}$/'],
+            'phone' => ['required', 'string', new PhilippineMobile],
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return ['phone.regex' => 'Enter a valid Philippine mobile number.'];
     }
 }

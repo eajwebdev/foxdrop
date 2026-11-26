@@ -22,7 +22,8 @@ final class GoogleSignInException extends RuntimeException
 
     public static function unavailable(): self
     {
-        return new self('Google sign-in is unavailable right now. Please try again in a moment.', 503);
+        // 502: an upstream (Google) failure the app treats like a network problem; 503 means not set up here.
+        return new self('Google sign-in is unavailable right now. Please try again in a moment.', 502);
     }
 
     public static function emailLinkedToAnotherGoogleAccount(): self

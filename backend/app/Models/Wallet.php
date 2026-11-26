@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Scope;
+use App\Models\Concerns\VisibleToViewer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Wallet extends Model
 {
-    use HasUuids;
+    use HasUuids, VisibleToViewer;
 
     public const null UPDATED_AT = null;
 
@@ -34,18 +34,12 @@ class Wallet extends Model
     /**
      * The wallet's store team or rider, its province's operator team, or platform admins.
      *
-     * @param  Builder<self>  $query
+     * @param  Builder<static>  $query
      */
-    #[Scope]
-    protected function visibleTo(Builder $query, User $user): void
+    protected function visibilityRule(Builder $query, User $user): void
     {
-        if ($user->isPlatformAdmin()) {
-            return;
-        }
-        $query->where(fn (Builder $q) => $q
-            ->whereIn('province_id', $user->operatorProvinceIds())
-            ->orWhere(fn (Builder $s) => $s->where('owner_type', 'STORE')->whereIn('owner_id', $user->memberStoreIds()))
-            ->orWhere(fn (Builder $r) => $r->where('owner_type', 'RIDER')
-                ->whereIn('owner_id', Rider::query()->where('user_id', $user->id)->select('id'))));
+        $query->whereIn('province_id', $user->operatorProvinceIds())
+            ->orWhere(fn (Builder $store) => $store->where('owner_type', 'STORE')->whereIn('owner_id', $user->memberStoreIds()))
+            ->orWhere(fn (Builder $rider) => $rider->where('owner_type', 'RIDER')->whereIn('owner_id', $user->riderIdsQuery()));
     }
 }

@@ -5,8 +5,6 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.statement.bodyAsText
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -37,20 +35,16 @@ internal fun Throwable.toDomainError(): DomainError =
 /** The field and message of a Laravel error body: `{"message": "...", "errors": {"code": ["..."]}}`. */
 internal data class ApiErrorBody(val field: String?, val message: String?)
 
-private val errorJson = Json { ignoreUnknownKeys = true }
-
 internal fun laravelError(body: String): ApiErrorBody =
     try {
-        val root = errorJson.parseToJsonElement(body).jsonObject
+        val root = ApiJson.parseToJsonElement(body).jsonObject
         val firstError = (root["errors"] as? JsonObject)?.entries?.firstOrNull()
         ApiErrorBody(
             field = firstError?.key,
             message = firstError?.value?.jsonArray?.firstOrNull()?.jsonPrimitive?.contentOrNull
                 ?: root["message"]?.jsonPrimitive?.contentOrNull,
         )
-    } catch (_: SerializationException) {
-        ApiErrorBody(null, null)
-    } catch (_: IllegalArgumentException) {
+    } catch (_: IllegalArgumentException) { // includes SerializationException
         ApiErrorBody(null, null)
     }
 
@@ -58,10 +52,19 @@ internal fun laravelError(body: String): ApiErrorBody =
 internal fun httpStatusToDomainError(status: Int, body: ApiErrorBody = ApiErrorBody(null, null)): DomainError =
     when (status) {
         400, 422 -> DomainError.Validation(field = body.field ?: "request", reason = body.message.orEmpty())
+
         401, 403 -> DomainError.Unauthorized
+
+        // The server or one it depends on (e.g. Google) is unreachable: like no signal, try again later.
+        502, 504 -> DomainError.Network
+
         404 -> DomainError.NotFound
+
         409 -> DomainError.Conflict(body.message.orEmpty())
+
         429 -> DomainError.RateLimited
+
         503 -> DomainError.NotConfigured
+
         else -> DomainError.Unknown(body.message)
     }

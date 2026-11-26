@@ -3,7 +3,6 @@ package ph.foxdrop.core.network.auth
 import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +13,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.common.result.map
-import ph.foxdrop.core.domain.auth.EmailSignUpOutcome
 import ph.foxdrop.core.domain.auth.SessionStatus
 import ph.foxdrop.core.network.FoxApiClient
 import ph.foxdrop.core.network.di.DeviceName
@@ -27,13 +25,13 @@ import ph.foxdrop.core.network.session.StoredSession
 interface AuthRemoteDataSource {
     val sessionStatus: Flow<SessionStatus>
 
-    suspend fun requestPhoneOtp(phoneE164: String, fullName: String?): FoxResult<Unit>
+    suspend fun requestPhoneOtp(phoneE164: String): FoxResult<Unit>
 
-    suspend fun verifyPhoneOtp(phoneE164: String, code: String): FoxResult<Unit>
+    suspend fun verifyPhoneOtp(phoneE164: String, code: String, fullName: String?): FoxResult<Unit>
 
     suspend fun signInWithEmail(email: String, password: String): FoxResult<Unit>
 
-    suspend fun signUpWithEmail(fullName: String, email: String, password: String): FoxResult<EmailSignUpOutcome>
+    suspend fun signUpWithEmail(fullName: String, email: String, password: String): FoxResult<Unit>
 
     suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit>
 
@@ -54,9 +52,6 @@ internal class ApiAuthRemoteDataSource @Inject constructor(
     private val sessionStore: SessionStore,
     @param:DeviceName private val deviceName: String,
 ) : AuthRemoteDataSource {
-    /** The name typed on the sign-up form, sent with the code (the account is created when the code is verified). */
-    private val pendingNames = ConcurrentHashMap<String, String>()
-
     override val sessionStatus: Flow<SessionStatus> =
         flow {
             sessionStore.load()
@@ -71,32 +66,19 @@ internal class ApiAuthRemoteDataSource @Inject constructor(
             )
         }
 
-    override suspend fun requestPhoneOtp(phoneE164: String, fullName: String?): FoxResult<Unit> {
-        if (fullName.isNullOrBlank()) pendingNames.remove(phoneE164) else pendingNames[phoneE164] = fullName
-        return api.call { http -> http.post("auth/otp/send") { setBody(mapOf("phone" to phoneE164)) } }.map { }
-    }
+    override suspend fun requestPhoneOtp(phoneE164: String): FoxResult<Unit> =
+        api.call { http -> http.post("auth/otp/send") { setBody(mapOf("phone" to phoneE164)) } }.map { }
 
-    override suspend fun verifyPhoneOtp(phoneE164: String, code: String): FoxResult<Unit> =
-        signIn(
-            "auth/otp/verify",
-            buildMap {
-                put("phone", phoneE164)
-                put("code", code)
-                pendingNames[phoneE164]?.let { put("full_name", it) }
-            },
-        ).also { if (it is FoxResult.Success) pendingNames.remove(phoneE164) }
+    override suspend fun verifyPhoneOtp(phoneE164: String, code: String, fullName: String?): FoxResult<Unit> {
+        val fields = mapOf("phone" to phoneE164, "code" to code)
+        return signIn("auth/otp/verify", if (fullName == null) fields else fields + ("full_name" to fullName))
+    }
 
     override suspend fun signInWithEmail(email: String, password: String): FoxResult<Unit> =
         signIn("auth/email/login", mapOf("email" to email, "password" to password))
 
-    /** Accounts are signed in right away; email verification arrives with the email features (Phase 6). */
-    override suspend fun signUpWithEmail(
-        fullName: String,
-        email: String,
-        password: String,
-    ): FoxResult<EmailSignUpOutcome> =
+    override suspend fun signUpWithEmail(fullName: String, email: String, password: String): FoxResult<Unit> =
         signIn("auth/email/register", mapOf("full_name" to fullName, "email" to email, "password" to password))
-            .map { EmailSignUpOutcome.SignedIn }
 
     override suspend fun signInWithGoogle(idToken: String, rawNonce: String): FoxResult<Unit> =
         signIn("auth/google", mapOf("id_token" to idToken, "nonce" to rawNonce))

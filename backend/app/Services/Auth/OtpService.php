@@ -7,26 +7,12 @@ use App\Models\OtpCode;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Phone sign-in codes (§3). A code is 6 digits, expires after 5 minutes, allows 5 attempts and works once. Only an
+ * Phone sign-in codes (§3), sized and timed by config/foxdrop.php (6 digits, 5 minutes, 5 attempts, one use). Only an
  * HMAC of the code is stored. Demo numbers can have fixed codes in local and testing environments only.
  */
 final class OtpService
 {
     public function __construct(private readonly SmsSender $sms) {}
-
-    /**
-     * Seconds the caller must wait before another code may be sent to this phone (0 = may send now).
-     */
-    public function secondsUntilResend(string $phone): int
-    {
-        $latest = OtpCode::query()->where('phone', $phone)->latest('created_at')->first();
-        if ($latest === null) {
-            return 0;
-        }
-        $readyAt = $latest->created_at->copy()->addSeconds($this->config('resend_after_seconds'));
-
-        return max(0, (int) ceil(now()->diffInSeconds($readyAt, false)));
-    }
 
     /**
      * Sends a new code and retires every earlier one for this phone.
@@ -46,7 +32,8 @@ final class OtpService
         });
 
         if ($testCode === null) {
-            $this->sms->send($phone, "Your FoxDrop code is {$code}. It expires in 5 minutes. Never share this code.");
+            $minutes = intdiv($this->config('ttl_seconds'), 60);
+            $this->sms->send($phone, "Your FoxDrop code is {$code}. It expires in {$minutes} minutes. Never share this code.");
         }
     }
 
@@ -67,13 +54,10 @@ final class OtpService
                 return false;
             }
 
-            $otp->increment('attempts');
-            if (! hash_equals($otp->code_hash, $this->hash($phone, $code))) {
-                return false;
-            }
-            $otp->forceFill(['consumed_at' => now()])->save();
+            $matches = hash_equals($otp->code_hash, $this->hash($phone, $code));
+            $otp->forceFill(['attempts' => $otp->attempts + 1, 'consumed_at' => $matches ? now() : null])->save();
 
-            return true;
+            return $matches;
         });
     }
 

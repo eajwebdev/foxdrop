@@ -12,4 +12,9 @@ abstract class TestCase extends BaseTestCase
     protected bool $dropTypes = true;
 
     protected bool $dropViews = true;
+
+    /**
+     * Provinces + demo data are seeded once per test run (with the schema); each test rolls back its own changes.
+     */
+    protected bool $seed = true;
 }

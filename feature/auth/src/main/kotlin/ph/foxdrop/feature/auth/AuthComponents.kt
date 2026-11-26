@@ -200,7 +200,7 @@ internal fun AuthMessageBanner(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isInfo = message == AuthMessage.ConfirmEmail || message == AuthMessage.GoogleSoon
+    val isInfo = message == AuthMessage.GoogleSoon
     val colors = MaterialTheme.colorScheme
     Surface(
         shape = FoxShapes.Medium,
@@ -274,7 +274,6 @@ internal fun AuthMessage.textRes(): Int =
         AuthMessage.InvalidCredentials -> R.string.auth_message_invalid
         AuthMessage.WrongCode -> R.string.auth_message_wrong_code
         AuthMessage.CodeNotSent -> R.string.auth_message_code_not_sent
-        AuthMessage.ConfirmEmail -> R.string.auth_message_confirm_email
         AuthMessage.GoogleSoon -> R.string.auth_message_google_soon
         AuthMessage.GoogleFailed -> R.string.auth_message_google_failed
         AuthMessage.Unknown -> R.string.auth_message_unknown

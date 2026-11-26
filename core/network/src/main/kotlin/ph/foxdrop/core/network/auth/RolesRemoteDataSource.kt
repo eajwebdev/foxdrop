@@ -7,6 +7,7 @@ import javax.inject.Singleton
 import kotlinx.serialization.Serializable
 import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.common.result.FoxResult
+import ph.foxdrop.core.common.result.map
 import ph.foxdrop.core.model.RoleGrant
 import ph.foxdrop.core.network.FoxApiClient
 import ph.foxdrop.core.network.session.ApiUser
@@ -14,40 +15,28 @@ import ph.foxdrop.core.network.session.SessionStore
 import ph.foxdrop.core.network.session.toGrants
 
 interface RolesRemoteDataSource {
-    suspend fun myRoles(): FoxResult<List<RoleGrant>>
+    /** The roles saved with the session at sign-in or the last refresh; null when signed out. */
+    suspend fun savedRoles(): List<RoleGrant>?
+
+    /** The server's current roles (`/me`); they replace the saved copy. */
+    suspend fun fetchRoles(): FoxResult<List<RoleGrant>>
 }
 
 @Serializable
 internal data class MeResponse(val data: ApiUser)
 
-/**
- * Roles come from `/me` whenever the server is reachable, so a granted or revoked role shows on the next launch.
- * Offline (no signal in the province), the roles saved at the last sign-in or refresh pick the home; the server still
- * checks every request.
- */
 @Singleton
 internal class ApiRolesRemoteDataSource @Inject constructor(
     private val api: FoxApiClient,
     private val sessionStore: SessionStore,
 ) : RolesRemoteDataSource {
-    override suspend fun myRoles(): FoxResult<List<RoleGrant>> {
-        val session = sessionStore.load() ?: return FoxResult.Failure(DomainError.Unauthorized)
-        return when (val me = api.call { http -> http.get("me").body<MeResponse>().data }) {
-            is FoxResult.Success -> {
-                sessionStore.updateUser(session.token, me.value)
-                FoxResult.Success(me.value.roles.toGrants())
-            }
+    override suspend fun savedRoles(): List<RoleGrant>? = sessionStore.load()?.user?.roles?.toGrants()
 
-            is FoxResult.Failure -> {
-                val cached = sessionStore.load()
-                if (me.error == DomainError.Network &&
-                    cached != null
-                ) {
-                    FoxResult.Success(cached.user.roles.toGrants())
-                } else {
-                    me
-                }
-            }
+    override suspend fun fetchRoles(): FoxResult<List<RoleGrant>> {
+        val session = sessionStore.load() ?: return FoxResult.Failure(DomainError.Unauthorized)
+        return api.call { http -> http.get("me").body<MeResponse>().data }.map { user ->
+            sessionStore.updateUser(session.token, user)
+            user.roles.toGrants()
         }
     }
 }

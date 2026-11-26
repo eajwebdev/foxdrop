@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        // Partner documents (IDs, permits, licenses): private, served only through short-lived signed URLs.
+        'kyc' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/kyc'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

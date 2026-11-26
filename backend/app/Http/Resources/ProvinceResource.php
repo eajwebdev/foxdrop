@@ -13,6 +13,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property string $region_name
  * @property bool $is_serviceable
+ * @property bool $is_available
  */
 class ProvinceResource extends JsonResource
 {
@@ -27,6 +28,7 @@ class ProvinceResource extends JsonResource
             'name' => $this->name,
             'region_name' => $this->region_name,
             'is_serviceable' => (bool) $this->is_serviceable,
+            'is_available' => (bool) $this->is_available,
         ];
     }
 }

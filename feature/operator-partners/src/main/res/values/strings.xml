@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="partners_stores_title">Store applications</string>
+    <string name="partners_riders_title">Rider applications</string>
+    <string name="partners_filter_pending">Pending</string>
+    <string name="partners_filter_approved">Approved</string>
+    <string name="partners_filter_rejected">Rejected</string>
+    <string name="partners_error_title">We couldn\'t load the list</string>
+    <string name="partners_stores_empty_title">No store applications</string>
+    <string name="partners_stores_empty_message">New stores in your province will appear here for approval.</string>
+    <string name="partners_riders_empty_title">No rider applications</string>
+    <string name="partners_riders_empty_message">Riders who register in your province will appear here for approval.</string>
+    <string name="partners_submitted_on">Applied %1$s</string>
+
+    <string name="review_store_title">Review store</string>
+    <string name="review_rider_title">Review rider</string>
+    <string name="review_error_title">We couldn\'t load this application</string>
+    <string name="review_owner">Owner</string>
+    <string name="review_contact">Contact</string>
+    <string name="review_address">Address</string>
+    <string name="review_location">Location: %1$s, %2$s</string>
+    <string name="review_vehicle">Vehicle</string>
+    <string name="review_plate">Plate number</string>
+    <string name="review_license">Driver\'s license</string>
+    <string name="review_license_value">•••• %1$s, valid until %2$s</string>
+    <string name="review_documents">Documents</string>
+    <string name="review_no_documents">No documents uploaded.</string>
+    <string name="review_rejected_reason">Rejected: %1$s</string>
+    <string name="review_approve">Approve</string>
+    <string name="review_approving">Saving your decision</string>
+    <string name="review_reject">Reject</string>
+    <string name="review_reject_title">Reject this application?</string>
+    <string name="review_reject_reason">Reason (the applicant will see it)</string>
+    <string name="review_reject_confirm">Reject</string>
+    <string name="review_cancel">Cancel</string>
+    <string name="review_approved_store">Store approved. It is now visible to customers.</string>
+    <string name="review_approved_rider">Rider approved. They can now go online.</string>
+    <string name="review_rejected">Application rejected. The applicant can fix it and apply again.</string>
+
+    <string name="status_pending">Pending review</string>
+    <string name="status_active">Active</string>
+    <string name="status_approved">Approved</string>
+    <string name="status_rejected">Rejected</string>
+    <string name="status_other">%1$s</string>
+
+    <string name="category_food">Food</string>
+    <string name="category_groceries">Groceries</string>
+    <string name="category_medicine">Medicine</string>
+    <string name="category_more">More</string>
+    <string name="vehicle_motorcycle">Motorcycle</string>
+    <string name="vehicle_bicycle">Bicycle</string>
+    <string name="vehicle_tricycle">Tricycle</string>
+    <string name="vehicle_car">Car</string>
+    <string name="document_valid_id">Valid ID</string>
+    <string name="document_business_permit">Business permit</string>
+    <string name="document_drivers_license">Driver\'s license</string>
+    <string name="document_selfie">Selfie</string>
+    <string name="document_or_cr">OR/CR</string>
+    <string name="document_vehicle_photo">Vehicle photo</string>
+</resources>

@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -22,6 +24,8 @@ use RuntimeException;
  *   +63 917 000 0007  Rosa Lacson         store owner, Mama's Kitchen
  *   +63 917 000 0008  Ramon Yulo          store owner, QuickMart
  *   +63 917 000 0009  Teresa Montelibano  store owner, Bacolod Botika
+ *   +63 917 000 0011  Nena Villareal      applied to open "Lola Nena's Bakery" (waiting for the operator)
+ *   +63 917 000 0012  Jomar Tan           applied as a rider (waiting for the operator)
  *   admin@foxdrop.local / foxdrop-local-admin   super admin (web dashboard only)
  */
 class DemoSeeder extends Seeder
@@ -42,6 +46,7 @@ class DemoSeeder extends Seeder
             $this->riders($neg);
             $this->addresses($neg);
             $this->wallets($neg);
+            $this->applicationsToReview($neg);
         });
     }
 
@@ -75,6 +80,7 @@ class DemoSeeder extends Seeder
         $names = [
             1 => 'Juan Dela Cruz', 2 => 'Maria Santos', 3 => 'Paolo Reyes', 4 => 'Carlo Mendoza', 5 => 'Ana Villanueva',
             6 => 'Liza Gonzaga', 7 => 'Rosa Lacson', 8 => 'Ramon Yulo', 9 => 'Teresa Montelibano',
+            11 => 'Nena Villareal', 12 => 'Jomar Tan',
         ];
         $rows = collect($names)->map(fn (string $name, int $n): array => [
             'id' => self::userId($n),
@@ -265,6 +271,74 @@ class DemoSeeder extends Seeder
             }
         }
         DB::table('wallets')->insertOrIgnore($rows);
+    }
+
+    /**
+     * Phase 2: one store and one rider waiting for the operator, with generated document photos, so the operator
+     * demo (0006) has approvals to review.
+     */
+    private function applicationsToReview(string $neg): void
+    {
+        $storeId = self::storeId(11);
+        DB::table('stores')->insertOrIgnore([
+            'id' => $storeId,
+            'province_id' => $neg,
+            'owner_user_id' => self::userId(11),
+            'name' => "Lola Nena's Bakery",
+            'category' => 'FOOD',
+            'description' => 'Pandesal, ensaymada and piaya baked every morning.',
+            'location' => $this->point(122.9580, 10.6720),
+            'address_line' => 'Gatuslao St.',
+            'barangay' => 'Barangay 8',
+            'city' => 'Bacolod City',
+            'phone' => '+639170000011',
+            'status' => 'SUBMITTED',
+        ]);
+        foreach (['BUSINESS_PERMIT' => 'Business permit', 'VALID_ID' => 'Valid ID'] as $type => $label) {
+            DB::table('store_documents')->insertOrIgnore([
+                'store_id' => $storeId, 'province_id' => $neg, 'doc_type' => $type,
+                'storage_path' => $this->samplePhoto("stores/{$storeId}/".strtolower($type).'.jpg', $label),
+            ]);
+        }
+
+        $riderId = self::riderId(12);
+        DB::table('riders')->insertOrIgnore([
+            'id' => $riderId,
+            'user_id' => self::userId(12),
+            'province_id' => $neg,
+            'vehicle_type' => 'MOTORCYCLE',
+            'plate_no' => 'NEG 9012',
+            'license_no_encrypted' => Crypt::encryptString('N0123456789'),
+            'license_no_last4' => '6789',
+            'license_expiry' => now()->addYears(2)->toDateString(),
+            'status' => 'DOCS_REVIEW',
+        ]);
+        $documents = ['VALID_ID' => 'Valid ID', 'DRIVERS_LICENSE' => "Driver's license", 'SELFIE' => 'Selfie', 'OR_CR' => 'OR/CR', 'VEHICLE_PHOTO' => 'Vehicle'];
+        foreach ($documents as $type => $label) {
+            DB::table('rider_documents')->insertOrIgnore([
+                'rider_id' => $riderId, 'province_id' => $neg, 'doc_type' => $type,
+                'storage_path' => $this->samplePhoto("riders/{$riderId}/".strtolower($type).'.jpg', $label),
+            ]);
+        }
+    }
+
+    /**
+     * A plain placeholder photo on the private document disk.
+     */
+    private function samplePhoto(string $path, string $label): string
+    {
+        if (! Storage::disk('kyc')->exists($path)) {
+            $image = imagecreatetruecolor(800, 500);
+            imagefill($image, 0, 0, (int) imagecolorallocate($image, 245, 245, 250));
+            imagerectangle($image, 20, 20, 779, 479, (int) imagecolorallocate($image, 242, 1, 79));
+            imagestring($image, 5, 40, 40, 'DEMO - '.$label, (int) imagecolorallocate($image, 5, 21, 60));
+            ob_start();
+            imagejpeg($image, null, 80);
+            Storage::disk('kyc')->put($path, (string) ob_get_clean());
+            imagedestroy($image);
+        }
+
+        return $path;
     }
 
     /**

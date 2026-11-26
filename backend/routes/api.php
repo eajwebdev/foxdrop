@@ -4,13 +4,26 @@ use App\Http\Controllers\Api\V1\Auth\EmailAuthController;
 use App\Http\Controllers\Api\V1\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\V1\Auth\PhoneOtpController;
 use App\Http\Controllers\Api\V1\Auth\SessionController;
+use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\Operator\LicenseController;
+use App\Http\Controllers\Api\V1\Operator\OperatorApplicationController;
+use App\Http\Controllers\Api\V1\Operator\ProvinceSettingsController;
+use App\Http\Controllers\Api\V1\Operator\RateCardController;
+use App\Http\Controllers\Api\V1\Operator\RiderReviewController;
+use App\Http\Controllers\Api\V1\Operator\StoreReviewController;
+use App\Http\Controllers\Api\V1\Operator\ZoneController;
+use App\Http\Controllers\Api\V1\Partners\RiderApplicationController;
+use App\Http\Controllers\Api\V1\Partners\StoreApplicationController;
+use App\Http\Controllers\Api\V1\Payments\LicensePaymentController;
+use App\Http\Controllers\Api\V1\Payments\PaymentController;
+use App\Http\Controllers\Api\V1\Payments\PayMongoWebhookController;
 use App\Http\Controllers\Api\V1\ProvinceController;
 use App\Http\Middleware\EnsureAccountIsActive;
 use Illuminate\Support\Facades\Route;
 
 /*
-| FoxDrop API v1 for the three Android apps. Every route returns JSON.
+| FoxDrop API v1 for the three Android apps (docs/API.md). Every route returns JSON.
 */
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('provinces', ProvinceController::class)->name('provinces.index');
@@ -23,8 +36,52 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('google', GoogleAuthController::class)->middleware('throttle:google-sign-in')->name('google');
     });
 
+    // Payment provider callbacks (signature-checked, no user).
+    Route::post('webhooks/paymongo', PayMongoWebhookController::class)->name('webhooks.paymongo');
+
+    // Partner document photos for reviewers: signed 10-minute links (DECISIONS 60).
+    Route::middleware('signed')->name('documents.')->group(function (): void {
+        Route::get('documents/stores/{document}', [DocumentController::class, 'store'])->name('store');
+        Route::get('documents/riders/{document}', [DocumentController::class, 'rider'])->name('rider');
+    });
+
     Route::middleware(['auth:sanctum', EnsureAccountIsActive::class])->group(function (): void {
         Route::get('me', MeController::class)->name('me');
         Route::post('auth/logout', [SessionController::class, 'destroy'])->name('auth.logout');
+
+        // Becoming an operator, paying and renewing the license (§9.4 steps 1, 2, 8).
+        Route::post('operator/applications', [OperatorApplicationController::class, 'store'])->middleware('throttle:uploads')->name('operator.applications.store');
+        Route::get('operator/applications/mine', [OperatorApplicationController::class, 'mine'])->name('operator.applications.mine');
+        Route::get('operator/license', LicenseController::class)->name('operator.license');
+        Route::post('licenses/{license}/payments', LicensePaymentController::class)->name('licenses.payments.store');
+        Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+
+        // Territory of the operator's province (§9.4 steps 3, 5).
+        Route::prefix('operator')->name('operator.')->group(function (): void {
+            Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
+            Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');
+            Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
+            Route::get('rate-card', [RateCardController::class, 'show'])->name('rate-card.show');
+            Route::post('rate-cards', [RateCardController::class, 'store'])->name('rate-cards.store');
+            Route::post('rate-cards/preview', [RateCardController::class, 'preview'])->name('rate-cards.preview');
+            Route::get('province', [ProvinceSettingsController::class, 'show'])->name('province.show');
+            Route::patch('province', [ProvinceSettingsController::class, 'update'])->name('province.update');
+
+            // Partner reviews (§9.4 step 4).
+            Route::get('stores', [StoreReviewController::class, 'index'])->name('stores.index');
+            Route::get('stores/{store}', [StoreReviewController::class, 'show'])->name('stores.show');
+            Route::post('stores/{store}/approve', [StoreReviewController::class, 'approve'])->name('stores.approve');
+            Route::post('stores/{store}/reject', [StoreReviewController::class, 'reject'])->name('stores.reject');
+            Route::get('riders', [RiderReviewController::class, 'index'])->name('riders.index');
+            Route::get('riders/{rider}', [RiderReviewController::class, 'show'])->name('riders.show');
+            Route::post('riders/{rider}/approve', [RiderReviewController::class, 'approve'])->name('riders.approve');
+            Route::post('riders/{rider}/reject', [RiderReviewController::class, 'reject'])->name('riders.reject');
+        });
+
+        // Partner applications (§5.2, §5.3).
+        Route::post('stores', [StoreApplicationController::class, 'store'])->middleware('throttle:uploads')->name('stores.store');
+        Route::get('stores/mine', [StoreApplicationController::class, 'mine'])->name('stores.mine');
+        Route::post('riders', [RiderApplicationController::class, 'store'])->middleware('throttle:uploads')->name('riders.store');
+        Route::get('riders/me', [RiderApplicationController::class, 'me'])->name('riders.me');
     });
 });

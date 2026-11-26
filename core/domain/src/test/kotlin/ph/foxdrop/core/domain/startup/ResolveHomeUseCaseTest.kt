@@ -27,8 +27,8 @@ class ResolveHomeUseCaseTest {
     @Test
     fun `customers land on the customer home`() {
         assertEquals(HomeDecision.CustomerHome, decideHome(FoxDropApp.Customer, listOf(customer)))
-        assertEquals(HomeDecision.RiderNotRegistered, decideHome(FoxDropApp.Rider, listOf(customer)))
-        assertEquals(HomeDecision.BusinessNotRegistered, decideHome(FoxDropApp.Business, listOf(customer)))
+        assertEquals(HomeDecision.RiderOnboarding, decideHome(FoxDropApp.Rider, listOf(customer)))
+        assertEquals(HomeDecision.BusinessOnboarding, decideHome(FoxDropApp.Business, listOf(customer)))
     }
 
     @Test

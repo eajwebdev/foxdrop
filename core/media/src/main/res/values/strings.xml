@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_take_photo">Take photo</string>
+    <string name="media_choose_photo">Choose photo</string>
+    <string name="media_photo_added">Photo added</string>
+    <string name="media_photo_missing">No photo yet</string>
+    <string name="media_photo_unreadable">That photo could not be read. Please try another one.</string>
+</resources>

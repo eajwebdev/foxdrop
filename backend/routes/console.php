@@ -8,3 +8,6 @@ use Illuminate\Support\Facades\Schedule;
 */
 Schedule::command('model:prune', ['--model' => [OtpCode::class]])->daily()->onOneServer();
 Schedule::command('sanctum:prune-expired', ['--hours' => 24])->daily()->onOneServer();
+
+// License status changes (§5.1, §12): daily 00:05 Manila time.
+Schedule::command('foxdrop:licenses:advance')->dailyAt('00:05')->timezone('Asia/Manila')->withoutOverlapping()->onOneServer();

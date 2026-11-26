@@ -96,16 +96,4 @@ class RoleGateScreenshotTest {
         captureFoxScreenshots("role_gate_admin") {
             AccountMismatchScreen(decision = HomeDecision.AdminUseWeb, onSignOut = {})
         }
-
-    @Test
-    fun riderNotRegistered() =
-        captureFoxScreenshots("role_gate_rider_not_registered", listOf(FoxScreenshotVariant.PhoneLight)) {
-            AccountMismatchScreen(decision = HomeDecision.RiderNotRegistered, onSignOut = {})
-        }
-
-    @Test
-    fun businessNotRegistered() =
-        captureFoxScreenshots("role_gate_business_not_registered", listOf(FoxScreenshotVariant.PhoneLight)) {
-            AccountMismatchScreen(decision = HomeDecision.BusinessNotRegistered, onSignOut = {})
-        }
 }

@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Contracts\GoogleIdTokenVerifier;
+use App\Contracts\PaymentProvider;
 use App\Contracts\SmsSender;
 use App\Services\Auth\JwksGoogleIdTokenVerifier;
+use App\Services\Payments\FakeCheckoutProvider;
+use App\Services\Payments\PayMongoCheckoutProvider;
 use App\Services\Sms\LogSmsSender;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        $this->app->bind(PaymentProvider::class, function (): PaymentProvider {
+            return match (config('foxdrop.payments.driver')) {
+                'fake' => new FakeCheckoutProvider,
+                'paymongo' => new PayMongoCheckoutProvider,
+                default => throw new RuntimeException('Unknown PAYMENT_DRIVER: '.config('foxdrop.payments.driver')),
+            };
+        });
         $this->app->bind(SmsSender::class, function (): SmsSender {
             return match (config('foxdrop.sms.driver')) {
                 'log' => new LogSmsSender,
@@ -48,6 +58,9 @@ class AppServiceProvider extends ServiceProvider
         }
         if (config('foxdrop.auth.test_otps') !== []) {
             throw new RuntimeException('FOXDROP_TEST_OTPS must be empty in production.');
+        }
+        if (config('foxdrop.payments.driver') === 'fake') {
+            throw new RuntimeException('PAYMENT_DRIVER=fake takes no real money; configure PayMongo for production.');
         }
         if (config('foxdrop.sms.driver') === 'log') {
             throw new RuntimeException('SMS_DRIVER=log cannot send real codes; configure an SMS provider for production.');
@@ -90,6 +103,8 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(300)->by('email-sign-in:ip:'.$request->ip()),
             ];
         });
+        // Photo uploads (applications): a handful per hour is plenty for a real applicant.
+        RateLimiter::for('uploads', fn (Request $request): Limit => Limit::perHour(20)->by('uploads:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
         // Google proves identity itself; this only stops floods from one machine.
         RateLimiter::for('google-sign-in', fn (Request $request): Limit => Limit::perMinute(300)->by('google-sign-in:'.$request->ip()));
     }

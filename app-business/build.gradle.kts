@@ -11,3 +11,10 @@ android {
         versionName = "0.1.0"
     }
 }
+
+dependencies {
+    implementation(projects.feature.operatorLicense)
+    implementation(projects.feature.operatorZonesRates)
+    implementation(projects.feature.operatorPartners)
+    implementation(projects.feature.storeOnboarding)
+}

@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ReviewedByProvinceOperators;
 use App\Models\Concerns\VisibleToViewer;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,10 +20,28 @@ use Illuminate\Support\Facades\DB;
  * @property string $owner_user_id
  * @property string $name
  * @property string $status
+ * @property string|null $rejection_reason
+ * @property string $category
+ * @property string $address_line
+ * @property string $city
+ * @property Carbon|null $created_at
  */
+#[Fillable([
+    'province_id', 'owner_user_id', 'name', 'category', 'description', 'location', 'address_line', 'barangay', 'city', 'phone',
+    'status', 'rejection_reason',
+])]
 class Store extends Model
 {
-    use HasUuids, VisibleToViewer;
+    use HasUuids, ReviewedByProvinceOperators, VisibleToViewer;
+
+    public const string SUBMITTED = 'SUBMITTED';
+
+    public const string ACTIVE = 'ACTIVE';
+
+    public const string REJECTED = 'REJECTED';
+
+    /** Documents an application must include. */
+    public const array REQUIRED_DOCUMENTS = ['BUSINESS_PERMIT', 'VALID_ID'];
 
     /** A storefront customers can see (§5.2). */
     public const array PUBLISHED_STATUSES = ['ACTIVE', 'PAUSED'];
@@ -30,6 +52,34 @@ class Store extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    /**
+     * All columns plus the location as latitude/longitude.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function withLocation(Builder $query): void
+    {
+        $query->select('stores.*')
+            ->selectRaw('ST_Y(location::geometry) as location_lat, ST_X(location::geometry) as location_lng');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    /**
+     * @return HasMany<StoreDocument, $this>
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(StoreDocument::class)->orderBy('doc_type');
     }
 
     /**

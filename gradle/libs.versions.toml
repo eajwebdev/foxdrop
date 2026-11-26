@@ -33,6 +33,11 @@ ktor = "3.6.1"
 
 # UI libraries
 coil = "3.6.3"
+browser = "1.8.0"
+exifinterface = "1.4.1"
+
+# Location
+playServicesLocation = "21.3.0"
 lottie = "6.7.1"
 
 # Sign-in
@@ -114,6 +119,13 @@ ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
 # UI
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+
+# Location
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
 
 # Sign-in (Google via Credential Manager §11A.2, SMS User Consent for OTP autofill)

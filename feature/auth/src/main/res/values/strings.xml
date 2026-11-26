@@ -56,8 +56,4 @@
     <string name="role_sign_out">Sign out</string>
     <string name="role_admin_title">Use the FoxDrop Admin dashboard</string>
     <string name="role_admin_message">Admin accounts manage FoxDrop from the web dashboard, not from the mobile apps.</string>
-    <string name="role_rider_title">You\'re not a FoxDrop rider yet</string>
-    <string name="role_rider_message">Rider sign-up is coming soon. You can still order with the FoxDrop app using this account.</string>
-    <string name="role_business_title">No store or province linked yet</string>
-    <string name="role_business_message">Store and operator applications open soon. If you were invited, ask the owner to add this mobile number.</string>
 </resources>

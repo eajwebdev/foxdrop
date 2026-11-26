@@ -123,7 +123,11 @@ class RiderOnboardingViewModel @Inject constructor(
                         ) {
                             form
                         } else {
-                            form.copy(vehicle = previous.vehicleType, plateNo = previous.plateNo.orEmpty())
+                            form.copy(
+                                provinceId = open.firstOrNull { it.id == previous.provinceId }?.id ?: form.provinceId,
+                                vehicle = previous.vehicleType,
+                                plateNo = previous.plateNo.orEmpty(),
+                            )
                         },
                         previous = previous,
                     )

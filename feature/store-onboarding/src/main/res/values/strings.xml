@@ -4,7 +4,7 @@
     <string name="store_error_title">We couldn\'t load your store</string>
     <string name="store_apply_title">Tell us about your store</string>
     <string name="store_apply_intro">The FoxDrop operator in your province reviews every store before it goes live.</string>
-    <string name="store_apply_again_note">Your last application was rejected: %1$s. Fix it below and send it again.</string>
+    <string name="store_apply_again_note">Your last application was not approved: %1$s\nFix it below and send it again.</string>
     <string name="store_no_provinces_title">FoxDrop isn\'t open near you yet</string>
     <string name="store_no_provinces_message">Stores can join once a provincial operator runs FoxDrop in their province.</string>
     <string name="store_province">Province</string>

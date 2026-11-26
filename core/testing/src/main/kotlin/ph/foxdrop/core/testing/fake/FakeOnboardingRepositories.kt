@@ -98,10 +98,20 @@ object SampleData {
         }
 
     fun myStore(status: StoreStatus = StoreStatus.Submitted, reason: String? = null) =
-        MyStore("s1", "Mama's Kitchen", StoreCategory.Food, status, reason, "Negros Occidental")
+        MyStore("s1", "Mama's Kitchen", StoreCategory.Food, status, reason, "Negros Occidental", "neg")
 
     fun myRider(status: RiderStatus = RiderStatus.DocsReview, reason: String? = null) =
-        MyRider("r1", status, reason, "Negros Occidental", VehicleType.Motorcycle, "NEG 1234", "4567", "2028-01-31")
+        MyRider(
+            id = "r1",
+            status = status,
+            rejectionReason = reason,
+            provinceName = "Negros Occidental",
+            vehicleType = VehicleType.Motorcycle,
+            plateNo = "NEG 1234",
+            licenseNoLast4 = "4567",
+            licenseExpiry = "2028-01-31",
+            provinceId = "neg",
+        )
 
     val storeSummary =
         StoreSummary(

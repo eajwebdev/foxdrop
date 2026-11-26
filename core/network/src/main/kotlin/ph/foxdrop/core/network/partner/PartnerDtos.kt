@@ -34,6 +34,7 @@ internal data class MyStoreDto(
             status = apiEnum(status, StoreStatus.Unknown),
             rejectionReason = rejectionReason,
             provinceName = province.name,
+            provinceId = province.id,
         )
 }
 
@@ -108,6 +109,7 @@ internal data class MyRiderDto(
             plateNo = plateNo,
             licenseNoLast4 = licenseNoLast4,
             licenseExpiry = licenseExpiry,
+            provinceId = province.id,
         )
 }
 

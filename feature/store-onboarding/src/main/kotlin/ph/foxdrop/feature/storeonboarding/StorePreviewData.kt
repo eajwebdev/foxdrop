@@ -44,7 +44,7 @@ internal object StorePreviewData {
         )
 
     fun store(status: StoreStatus, reason: String? = null) =
-        MyStore("s1", "Mama's Kitchen", StoreCategory.Food, status, reason, "Negros Occidental")
+        MyStore("s1", "Mama's Kitchen", StoreCategory.Food, status, reason, "Negros Occidental", "neg")
 }
 
 @FoxPreviews

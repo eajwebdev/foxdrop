@@ -24,8 +24,8 @@
         <h1>FoxDrop {{ strtolower($payment->purpose) }} payment</h1>
         <div class="amount">₱{{ number_format($payment->amount_centavos / 100, 2) }}</div>
         @if ($payment->status === 'PENDING')
-            <form method="post" action="{{ route('dev.checkout.pay', $payment) }}">@csrf<button class="pay" type="submit">Pay (test)</button></form>
-            <form method="post" action="{{ route('dev.checkout.cancel', $payment) }}">@csrf<button class="cancel" type="submit">Cancel</button></form>
+            <form method="post" action="{{ route('dev.checkout.pay', $payment, absolute: false) }}">@csrf<button class="pay" type="submit">Pay (test)</button></form>
+            <form method="post" action="{{ route('dev.checkout.cancel', $payment, absolute: false) }}">@csrf<button class="cancel" type="submit">Cancel</button></form>
         @else
             <p class="done">Payment {{ strtolower($payment->status) }}. You can close this page and go back to the app.</p>
         @endif

@@ -76,7 +76,8 @@ class DomainModelsTest {
             )
         val documents = listOf(PartnerDocument("VALID_ID", "https://x/id"))
         val review = StoreReview(summary, null, null, null, form.location, null, documents)
-        val mine = MyStore("s1", form.name, form.category, StoreStatus.Rejected, "Blurry permit", "Negros Occidental")
+        val mine =
+            MyStore("s1", form.name, form.category, StoreStatus.Rejected, "Blurry permit", "Negros Occidental", "neg")
 
         assertEquals(bacolod, review.location)
         assertEquals("VALID_ID", review.documents.single().type)
@@ -111,6 +112,7 @@ class DomainModelsTest {
                 null,
                 "4567",
                 "2028-01-31",
+                "neg",
             )
 
         assertNull(form.orCr)

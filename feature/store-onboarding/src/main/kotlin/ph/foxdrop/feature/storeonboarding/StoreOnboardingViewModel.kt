@@ -136,7 +136,11 @@ class StoreOnboardingViewModel @Inject constructor(
                         ) {
                             form
                         } else {
-                            form.copy(name = previous.name, category = previous.category)
+                            form.copy(
+                                provinceId = open.firstOrNull { it.id == previous.provinceId }?.id ?: form.provinceId,
+                                name = previous.name,
+                                category = previous.category,
+                            )
                         },
                         previous = previous,
                     )

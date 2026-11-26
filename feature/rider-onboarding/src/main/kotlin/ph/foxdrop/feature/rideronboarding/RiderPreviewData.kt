@@ -36,7 +36,17 @@ internal object RiderPreviewData {
     val bicycle = RiderForm(provinces = provinces, provinceId = "neg", vehicle = VehicleType.Bicycle)
 
     fun rider(status: RiderStatus, reason: String? = null) =
-        MyRider("r1", status, reason, "Negros Occidental", VehicleType.Motorcycle, "NEG 1234", "6789", "2028-01-31")
+        MyRider(
+            id = "r1",
+            status = status,
+            rejectionReason = reason,
+            provinceName = "Negros Occidental",
+            vehicleType = VehicleType.Motorcycle,
+            plateNo = "NEG 1234",
+            licenseNoLast4 = "6789",
+            licenseExpiry = "2028-01-31",
+            provinceId = "neg",
+        )
 }
 
 @FoxPreviews

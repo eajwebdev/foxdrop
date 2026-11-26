@@ -16,6 +16,7 @@ data class MyStore(
     val status: StoreStatus,
     val rejectionReason: String?,
     val provinceName: String,
+    val provinceId: String,
 )
 
 data class StoreApplicationForm(
@@ -53,6 +54,7 @@ data class MyRider(
     val plateNo: String?,
     val licenseNoLast4: String?,
     val licenseExpiry: String?,
+    val provinceId: String,
 )
 
 data class RiderApplicationForm(

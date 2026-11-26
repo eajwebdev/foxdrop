@@ -4,7 +4,7 @@
     <string name="rider_error_title">We couldn\'t load your registration</string>
     <string name="rider_apply_title">Registration</string>
     <string name="rider_apply_intro">Complete all four parts. The FoxDrop operator in your province checks every rider before the first delivery.</string>
-    <string name="rider_apply_again_note">Your last registration was rejected: %1$s. Fix it below and send it again.</string>
+    <string name="rider_apply_again_note">Your last registration was not approved: %1$s\nFix it below and send it again.</string>
     <string name="rider_no_provinces_title">FoxDrop isn\'t open near you yet</string>
     <string name="rider_no_provinces_message">Riders can join once a provincial operator runs FoxDrop in their province.</string>
 

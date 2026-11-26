@@ -154,7 +154,8 @@ Format: **what** — why — revisit when.
     apply: admin actions are Laravel Actions with policies and audit-log rows.
 48. **Sign-in rate limits are tight per phone / email and loose per IP** (Phase 1b code review): Philippine carriers
     put many subscribers behind one IP (CGNAT), so per-IP limits only stop bulk abuse. Behind the VPS proxy the
-    client IP comes from `X-Forwarded-For`, trusted only for `TRUSTED_PROXIES`.
+    client IP comes from `X-Forwarded-For`, trusted only for `TRUSTED_PROXIES`. It is read in `bootstrap/app.php`, so on the
+    VPS it must be a real environment variable (systemd/php-fpm), not only a `.env` line, once `config:cache` runs.
 49. **Google sign-in hardening** (Phase 1b code review): an email already linked to one Google account is never moved
     to another (409); each Google ID token is accepted once (its nonce is remembered until it expires); an unknown
     signing key triggers one refetch of Google's keys; Google being unreachable answers 503, not "invalid".

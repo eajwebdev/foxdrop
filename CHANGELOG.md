@@ -2,7 +2,19 @@
 
 All notable changes, per phase. Format: Keep a Changelog; commits follow Conventional Commits.
 
-## [Unreleased] — Phase 1: Database, auth, roles
+## [Unreleased] — Phase 1b: backend on Laravel + PostgreSQL
+
+### Changed
+- Backend is `backend/`: Laravel 13 API (Sanctum tokens, rate limits) on PostgreSQL 17 + PostGIS, replacing Supabase.
+  The Phase 1 schema and its database rules were ported; province isolation is enforced in Laravel and proven by Pest
+  on a real database (79 backend tests).
+- Android apps talk to the FoxDrop API with Ktor; roles open the right home instantly and offline; sign-up name is sent
+  with the code.
+
+### Removed
+- `supabase/` (migrations, RLS, pgTAP, config), deep-link auth redirects, the email-confirmation sign-up path.
+
+## Phase 1: Database, auth, roles
 
 ### Added
 - Supabase schema for every §8 table (15 migrations): RLS enabled and forced on every table, province isolation,

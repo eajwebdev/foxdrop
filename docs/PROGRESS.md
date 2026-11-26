@@ -5,28 +5,31 @@ A new session reads this first and continues from **Next**. Never restart a fini
 ## Current phase: 2 — Operator & licensing & partner onboarding (not started)
 
 ## Done
-- **Phase 0 — Foundation** ✅ (2026-11-25). Report: `docs/PHASE_0_REPORT.md`. Merged into `main` locally.
-- **Phase 1 — Database, auth, roles** ✅ for the code and Android checks (2026-11-25). Report: `docs/PHASE_1_REPORT.md`.
-  Merged into `main` locally. **Database checks are still open:** migrations, seed and pgTAP were parsed but have
-  never run (no Docker yet).
+- **Phase 0 — Foundation** ✅ (2026-11-25). Report: `docs/PHASE_0_REPORT.md`.
+- **Phase 1 — Database, auth, roles** ✅ (2026-11-25). Report: `docs/PHASE_1_REPORT.md`.
+- **Phase 1b — backend moved to Laravel + PostgreSQL** ✅ (2026-11-26). Report: `docs/PHASE_1B_REPORT.md`.
+  All merged into `main` locally.
+
+## How to run things
+See `docs/DEVELOPMENT.md`:
+1. Run `. .\tools\dev\backend-env.ps1` (portable PHP 8.4 + PostgreSQL 17 in `D:\devtools`).
+2. Run `php artisan serve --host=127.0.0.1` in `backend/`.
+3. The apps use `FOXDROP_API_URL=http://10.0.2.2:8000/api/v1/`.
 
 ## Next
-1. **As soon as Docker + the Supabase CLI are installed:** run `supabase start`, `supabase db reset` and
-   `supabase test db`. Fix anything they report **before** building on the schema, then tick the pgTAP items in
-   PHASE_1_REPORT.
-2. Write the Phase 2 plan in `docs/plans/phase-2.md` (MASTER_PROMPT §13 Phase 2, §4, §5.1, §6). It covers:
+1. Write the Phase 2 plan in `docs/plans/phase-2.md` (MASTER_PROMPT §13 Phase 2, §4, §5.1, §6, §17). It covers:
    - operator application and license payment (PayMongo test mode)
    - license states and renewal
    - zone map editor and rate card editor
    - store and rider applications with document upload, plus the approval flows
-   - `admin_api.*` functions with pgTAP tests
-   - any flow that grants a role must refresh the user's session, because routing reads the JWT claim
-     (DECISIONS 34)
-3. Carry-overs from the Phase 1 report: make `support_tickets.province_id` server-derived (Phase 6), plan the
-   per-province platform/system wallets (Phase 5), and add one global session-expiry handler (Phase 2).
+   - admin approval Actions with Pest tests
+2. Rules that apply from now on:
+   - Every endpoint that reads provincial rows uses `visibleTo($user)` and gets a Pest test proving that another
+     province sees 0 rows (DECISIONS 52).
+   - Flows that grant a role refresh the user's roles (`/me`).
+   - Introduce one error envelope `{message, code, errors}` and the sign-in Action family (PHASE_1B_REPORT "left
+     for later").
 
 ## Blocked / waiting for owner (docs/OWNER_TODO.md)
-- Docker Desktop, the Supabase CLI and Deno are not installed, so migrations, pgTAP and Edge Functions cannot run
-  locally.
 - There is no GitHub repository, so CI has not run.
-- The Google OAuth client IDs are needed for real Google sign-in.
+- Real SMS provider and Google OAuth client IDs (before real users test).

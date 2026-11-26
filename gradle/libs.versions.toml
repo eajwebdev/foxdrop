@@ -11,7 +11,7 @@ ksp = "2.3.14"
 
 # AndroidX / Compose
 # 2026.11.01 (Compose 1.13) needs compileSdk 37.1, beyond the AGP 9.3 line — see docs/DECISIONS.md
-composeBom = "2026.09.00"
+composeBom = "2026.11.01"
 coreKtx = "1.19.1"
 coreSplashscreen = "1.2.0"
 activityCompose = "1.13.0"
@@ -33,7 +33,7 @@ ktor = "3.6.1"
 
 # UI libraries
 coil = "3.6.3"
-browser = "1.8.0"
+browser = "1.10.0"
 exifinterface = "1.4.1"
 
 # Location

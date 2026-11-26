@@ -20,11 +20,14 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property string|null $payer_user_id
  * @property string|null $license_id
+ * @property string|null $order_id
+ * @property string|null $provider_payment_id
+ * @property Carbon|null $refunded_at
  * @property Carbon|null $expires_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['province_id', 'purpose', 'provider', 'intent_id', 'checkout_url', 'amount_centavos', 'status', 'payer_user_id', 'license_id', 'expires_at', 'raw'])]
+#[Fillable(['province_id', 'purpose', 'provider', 'intent_id', 'checkout_url', 'amount_centavos', 'status', 'payer_user_id', 'license_id', 'order_id', 'expires_at', 'raw'])]
 class Payment extends Model
 {
     use HasUuids;
@@ -38,6 +41,10 @@ class Payment extends Model
     public const string EXPIRED = 'EXPIRED';
 
     public const string PURPOSE_LICENSE = 'LICENSE';
+
+    public const string PURPOSE_ORDER = 'ORDER';
+
+    public const string REFUNDED = 'REFUNDED';
 
     /** Recorded by an admin for money received outside the gateway (DECISIONS 76). */
     public const string PROVIDER_MANUAL = 'manual';
@@ -56,6 +63,6 @@ class Payment extends Model
      */
     protected function casts(): array
     {
-        return ['amount_centavos' => 'integer', 'expires_at' => 'datetime', 'raw' => 'array'];
+        return ['amount_centavos' => 'integer', 'expires_at' => 'datetime', 'refunded_at' => 'datetime', 'raw' => 'array'];
     }
 }

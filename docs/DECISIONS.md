@@ -286,3 +286,33 @@ Format: **what** — why — revisit when.
       tokens.
     - `foxdrop:super-admin` refuses to promote an existing non-admin account (anyone can register an email through the
       app) unless run with `--promote-existing`.
+
+## Phase 3 (2026-11-26)
+
+83. **Order ledger postings (§7 rules 1–3) come in Phase 5** with the rest of the money work. Phase 3 stores every
+    split on the order (store net, commissions, rider earning, operator cut) when it is placed. Phase 5 posts
+    completed orders idempotently by order id, including any completed before it ships (local data only).
+84. **Where a customer is decides the province**: an address or pin belongs to the province whose *active delivery
+    zone* contains it. There are no province boundaries yet (DECISIONS 70). Outside every zone the app says "Not yet
+    available in your area"; a delivery must also fall inside a zone of the store's own province.
+85. **Distance**: Google Routes API driving distance when `GOOGLE_ROUTES_API_KEY` is set. Until then, the straight
+    line × 1.25 (a typical road factor in PH towns), rounded up to 0.1 km. Both sit behind one `DistanceProvider`;
+    the quote records which was used.
+86. **The quote is the price** (§6): `POST orders` takes only a `quote_id` (10 minutes, one order per quote) and
+    re-checks the store, items and stock under lock. Every amount the client sends is ignored. A retried
+    `POST orders` with the same `Idempotency-Key` returns the same order.
+87. **Pick-up orders** have no delivery fee and may be paid online or at the store (COD). The store finishes them by
+    entering the customer's 4-digit pick-up code (5 wrong tries lock it for 10 minutes).
+88. **The incoming-order alarm works while the business app is open** (polling every 10 s, looping sound and
+    vibration until the order is accepted or rejected). The push version, which also rings when the app is closed,
+    needs Firebase (OWNER_TODO) and comes with notifications (Phase 6). The server auto-cancels after 5 minutes
+    either way.
+89. **Refunds**: `PaymentProvider::refund()` (PayMongo Refunds API; the fake provider refunds at once). A refund is
+    recorded on `payments` (REFUNDED, `refunded_at`) and on the order (`payment_status = REFUNDED`). With no ledger
+    entries before completion (§7 rule 1) nothing else is posted.
+90. **Stock**: products with a tracked `stock` are reserved when the order is placed and released when it is
+    cancelled. A null stock means not tracked.
+91. **Cart**: on the phone only (DataStore), one store at a time. Adding from another store asks to clear the cart.
+    The server re-prices it at every quote.
+92. **Product photos** are public (shown to signed-out visitors), re-encoded and resized by the server like KYC
+    photos. They live on the `public` disk at `/storage/catalog/...`.

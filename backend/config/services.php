@@ -29,6 +29,12 @@ return [
     ],
 
     // PayMongo (GCash, Maya, cards). Test keys start with sk_test_; the webhook secret is per webhook endpoint.
+    // Driving distance for delivery quotes (DECISIONS 85). Without a key the straight line × road factor is used.
+    'google_routes' => [
+        'key' => env('GOOGLE_ROUTES_API_KEY'),
+        'url' => 'https://routes.googleapis.com/directions/v2:computeRoutes',
+    ],
+
     'paymongo' => [
         'secret_key' => env('PAYMONGO_SECRET_KEY'),
         'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),

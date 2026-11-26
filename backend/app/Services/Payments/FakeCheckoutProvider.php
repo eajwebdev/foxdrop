@@ -20,4 +20,9 @@ final class FakeCheckoutProvider implements PaymentProvider
     {
         return new CheckoutSession('fake_'.$payment->id, route('dev.checkout.show', $payment));
     }
+
+    public function refund(Payment $payment, string $reason): void
+    {
+        // Nothing to call: the local fake checkout never took real money.
+    }
 }

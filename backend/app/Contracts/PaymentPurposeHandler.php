@@ -11,4 +11,9 @@ use App\Models\Payment;
 interface PaymentPurposeHandler
 {
     public function onPaid(Payment $payment): void;
+
+    /**
+     * The payment failed or expired (called once, after it is marked so).
+     */
+    public function onFailed(Payment $payment): void;
 }

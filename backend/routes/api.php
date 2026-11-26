@@ -13,12 +13,17 @@ use App\Http\Controllers\Api\V1\Operator\RateCardController;
 use App\Http\Controllers\Api\V1\Operator\RiderReviewController;
 use App\Http\Controllers\Api\V1\Operator\StoreReviewController;
 use App\Http\Controllers\Api\V1\Operator\ZoneController;
+use App\Http\Controllers\Api\V1\Ordering\AddressController;
+use App\Http\Controllers\Api\V1\Ordering\BrowseController;
+use App\Http\Controllers\Api\V1\Ordering\OrderController;
 use App\Http\Controllers\Api\V1\Partners\RiderApplicationController;
 use App\Http\Controllers\Api\V1\Partners\StoreApplicationController;
 use App\Http\Controllers\Api\V1\Payments\LicensePaymentController;
 use App\Http\Controllers\Api\V1\Payments\PaymentController;
 use App\Http\Controllers\Api\V1\Payments\PayMongoWebhookController;
 use App\Http\Controllers\Api\V1\ProvinceController;
+use App\Http\Controllers\Api\V1\StoreTeam\StoreCatalogController;
+use App\Http\Controllers\Api\V1\StoreTeam\StoreOrderController;
 use App\Http\Middleware\EnsureAccountIsActive;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +32,13 @@ use Illuminate\Support\Facades\Route;
 */
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('provinces', ProvinceController::class)->name('provinces.index');
+
+    // Browsing (§9.1 steps 2–3), also for signed-out visitors.
+    Route::middleware('throttle:browse')->group(function (): void {
+        Route::get('stores', [BrowseController::class, 'stores'])->name('stores.index');
+        Route::get('stores/{store}', [BrowseController::class, 'show'])->name('stores.show');
+        Route::get('search', [BrowseController::class, 'search'])->name('search');
+    });
 
     Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::post('otp/send', [PhoneOtpController::class, 'send'])->middleware('throttle:otp-send')->name('otp.send');
@@ -55,6 +67,37 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('operator/license', LicenseController::class)->name('operator.license');
         Route::post('licenses/{license}/payments', LicensePaymentController::class)->name('licenses.payments.store');
         Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+
+        // Ordering (§9.1 steps 4–7).
+        Route::get('addresses', [AddressController::class, 'index'])->name('addresses.index');
+        Route::post('addresses', [AddressController::class, 'store'])->name('addresses.store');
+        Route::put('addresses/{address}', [AddressController::class, 'update'])->name('addresses.update');
+        Route::delete('addresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
+        Route::post('quotes', [OrderController::class, 'quote'])->middleware('throttle:quotes')->name('quotes.store');
+        Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:quotes')->name('orders.store');
+        Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+
+        // The store team (§9.3): menu, settings, order board. Categories, products and orders must belong to {store}.
+        Route::prefix('my-stores/{store}')->name('my-stores.')->scopeBindings()->group(function (): void {
+            Route::get('catalog', [StoreCatalogController::class, 'show'])->name('catalog');
+            Route::post('categories', [StoreCatalogController::class, 'storeCategory'])->name('categories.store');
+            Route::put('categories/{category}', [StoreCatalogController::class, 'updateCategory'])->name('categories.update');
+            Route::delete('categories/{category}', [StoreCatalogController::class, 'destroyCategory'])->name('categories.destroy');
+            Route::post('products', [StoreCatalogController::class, 'storeProduct'])->middleware('throttle:uploads')->name('products.store');
+            Route::post('products/{product}', [StoreCatalogController::class, 'updateProduct'])->middleware('throttle:uploads')->name('products.update');
+            Route::patch('products/{product}/availability', [StoreCatalogController::class, 'availability'])->name('products.availability');
+            Route::delete('products/{product}', [StoreCatalogController::class, 'destroyProduct'])->name('products.destroy');
+            Route::patch('settings', [StoreOrderController::class, 'settings'])->name('settings');
+            Route::get('orders', [StoreOrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/{order}', [StoreOrderController::class, 'show'])->name('orders.show');
+            Route::post('orders/{order}/accept', [StoreOrderController::class, 'accept'])->name('orders.accept');
+            Route::post('orders/{order}/reject', [StoreOrderController::class, 'reject'])->name('orders.reject');
+            Route::post('orders/{order}/preparing', [StoreOrderController::class, 'preparing'])->name('orders.preparing');
+            Route::post('orders/{order}/ready', [StoreOrderController::class, 'ready'])->name('orders.ready');
+            Route::post('orders/{order}/complete', [StoreOrderController::class, 'complete'])->middleware('throttle:pickup-codes')->name('orders.complete');
+        });
 
         // Territory of the operator's province (§9.4 steps 3, 5).
         Route::prefix('operator')->name('operator.')->group(function (): void {

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasStatusChanges;
 use App\Models\Concerns\ReviewedByProvinceOperators;
 use App\Models\Concerns\VisibleToViewer;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,6 +27,13 @@ use Illuminate\Support\Facades\DB;
  * @property string $category
  * @property string $address_line
  * @property string $city
+ * @property int $prep_time_min
+ * @property bool $accepts_cod
+ * @property bool $accepts_pickup
+ * @property array<string, list<array{0: string, 1: string}>> $opening_hours
+ * @property float $rating_avg
+ * @property int $rating_count
+ * @property string|null $logo_path
  * @property Carbon|null $created_at
  */
 #[Fillable([
@@ -63,6 +71,61 @@ class Store extends Model
 
     /** Statuses a reviewer may list (§9.4 step 4). */
     public const array REVIEW_FILTERS = [self::SUBMITTED, self::ACTIVE, self::PAUSED, self::SUSPENDED, self::REJECTED, self::CLOSED];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'prep_time_min' => 'integer',
+            'accepts_cod' => 'boolean',
+            'accepts_pickup' => 'boolean',
+            'opening_hours' => 'array',
+            'rating_avg' => 'float',
+            'rating_count' => 'integer',
+        ];
+    }
+
+    /**
+     * Open for orders now: ACTIVE (not PAUSED), and inside today's opening hours in Asia/Manila. A store without
+     * opening hours is open whenever it is ACTIVE.
+     */
+    public function isOpenAt(CarbonInterface $at): bool
+    {
+        if ($this->status !== self::ACTIVE) {
+            return false;
+        }
+        $hours = $this->opening_hours;
+        if ($hours === []) {
+            return true;
+        }
+        $local = $at->copy()->setTimezone('Asia/Manila');
+        $now = $local->format('H:i');
+        foreach ($hours[strtolower($local->format('D'))] ?? [] as [$opens, $closes]) {
+            if ($opens <= $now && $now < $closes) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return HasMany<ProductCategory, $this>
+     */
+    public function categories(): HasMany
+    {
+        return $this->hasMany(ProductCategory::class)->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class)->orderBy('sort_order')->orderBy('name');
+    }
 
     /**
      * @return BelongsTo<Province, $this>

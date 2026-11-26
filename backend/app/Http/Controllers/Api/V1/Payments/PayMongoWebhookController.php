@@ -40,6 +40,11 @@ class PayMongoWebhookController extends Controller
         try {
             $payment = $this->paymentFor($event);
             if ($payment !== null && $type === 'checkout_session.payment.paid') {
+                // The gateway's own payment id: refunds need it (DECISIONS 89).
+                $gatewayPaymentId = data_get($event, 'data.attributes.data.attributes.payments.0.id');
+                if (is_string($gatewayPaymentId) && $payment->provider_payment_id === null) {
+                    $payment->forceFill(['provider_payment_id' => $gatewayPaymentId])->save();
+                }
                 $settle->succeeded($payment, $event);
             } elseif ($payment !== null && in_array($type, ['payment.failed', 'checkout_session.payment.failed'], true)) {
                 $settle->failed($payment, $event);

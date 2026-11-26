@@ -44,6 +44,18 @@ return [
         'checkout_ttl_minutes' => 30,
     ],
 
+    'ordering' => [
+        // Straight-line km × this when no Google Routes key is set (DECISIONS 85).
+        'road_factor' => 1.25,
+        // A quote can be turned into an order this long.
+        'quote_ttl_minutes' => 10,
+        // Store "prep time" plus this many minutes per km gives the ETA range customers see.
+        'minutes_per_km' => 3,
+        // Wrong pick-up codes before the store has to wait (DECISIONS 87).
+        'pickup_code_attempts' => 5,
+        'pickup_code_lock_minutes' => 10,
+    ],
+
     'documents' => [
         // Signed document links for reviewers stay valid this long.
         'url_ttl_minutes' => 10,

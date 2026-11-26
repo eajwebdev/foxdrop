@@ -30,6 +30,11 @@ final class ActivateLicensePayment implements PaymentPurposeHandler
         private readonly RecordAudit $audit,
     ) {}
 
+    public function onFailed(Payment $payment): void
+    {
+        // Nothing to undo: the license simply stays waiting for payment.
+    }
+
     public function onPaid(Payment $payment): void
     {
         $license = ProvinceLicense::query()->lockForUpdate()->findOrFail($payment->license_id);

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $short_code
  * @property string $region_name
  * @property bool $is_enabled
+ * @property int $operator_commission_bps
  */
 class Province extends Model
 {
@@ -46,6 +47,39 @@ class Province extends Model
     public static function isAvailable(string $provinceId): bool
     {
         return DB::table('province_directory')->where('id', $provinceId)->value('is_available') === true;
+    }
+
+    /**
+     * The three-letter code in order numbers (FD-NEG-000123). A province without one gets one the first time it takes
+     * an order: the first letters of its name, then other letters of it until the code is free.
+     */
+    public static function shortCode(string $provinceId): string
+    {
+        $province = self::query()->findOrFail($provinceId);
+        if (is_string($province->short_code) && $province->short_code !== '') {
+            return $province->short_code;
+        }
+
+        $letters = strtoupper(preg_replace('/[^A-Za-z]/', '', $province->name) ?? '');
+        $letters = str_pad($letters, 3, 'X');
+        foreach (range(2, strlen($letters) - 1) as $third) {
+            $code = substr($letters, 0, 2).$letters[$third];
+            if (self::query()->where('short_code', $code)->doesntExist()) {
+                $province->forceFill(['short_code' => $code])->save();
+
+                return $code;
+            }
+        }
+        foreach (range('A', 'Z') as $third) { // every letter of the name is taken: any free code with its first two
+            $code = substr($letters, 0, 2).$third;
+            if (self::query()->where('short_code', $code)->doesntExist()) {
+                $province->forceFill(['short_code' => $code])->save();
+
+                return $code;
+            }
+        }
+
+        throw new \RuntimeException("No free order code for {$province->name}.");
     }
 
     /**

@@ -1,9 +1,15 @@
 <?php
 
 use App\Http\Controllers\Dev\FakeCheckoutController;
+use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/admin');
+
+// Public product photos (DECISIONS 92): file names are new UUIDs, so they can be cached for a year.
+Route::get('media/catalog/{store}/{file}', [MediaController::class, 'catalog'])
+    ->where('file', '[0-9a-f-]{36}\\.jpg')
+    ->name('media.catalog');
 
 // Where PayMongo sends the payer back after checkout; the app itself polls the payment.
 Route::get('payments/return', fn () => view('payments.return', ['result' => request()->string('result')->toString()]))

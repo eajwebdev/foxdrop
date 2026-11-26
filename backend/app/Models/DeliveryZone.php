@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A coverage area of a province (§6). `area` is the polygon used for coverage checks; circle zones also keep their
@@ -26,6 +27,34 @@ class DeliveryZone extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];
+    }
+
+    /**
+     * The serviceable province whose active zone holds this point, or null: "Not yet available in your area"
+     * (DECISIONS 84). Where zones of two provinces overlap, the one whose zone is smallest wins (the most specific).
+     */
+    public static function provinceAt(float $lat, float $lng): ?string
+    {
+        $provinceId = self::query()
+            ->where('is_active', true)
+            ->whereIn('province_id', DB::table('province_directory')->where('is_serviceable', true)->select('id'))
+            ->whereRaw('ST_Covers(area, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography)', [$lng, $lat])
+            ->orderByRaw('ST_Area(area)')
+            ->value('province_id');
+
+        return is_string($provinceId) ? $provinceId : null;
+    }
+
+    /**
+     * Whether an active zone of [provinceId] holds the point (a delivery must stay inside the store's province).
+     */
+    public static function covers(string $provinceId, float $lat, float $lng): bool
+    {
+        return self::query()
+            ->where('province_id', $provinceId)
+            ->where('is_active', true)
+            ->whereRaw('ST_Covers(area, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography)', [$lng, $lat])
+            ->exists();
     }
 
     /**

@@ -61,4 +61,36 @@ final class PayMongoCheckoutProvider implements PaymentProvider
 
         return new CheckoutSession($id, $url);
     }
+
+    /**
+     * PayMongo Refunds API: the full amount of the gateway payment saved from the paid webhook.
+     */
+    public function refund(Payment $payment, string $reason): void
+    {
+        $secret = (string) config('services.paymongo.secret_key');
+        if ($secret === '') {
+            throw PaymentProviderException::notConfigured();
+        }
+        if ($payment->provider_payment_id === null) {
+            throw PaymentProviderException::unavailable();
+        }
+
+        try {
+            Http::withBasicAuth($secret, '')
+                ->acceptJson()
+                ->timeout(15)
+                ->post(config('services.paymongo.base_url').'/refunds', [
+                    'data' => ['attributes' => [
+                        'amount' => $payment->amount_centavos,
+                        'payment_id' => $payment->provider_payment_id,
+                        'reason' => 'requested_by_customer',
+                        'notes' => mb_substr($reason, 0, 255),
+                        'metadata' => ['payment_id' => $payment->id],
+                    ]],
+                ])
+                ->throw();
+        } catch (ConnectionException|RequestException) {
+            throw PaymentProviderException::unavailable();
+        }
+    }
 }

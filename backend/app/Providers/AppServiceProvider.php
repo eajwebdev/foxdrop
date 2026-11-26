@@ -2,14 +2,18 @@
 
 namespace App\Providers;
 
+use App\Contracts\DistanceProvider;
 use App\Contracts\GoogleIdTokenVerifier;
 use App\Contracts\PaymentProvider;
 use App\Contracts\SmsSender;
 use App\Enums\AdminPermission;
 use App\Models\OperatorApplication;
+use App\Models\ProductCategory;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 use App\Services\Auth\JwksGoogleIdTokenVerifier;
+use App\Services\Distance\GoogleRoutesDistance;
+use App\Services\Distance\StraightLineDistance;
 use App\Services\Payments\FakeCheckoutProvider;
 use App\Services\Payments\PayMongoCheckoutProvider;
 use App\Services\Sms\LogSmsSender;
@@ -41,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
                 default => throw new RuntimeException('Unknown PAYMENT_DRIVER: '.config('foxdrop.payments.driver')),
             };
         });
+        // DECISIONS 85: Google driving distance when a key is set, the straight line × road factor otherwise.
+        $this->app->bind(DistanceProvider::class, fn (): DistanceProvider => filled(config('services.google_routes.key'))
+            ? $this->app->make(GoogleRoutesDistance::class)
+            : new StraightLineDistance);
         $this->app->bind(SmsSender::class, function (): SmsSender {
             return match (config('foxdrop.sms.driver')) {
                 'log' => new LogSmsSender,
@@ -79,12 +87,13 @@ class AppServiceProvider extends ServiceProvider
     private function configureRouteParameters(): void
     {
         $uuid = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
-        foreach (['province', 'application', 'license', 'store', 'rider', 'user', 'staff', 'document', 'payment', 'zone'] as $parameter) {
+        foreach (['province', 'application', 'license', 'store', 'rider', 'user', 'staff', 'document', 'payment', 'zone', 'order', 'address', 'category', 'product'] as $parameter) {
             Route::pattern($parameter, $uuid);
         }
         Route::model('application', OperatorApplication::class);
         Route::model('license', ProvinceLicense::class);
         Route::model('staff', User::class);
+        Route::model('category', ProductCategory::class);
     }
 
     /**
@@ -144,6 +153,12 @@ class AppServiceProvider extends ServiceProvider
         });
         // Photo uploads (applications): a handful per hour is plenty for a real applicant.
         RateLimiter::for('uploads', fn (Request $request): Limit => Limit::perHour(20)->by('uploads:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+        // Browsing is public: generous per IP (carrier NAT), it only stops scraping floods.
+        RateLimiter::for('browse', fn (Request $request): Limit => Limit::perMinute(240)->by('browse:'.$request->ip()));
+        // A person checks prices and places orders a few times a minute at most.
+        RateLimiter::for('quotes', fn (Request $request): Limit => Limit::perMinute(30)->by('quotes:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+        // Pick-up codes also lock per order after 5 wrong tries (DECISIONS 87); this stops trying many orders.
+        RateLimiter::for('pickup-codes', fn (Request $request): Limit => Limit::perMinute(20)->by('pickup-codes:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
         // Google proves identity itself; this only stops floods from one machine.
         RateLimiter::for('google-sign-in', fn (Request $request): Limit => Limit::perMinute(300)->by('google-sign-in:'.$request->ip()));
     }

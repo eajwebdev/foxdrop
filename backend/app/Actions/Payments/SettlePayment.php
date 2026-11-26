@@ -3,6 +3,7 @@
 namespace App\Actions\Payments;
 
 use App\Actions\Licensing\ActivateLicensePayment;
+use App\Actions\Ordering\OrderPaymentHandler;
 use App\Contracts\PaymentPurposeHandler;
 use App\Models\Payment;
 use Illuminate\Contracts\Container\Container;
@@ -18,6 +19,7 @@ final class SettlePayment
     /** @var array<string, class-string<PaymentPurposeHandler>> what each payment purpose pays for */
     private const array HANDLERS = [
         Payment::PURPOSE_LICENSE => ActivateLicensePayment::class,
+        Payment::PURPOSE_ORDER => OrderPaymentHandler::class,
     ];
 
     public function __construct(private readonly Container $container) {}
@@ -49,6 +51,7 @@ final class SettlePayment
             $payment = Payment::query()->lockForUpdate()->findOrFail($payment->id);
             if ($payment->status === Payment::PENDING) {
                 $payment->forceFill(['status' => Payment::FAILED, 'raw' => $raw])->save();
+                $this->handlerFor($payment->purpose)->onFailed($payment);
             }
 
             return $payment;

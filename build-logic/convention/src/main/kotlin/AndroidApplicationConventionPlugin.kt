@@ -39,8 +39,6 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 configureAndroidCommon(this)
                 defaultConfig.targetSdk = libs.versionInt("targetSdk")
                 buildFeatures.buildConfig = true
-                // Auth redirect scheme, same rule as AuthRedirect.forApp(): app-customer -> foxdrop-customer://auth
-                defaultConfig.manifestPlaceholders["authScheme"] = "foxdrop-" + project.name.removePrefix("app-")
 
                 buildTypes.getByName("release").apply {
                     isMinifyEnabled = true

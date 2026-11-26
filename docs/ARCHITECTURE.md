@@ -1,6 +1,7 @@
 # Architecture
 
-FoxDrop is one repository: three Android apps, a Supabase backend, and (from Phase W1) a Laravel admin web.
+FoxDrop is one repository: three Android apps and one Laravel backend (`backend/`) that serves the apps' API and,
+from Phase W1, the admin web.
 This file describes what exists now; MASTER_PROMPT.md describes the target.
 
 ## Android modules
@@ -12,7 +13,7 @@ app-customer   app-rider   app-business        ← wire features together; MainA
                      │
    core:designsystem   core:domain   core:data   core:common   core:model
                          ▲              │
-                         │        core:network (Supabase)   core:datastore (DataStore + Tink)
+                         │        core:network (FoxDrop API, Ktor)   core:datastore (DataStore + Tink)
    core:testing (test helpers, fakes, screenshot helper)
 ```
 
@@ -20,16 +21,16 @@ app-customer   app-rider   app-business        ← wire features together; MainA
 |---|---|---|
 | `core:model` | pure Kotlin | `Money` (Long centavos), `AppRole`, `FoxDropApp` |
 | `core:common` | pure Kotlin | `FoxResult`/`DomainError`, dispatcher qualifiers, `PesoFormatter`, `ManilaTime`, PH phone/email/password validation |
-| `core:domain` | pure Kotlin | repository interfaces (`AuthRepository`, `AppPreferencesRepository`), `ResolveStartDestinationUseCase` |
+| `core:domain` | pure Kotlin | repository interfaces (`AuthRepository`, `RoleRepository`, `AppPreferencesRepository`), `ResolveStartDestinationUseCase`, `ResolveHomeUseCase` (role routing) |
 | `core:datastore` | Android | `SecureStore` (encrypted values), `AppPreferencesDataSource` |
-| `core:network` | Android | `SupabaseClientProvider`, `EncryptedSessionManager`, `AuthRemoteDataSource`, error mapping |
+| `core:network` | Android | `FoxApiClient` (Ktor, bearer token, global 401 → sign-out), `SessionStore` (encrypted token + last user), auth and roles data sources, error mapping |
 | `core:data` | Android | repository implementations, dispatcher + app-scope providers |
 | `core:designsystem` | Android/Compose | theme, tokens, `FoxMotion`, components, splash, `FoxNavHost`, previews |
 | `core:testing` | Android | `MainDispatcherRule`, fakes, `captureFoxScreenshots` |
 | `feature:onboarding` | feature | first-run intro, pager, location explainer, `StartupViewModel` |
-| `feature:auth` | feature | Log In ⇄ Sign Up, phone OTP, `SessionViewModel` |
+| `feature:auth` | feature | Log In ⇄ Sign Up, phone OTP (SMS autofill), Google sign-in, `SessionViewModel`, `RoleGate` (role routing) |
 
-Rules (enforced by the build): features depend only on `core:*`; domain has no Android or Supabase imports.
+Rules (enforced by the build): features depend only on `core:*`; domain has no Android or network imports.
 
 ## Build
 
@@ -58,11 +59,34 @@ ViewModel.onAction(action)
 
 ## Security on the device (§17, Phase 0 part)
 
-- Session tokens: supabase-kt → `EncryptedSessionManager` → `SecureStore` (Tink AES-256-GCM; keyset protected by an
+- Session token (Sanctum, 90 days) + last known user: `EncryptedSessionStore` → `SecureStore` (Tink AES-256-GCM; keyset protected by an
   Android Keystore key; the storage key is the AEAD associated data).
-- No backups; HTTPS only in release; debug allows HTTP only to the local Supabase host.
+- No backups; HTTPS only in release; debug allows HTTP only to the local API (`10.0.2.2`, `localhost`).
 - `FLAG_SECURE` on the OTP step (`SecureScreen()`); R8 full mode in release; Timber planted in debug only.
 
-## Backend
+## Backend (`backend/`)
 
-`supabase/config.jsonc` (CLI 3.4) is committed. Migrations, RLS and pgTAP tests start in Phase 1.
+Laravel 13 on PHP 8.4, PostgreSQL 17 + PostGIS. Local setup without Docker: `docs/DEVELOPMENT.md`.
+
+```
+Android apps ──HTTPS──▶ /api/v1 (routes/api.php)
+                          ├─ FormRequest validation, rate limits (otp-send, otp-verify, sign-in)
+                          ├─ Controllers (thin) → Actions / Services (IssueApiToken, OtpService, Google verifier)
+                          ├─ Sanctum bearer tokens, one per device; EnsureAccountIsActive
+                          └─ Eloquent models with visibleTo(User) scopes (province isolation)
+                        PostgreSQL: database/schema/*.sql (via migrations)
+                          ├─ enums, checks, composite province FKs
+                          ├─ ledger: append-only triggers + deferred zero-sum check, balances by trigger
+                          └─ one live license per province (unique partial index)
+Admin web (Phase W1) ──▶ Inertia + React in backend/resources/js (same app, same database)
+Reverb (Phase 3/4)   ──▶ live order status and rider location
+```
+
+| Area | Where |
+|---|---|
+| API routes | `backend/routes/api.php` (`api.v1.*` names) |
+| Sign-in | `app/Http/Controllers/Api/V1/Auth/*`, `app/Services/Auth/*`, `app/Actions/Auth/IssueApiToken.php` |
+| Province isolation | `visibleTo()` scopes on `Order`, `Store`, `Rider`, `Wallet`, `ProvinceLicense`, `UserRole`; tests in `tests/Feature/Data/ProvinceIsolationTest.php` |
+| Database rules | `database/schema/*.sql`; tests in `tests/Feature/Data/DatabaseRulesTest.php` |
+| Seed | `ProvinceSeeder` (83 PSGC provinces), `DemoSeeder` (local/testing only) |
+| Config | `config/foxdrop.php` (OTP, test codes, token lifetime, Google client IDs, SMS driver) |

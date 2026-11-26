@@ -111,3 +111,66 @@ Format: **what** — why — revisit when.
     flow: the implicit default would import any tokens in a crafted `foxdrop-<app>://auth#access_token=…` link and
     silently sign the victim into an attacker's account (Phase 1 security review). Verified App Links (`https://`)
     replace the custom schemes once the production domain exists (Phase 7).
+
+## Phase 1b — backend moved to Laravel (2026-11-26)
+
+36. **The backend is Laravel 13 + PostgreSQL 17 + PostGIS in `backend/`, replacing Supabase** (owner decision,
+    2026-11-26: own hosting on a Hostinger VPS, one backend for apps and admin web). Supersedes 26 (and the Supabase
+    parts of 19, 25, 27, 32–35). The Phase 1 schema was ported, not redesigned: `backend/database/schema/*.sql` run
+    by Laravel migrations keep every database rule (checks, append-only ledger + zero-sum check, one live license per
+    province, composite province FKs). Supabase-only parts were dropped: `auth.users` (now Laravel `users`), RLS,
+    grants, Vault, Storage policies, the access-token hook. `supabase/` was deleted.
+37. **Local tools are portable, in `D:\devtools`** (PHP 8.4, PostgreSQL 17 binaries + PostGIS bundle; no Docker, no
+    admin rights; drive C: had 2.8 GB free). XAMPP's PHP 8.2 is untouched (Laravel 13 needs 8.3+). The PostGIS
+    bundle overwrites PostgreSQL's `libcurl.dll` with one that needs DLLs it does not ship, so PostgreSQL's own copies
+    are restored (`docs/DEVELOPMENT.md`).
+38. **Province isolation is enforced in Laravel**: `visibleTo(User)` query scopes on every provincial model, used by
+    every controller that lists or shows provincial rows (from Phase 2), plus policies for writes. Pest feature tests
+    on real PostgreSQL prove isolation (ported from the pgTAP suite). The database still guarantees the invariants
+    that must hold whatever code path writes.
+39. **Sign-in tokens are Sanctum personal access tokens**, one per device, named after the device, valid 90 days
+    (`FOXDROP_TOKEN_TTL_MINUTES`). Suspended accounts are refused at sign-in and on every API call.
+40. **Phone OTP is our own service**: 6 digits, only an HMAC (app key) stored, 5-minute expiry, 5 attempts, one use,
+    a new code retires older ones, 60 s between sends (the app's countdown matches), rate limits per phone and per
+    IP. Demo numbers have fixed codes via `FOXDROP_TEST_OTPS`, honoured only in `local`/`testing`; production
+    refuses to boot with fixed codes or the `log` SMS driver.
+41. **Google sign-in is verified by the backend** (Google's JWKS, issuer, audience = our client IDs, expiry, nonce =
+    SHA-256 of the app's raw nonce). Linking: by Google subject first, then by Google-verified email. Linking to an
+    account whose email was never verified removes its password and signs out its devices (blocks pre-account
+    takeover by someone who registered the victim's email first).
+42. **Role routing reads `/me` when online and the copy saved at sign-in when offline** (supersedes 34's JWT claim).
+    A `401` from any call clears the session once in `FoxApiClient`, and the session observers send the user to
+    sign-in (the global session-expiry handler planned in the Phase 1 report).
+43. **No deep-link auth redirects** (supersedes 35): nothing signs in through a browser any more, so the per-app
+    `foxdrop-<app>://auth` intent filters and their handler were removed.
+44. **PostgreSQL sessions use UTC** (`config/database.php` `timezone`). Laravel writes timestamps without an offset; a
+    Manila-time session read them 8 hours off (found by the OTP expiry tests). Manila time is for display only.
+45. **License numbers are encrypted by Laravel** (`encrypted` cast, app key) instead of pgcrypto + Vault. A separate
+    rotation-safe key (`APP_PREVIOUS_KEYS`) is part of the Phase 7 runbook.
+46. **Email sign-up signs in right away**; email verification arrives with the email features (Phase 6). Google
+    accounts are created with a verified email.
+47. **The admin web lives inside `backend/`** (Inertia + React in `resources/js`, Phase W1), not in a separate
+    `admin-web/` app. The old `admin_web` database role, `admin_api.*` SQL functions and `admin` schema rules no longer
+    apply: admin actions are Laravel Actions with policies and audit-log rows.
+48. **Sign-in rate limits are tight per phone / email and loose per IP** (Phase 1b code review): Philippine carriers
+    put many subscribers behind one IP (CGNAT), so per-IP limits only stop bulk abuse. Behind the VPS proxy the
+    client IP comes from `X-Forwarded-For`, trusted only for `TRUSTED_PROXIES`. It is read in `bootstrap/app.php`, so on the
+    VPS it must be a real environment variable (systemd/php-fpm), not only a `.env` line, once `config:cache` runs.
+49. **Google sign-in hardening** (Phase 1b code review): an email already linked to one Google account is never moved
+    to another (409); each Google ID token is accepted once (its nonce is remembered until it expires); an unknown
+    signing key triggers one refetch of Google's keys; Google being unreachable answers 503, not "invalid".
+50. **The schema files were corrected in place** (ledger entries must carry their wallet's province; favourites and
+    reviews tie to their store / product / rider province). Allowed only because no database outside development
+    exists yet; from the first deploy on, schema files are forward-only.
+51. **Routing uses the saved roles first, then the server's** (Phase 1b /simplify; refines 42): the app opens straight
+    to its home from the roles saved with the session (no wait on a slow provincial network), then `/me` updates
+    them and re-routes only if they lead elsewhere; a rejected session still signs out.
+52. **Province isolation stays an explicit `visibleTo($user)` scope** (one `VisibleToViewer` trait holds the admin
+    bypass; each model states only its rule). A global scope was considered and rejected for now: queues, the
+    scheduler and admin actions have no request user, and a deny-by-default global scope would make every job opt
+    out. From Phase 2 every endpoint that reads provincial rows gets a Pest test proving another province sees 0 rows.
+53. **The 60-second OTP resend wait is a rate limit** (`otp-send`, per phone, with the remaining seconds in the 429
+    body), not a database query; the app's countdown uses the same 60 s. Rate limits and the Google nonce use the
+    cache store: `database` locally, **Redis on the VPS** (§20.6).
+54. **Sanctum does not track `last_used_at`** (it would write the token row on every API call); expired tokens and
+    old OTP codes are pruned daily by the scheduler.

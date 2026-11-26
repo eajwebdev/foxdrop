@@ -1,14 +1,13 @@
 # Copy to local.properties (never committed). Android Studio adds sdk.dir automatically.
 #
-# Supabase — public client values only. NEVER put the service_role key here.
-# Local stack (`supabase start`), from the Android emulator:
-#   SUPABASE_URL=http://10.0.2.2:54321
-#   SUPABASE_ANON_KEY=<"Publishable key" / anon key printed by `supabase start`>
-# Hosted project: Supabase dashboard > Project Settings > API.
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
+# FoxDrop API (backend/, Laravel). The apps hold no server secrets: each user gets a token at sign-in.
+# Local server (`php artisan serve` in backend/), seen from the Android emulator:
+#   FOXDROP_API_URL=http://10.0.2.2:8000/api/v1/
+# Empty = the apps run but say they are not connected to a server yet.
+FOXDROP_API_URL=
 
 # Google sign-in: OAuth "Web application" client ID (public). Empty = the Google button says "coming soon".
+# The same ID goes into backend/.env GOOGLE_CLIENT_IDS.
 GOOGLE_WEB_CLIENT_ID=
 
 # Google Maps (from Phase 2): key restricted to the apps' package names + SHA-1.

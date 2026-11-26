@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,26 +64,32 @@ class RoleGateViewModel @Inject constructor(
     private val _state = MutableStateFlow<RoleGateState>(RoleGateState.Loading)
     val state: StateFlow<RoleGateState> = _state.asStateFlow()
 
+    private var loading: Job? = null
+
     init {
         retry()
     }
 
+    /** Loads (again) and follows updates: saved roles first, then the server's if they lead to another home. */
     fun retry() {
+        loading?.cancel()
         _state.value = RoleGateState.Loading
-        viewModelScope.launch {
-            _state.value =
-                when (val result = resolveHome(app)) {
-                    is FoxResult.Success -> RoleGateState.Ready(result.value)
-
-                    is FoxResult.Failure ->
-                        if (result.error == DomainError.Unauthorized) {
-                            RoleGateState.SessionExpired
-                        } else {
-                            RoleGateState.Failed(result.error.toMessage())
-                        }
-                }
+        loading = viewModelScope.launch {
+            resolveHome(app).collect { result -> _state.value = result.toGateState() }
         }
     }
+
+    private fun FoxResult<HomeDecision>.toGateState(): RoleGateState =
+        when (this) {
+            is FoxResult.Success -> RoleGateState.Ready(value)
+
+            is FoxResult.Failure ->
+                if (error == DomainError.Unauthorized) {
+                    RoleGateState.SessionExpired
+                } else {
+                    RoleGateState.Failed(error.toMessage())
+                }
+        }
 }
 
 /**

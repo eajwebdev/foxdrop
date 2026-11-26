@@ -10,10 +10,6 @@ keystore.properties
 google-services.json
 GoogleService-Info.plist
 service-account*.json
-supabase/.env
-supabase/functions/.env
-supabase/.temp/
-supabase/.branches/
 
 # Gradle / Android
 .gradle/

@@ -1,6 +1,9 @@
 package ph.foxdrop.core.domain.startup
 
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import ph.foxdrop.core.common.result.FoxResult
 import ph.foxdrop.core.common.result.map
 import ph.foxdrop.core.domain.auth.RoleRepository
@@ -37,7 +40,9 @@ sealed interface HomeDecision {
 class ResolveHomeUseCase @Inject constructor(
     private val roles: RoleRepository,
 ) {
-    suspend operator fun invoke(app: FoxDropApp): FoxResult<HomeDecision> = roles.myRoles().map { decideHome(app, it) }
+    /** The home for [app]: from the saved roles first, then again if the server's roles lead somewhere else. */
+    operator fun invoke(app: FoxDropApp): Flow<FoxResult<HomeDecision>> =
+        roles.roles().map { result -> result.map { decideHome(app, it) } }.distinctUntilChanged()
 
     companion object {
         /**

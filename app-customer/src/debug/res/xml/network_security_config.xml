@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Debug builds only: plain HTTP is allowed to the local Supabase stack (`supabase start`) on the developer's
+<!-- Debug builds only: plain HTTP is allowed to the local Laravel API (`php artisan serve`) on the developer's
      machine — 10.0.2.2 from the emulator, localhost via `adb reverse`. Release builds use src/main (HTTPS only). -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">

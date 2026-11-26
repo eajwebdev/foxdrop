@@ -2,49 +2,61 @@ name: Backend
 
 on:
   pull_request:
-    paths: ["supabase/**", ".github/workflows/backend.yml"]
+    paths: ["backend/**", ".github/workflows/backend.yml"]
   push:
     branches: [main]
-    paths: ["supabase/**"]
+    paths: ["backend/**"]
 
 permissions:
   contents: read
 
 jobs:
-  database:
+  laravel:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: foxdrop
+          POSTGRES_PASSWORD: foxdrop
+          POSTGRES_DB: foxdrop_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U foxdrop" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: foxdrop_test
+      DB_USERNAME: foxdrop
+      DB_PASSWORD: foxdrop
     steps:
       - uses: actions/checkout@v4
 
-      - uses: supabase/setup-cli@v1
+      - uses: shivammathur/setup-php@v2
         with:
-          version: 3.4.0
+          php-version: "8.4"
+          extensions: pdo_pgsql, pgsql, intl, mbstring, bcmath, sodium, zip
+          coverage: none
 
-      - name: Start local stack
-        run: supabase start
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Apply migrations and seed
-        run: supabase db reset
+      - name: Prepare environment
+        run: cp .env.example .env && php artisan key:generate
 
-      - name: Lint database
-        run: supabase db lint --level warning --fail-on error
+      - name: Pint
+        run: vendor/bin/pint --test
 
-      # pgTAP: RLS isolation and money functions (from Phase 1)
-      - name: pgTAP
-        if: hashFiles('supabase/tests/**/*.sql') != ''
-        run: supabase test db
+      - name: PHPStan (Larastan level 8)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
-  # Edge Functions start in Phase 2/3; the steps skip until the first one exists.
-  edge-functions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v2
-        if: hashFiles('supabase/functions/**/*.ts') != ''
-        with:
-          deno-version: v2.x
-      - if: hashFiles('supabase/functions/**/*.ts') != ''
-        run: deno lint supabase/functions
-      - if: hashFiles('supabase/functions/**/*.ts') != ''
-        run: deno test --allow-env --allow-net=127.0.0.1 supabase/functions
+      - name: Pest (real PostgreSQL + PostGIS)
+        run: vendor/bin/pest
+
+      - name: Composer audit
+        run: composer audit

@@ -1,5 +1,9 @@
 # Phase 1 report — Database, auth, roles
 
+> **Update (Phase 1b, 2026-11-26):** the backend moved from Supabase to Laravel + PostgreSQL. The database checks
+> below that were "not verified" now run as Pest tests on a real PostgreSQL + PostGIS database and pass; see
+> `docs/PHASE_1B_REPORT.md`. The Supabase-specific parts of this report (RLS, pgTAP, PKCE redirects) are history.
+
 Date: 2026-11-25 · Branch: `phase-1` (merged into `main` locally; no GitHub remote yet)
 
 ## What was built

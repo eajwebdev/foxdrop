@@ -30,7 +30,7 @@ class AuthViewModelTest {
             vm.onAction(AuthAction.Submit)
             runCurrent()
             assertEquals(AuthStep.Otp, vm.state.value.step)
-            assertEquals("otp:+639171234567:null", auth.calls.last())
+            assertEquals("otp:+639171234567", auth.calls.last())
 
             advanceTimeBy(5_001)
             assertEquals(AuthReducer.RESEND_SECONDS - 5, vm.state.value.resendSecondsLeft)
@@ -61,27 +61,36 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `email sign up with confirmation and email sign in`() = runTest(main.dispatcher) {
-        auth.signUpOutcome = ph.foxdrop.core.domain.auth.EmailSignUpOutcome.ConfirmationEmailSent
+    fun `email sign up signs the new account in`() = runTest(main.dispatcher) {
+        val vm = AuthViewModel(auth, googleClientId = "")
+        vm.effect.test {
+            vm.onAction(AuthAction.ModeChanged(AuthMode.SignUp))
+            vm.onAction(AuthAction.MethodChanged(AuthMethod.Email))
+            vm.onAction(AuthAction.NameChanged("Juan"))
+            vm.onAction(AuthAction.EmailChanged("juan@example.ph"))
+            vm.onAction(AuthAction.PasswordChanged("foxdrop2026"))
+            vm.onAction(AuthAction.TermsChanged(true))
+            vm.onAction(AuthAction.Submit)
+            runCurrent()
+            assertEquals("signup:Juan:juan@example.ph", auth.calls.last())
+            assertEquals(AuthEffect.SignedIn, awaitItem())
+        }
+    }
+
+    @Test
+    fun `the name typed at phone sign-up is sent with the code`() = runTest(main.dispatcher) {
         val vm = AuthViewModel(auth, googleClientId = "")
         vm.onAction(AuthAction.ModeChanged(AuthMode.SignUp))
-        vm.onAction(AuthAction.MethodChanged(AuthMethod.Email))
-        vm.onAction(AuthAction.NameChanged("Juan"))
-        vm.onAction(AuthAction.EmailChanged("juan@example.ph"))
-        vm.onAction(AuthAction.PasswordChanged("foxdrop2026"))
+        vm.onAction(AuthAction.NameChanged(" Juan Dela Cruz "))
+        vm.onAction(AuthAction.PhoneChanged("9171234567"))
         vm.onAction(AuthAction.TermsChanged(true))
         vm.onAction(AuthAction.Submit)
         runCurrent()
-        assertEquals(AuthMessage.ConfirmEmail, vm.state.value.message)
-        assertEquals(AuthMode.Login, vm.state.value.mode)
+        vm.onAction(AuthAction.OtpChanged("123456"))
+        vm.onAction(AuthAction.VerifyOtp)
+        runCurrent()
 
-        vm.effect.test {
-            vm.onAction(AuthAction.PasswordChanged("foxdrop2026"))
-            vm.onAction(AuthAction.Submit)
-            runCurrent()
-            assertEquals("signin:juan@example.ph", auth.calls.last())
-            assertEquals(AuthEffect.SignedIn, awaitItem())
-        }
+        assertEquals("verify:+639171234567:123456:Juan Dela Cruz", auth.calls.last())
     }
 
     @Test

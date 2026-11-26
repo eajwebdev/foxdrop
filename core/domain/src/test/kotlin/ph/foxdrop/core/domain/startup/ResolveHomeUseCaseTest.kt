@@ -1,5 +1,7 @@
 package ph.foxdrop.core.domain.startup
 
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -11,7 +13,10 @@ import ph.foxdrop.core.model.AppRole
 import ph.foxdrop.core.model.FoxDropApp
 import ph.foxdrop.core.model.RoleGrant
 
-/** Phase 1 acceptance: each demo user lands on the correct home. Mirrors the demo accounts in supabase/seed.sql. */
+/**
+ * Phase 1 acceptance: each demo user lands on the correct home. Mirrors the demo accounts in
+ * backend/database/seeders/DemoSeeder.php.
+ */
 class ResolveHomeUseCaseTest {
     private val customer = RoleGrant(AppRole.Customer)
     private val rider = listOf(customer, RoleGrant(AppRole.Rider, provinceId = "neg"))
@@ -62,14 +67,14 @@ class ResolveHomeUseCaseTest {
     @Test
     fun `use case passes repository errors through`() = runTest {
         val failing = ResolveHomeUseCase(roleRepository(FoxResult.Failure(DomainError.Network)))
-        assertEquals(FoxResult.Failure(DomainError.Network), failing(FoxDropApp.Business))
+        assertEquals(FoxResult.Failure(DomainError.Network), failing(FoxDropApp.Business).first())
 
         val ok = ResolveHomeUseCase(roleRepository(FoxResult.Success(operator)))
-        assertEquals(FoxResult.Success(HomeDecision.OperatorHome("neg")), ok(FoxDropApp.Business))
+        assertEquals(FoxResult.Success(HomeDecision.OperatorHome("neg")), ok(FoxDropApp.Business).first())
     }
 
     private fun roleRepository(result: FoxResult<List<RoleGrant>>) =
         object : RoleRepository {
-            override suspend fun myRoles() = result
+            override fun roles() = flowOf(result)
         }
 }

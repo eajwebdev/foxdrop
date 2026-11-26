@@ -40,7 +40,7 @@ class AuthViewModel @Inject constructor(
     private var resendTimer: Job? = null
     private var signedInSent = false
 
-    /** Raw nonce of the Google request in flight; Google signs its SHA-256, Supabase checks it against this. */
+    /** Raw nonce of the Google request in flight; Google signs its SHA-256, the API checks it against this. */
     private var googleNonce: String? = null
 
     init {
@@ -67,12 +67,14 @@ class AuthViewModel @Inject constructor(
         when (command) {
             is AuthCommand.RequestOtp ->
                 launchResult {
-                    AuthAction.OtpRequested(auth.requestPhoneOtp(command.phoneE164, command.fullName).errorOrNull())
+                    AuthAction.OtpRequested(auth.requestPhoneOtp(command.phoneE164).errorOrNull())
                 }
 
             is AuthCommand.VerifyOtp ->
                 launchResult {
-                    AuthAction.OtpVerified(auth.verifyPhoneOtp(command.phoneE164, command.code).errorOrNull())
+                    AuthAction.OtpVerified(
+                        auth.verifyPhoneOtp(command.phoneE164, command.code, command.fullName).errorOrNull(),
+                    )
                 }
 
             is AuthCommand.SignInWithEmail ->
@@ -82,10 +84,9 @@ class AuthViewModel @Inject constructor(
 
             is AuthCommand.SignUpWithEmail ->
                 launchResult {
-                    when (val result = auth.signUpWithEmail(command.fullName, command.email, command.password)) {
-                        is FoxResult.Success -> AuthAction.EmailSignedUp(error = null, outcome = result.value)
-                        is FoxResult.Failure -> AuthAction.EmailSignedUp(error = result.error, outcome = null)
-                    }
+                    AuthAction.EmailSignedIn(
+                        auth.signUpWithEmail(command.fullName, command.email, command.password).errorOrNull(),
+                    )
                 }
 
             AuthCommand.StartResendTimer -> startResendTimer()

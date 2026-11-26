@@ -132,8 +132,15 @@ class OperatorLicenseViewModel @Inject constructor(
 
                 is FoxResult.Success -> {
                     val application = result.value ?: return@launch openFormNow(previous = null)
-                    _state.value =
-                        current.copy(application = application, license = application.license, refreshing = false)
+                    // Update the latest state: the payment poller may have changed it while this was loading.
+                    _state.update {
+                        (it as? State.Status)?.copy(
+                            application = application,
+                            license = application.license,
+                            refreshing = false,
+                        )
+                            ?: it
+                    }
                     if (application.license?.status ==
                         LicenseStatus.Active
                     ) {

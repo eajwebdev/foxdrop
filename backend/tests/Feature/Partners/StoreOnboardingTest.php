@@ -157,3 +157,26 @@ it('lets a platform admin approve a store in any province', function () {
         ->assertOk()->assertJsonPath('data.status', 'ACTIVE');
     expect(DB::table('audit_logs')->where('action', 'store.approved')->where('actor_role', 'super_admin')->exists())->toBeTrue();
 });
+
+it('keeps an operator whose license expired read-only', function () {
+    $store = submittedStore(User::factory()->create());
+    DB::table('province_licenses')->where('operator_user_id', demoUser(6)->id)->update(['status' => 'EXPIRED']);
+
+    $this->withHeaders(bearer(demoUser(6)))->postJson(route('api.v1.operator.stores.approve', $store))->assertForbidden();
+
+    expect($store->refresh()->status)->toBe(Store::SUBMITTED);
+});
+
+it('deletes the replaced document photos when a store is resubmitted', function () {
+    $owner = User::factory()->create();
+    $store = submittedStore($owner);
+    $oldPaths = DB::table('store_documents')->where('store_id', $store->id)->pluck('storage_path')->all();
+    $this->withHeaders(bearer(demoUser(6)))->postJson(route('api.v1.operator.stores.reject', $store), ['reason' => 'Permit is expired.'])->assertOk();
+
+    applyForStore($owner)->assertCreated();
+
+    foreach ($oldPaths as $path) {
+        Storage::disk('kyc')->assertMissing($path);
+    }
+    expect(DB::table('store_documents')->where('store_id', $store->id)->count())->toBe(2);
+});

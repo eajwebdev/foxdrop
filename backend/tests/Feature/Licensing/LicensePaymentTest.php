@@ -215,3 +215,16 @@ it('shows a payment only to its payer', function () {
 
     $this->withHeaders(bearer(User::factory()->create()))->getJson(route('api.v1.payments.show', $id))->assertNotFound();
 });
+
+it('starts a fresh checkout after one failed to open', function () {
+    config(['foxdrop.payments.driver' => 'paymongo', 'services.paymongo.secret_key' => 'sk_test_123']);
+    Http::fake(['api.paymongo.com/*' => Http::response('down', 500)]);
+    [$applicant, $license] = approvedApplicant();
+    startPayment($applicant, $license)->assertStatus(502);
+
+    expect(Payment::query()->where('license_id', $license->id)->sole()->status)->toBe(Payment::FAILED);
+
+    config(['foxdrop.payments.driver' => 'fake']);
+    startPayment($applicant, $license)->assertCreated()->assertJsonPath('data.status', 'PENDING');
+    expect(Payment::query()->where('license_id', $license->id)->where('status', Payment::PENDING)->sole()->checkout_url)->not->toBeNull();
+});

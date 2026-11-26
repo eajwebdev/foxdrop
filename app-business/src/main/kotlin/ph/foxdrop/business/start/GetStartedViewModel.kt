@@ -50,7 +50,8 @@ class GetStartedViewModel @Inject constructor(
                     else ->
                         Loadable.Ready(
                             GetStartedData(
-                                store = (storeResult as FoxResult.Success).value.lastOrNull(),
+                                // stores/mine lists the newest store first
+                                store = (storeResult as FoxResult.Success).value.firstOrNull(),
                                 application = (applicationResult as FoxResult.Success).value,
                             ),
                         )

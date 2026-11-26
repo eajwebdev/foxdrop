@@ -101,6 +101,8 @@ data class RateCardState(
     val problems: Map<RateCardRules.Field, Problem> = emptyMap(),
     val preview: Loadable<ImmutableList<FeePreview>> = Loadable.Loading,
     val effectiveFrom: String? = null,
+    /** The card in force; fields the editor does not show (surcharges) are kept from it when publishing. */
+    val current: RateCard? = null,
     val publishing: Boolean = false,
     val justPublished: Boolean = false,
     val storeFee: String = "",
@@ -141,6 +143,7 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
                             content = Loadable.Ready(Unit),
                             fields = RateFields.from(current),
                             effectiveFrom = current.effectiveFrom,
+                            current = current,
                             storeFee = PesoInput.toInput((province as FoxResult.Success).value.storeFeeCentavos),
                         )
                     }
@@ -170,7 +173,16 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
         val current = state.value
         if (current.publishing) return
         val parsed = current.fields.parse()
-        val card = parsed.toCard()
+        val card =
+            parsed.toCard()?.let { edited ->
+                current.current?.let {
+                    edited.copy(
+                        nightSurchargeCentavos = it.nightSurchargeCentavos,
+                        badWeatherSurchargeCentavos = it.badWeatherSurchargeCentavos,
+                        extraStopCentavos = it.extraStopCentavos,
+                    )
+                } ?: edited
+            }
         if (card == null) {
             _state.update { it.copy(problems = parsed.problems) }
             return
@@ -180,7 +192,12 @@ class RateCardViewModel @Inject constructor(private val territory: TerritoryRepo
             when (val result = territory.publishRateCard(card)) {
                 is FoxResult.Success ->
                     _state.update {
-                        it.copy(publishing = false, justPublished = true, effectiveFrom = result.value.effectiveFrom)
+                        it.copy(
+                            publishing = false,
+                            justPublished = true,
+                            effectiveFrom = result.value.effectiveFrom,
+                            current = result.value,
+                        )
                     }
 
                 is FoxResult.Failure -> _state.update { it.copy(publishing = false, message = result.error) }

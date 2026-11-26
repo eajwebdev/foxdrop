@@ -3,6 +3,7 @@
 namespace App\Actions\Documents;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -32,8 +33,22 @@ final class StoreKycImage
 
         $path = $folder.'/'.Str::lower($field).'-'.Str::uuid7().'.jpg';
         Storage::disk('kyc')->put($path, $jpeg);
+        // If the application's transaction fails, the photo it saved must not stay behind.
+        DB::afterRollBack(fn () => Storage::disk('kyc')->delete($path));
 
         return $path;
+    }
+
+    /**
+     * Deletes photos a resubmission replaced, once the new ones are safely committed.
+     *
+     * @param  list<string>  $paths
+     */
+    public function deleteAfterCommit(array $paths): void
+    {
+        if ($paths !== []) {
+            DB::afterCommit(fn () => Storage::disk('kyc')->delete($paths));
+        }
     }
 
     private function scaledDown(\GdImage $image, int $maxPixels): \GdImage

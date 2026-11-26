@@ -92,8 +92,7 @@ class RoleGateViewModel @Inject constructor(
 
 /**
  * Shows [content] for the user's home, or a friendly screen when the account does not belong in this app.
- * [content] also gets
-efreshRoles: onboarding flows call it when a role may have been granted (license paid, store
+ * [content] also gets [refreshRoles]: onboarding flows call it when a role may have been granted (license paid, store
  * or rider approved), so the gate re-reads /me and moves to the new home.
  * Loading shows a skeleton; errors offer a retry (CLAUDE.md: every screen has loading, empty, error).
  */

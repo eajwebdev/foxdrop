@@ -137,3 +137,13 @@ it('makes an expired operator read-only', function () {
         ->assertForbidden()->assertJsonPath('message', 'Your province license is not active. Renew it to make changes.');
     $this->withHeaders(bearer($expired))->patchJson(route('api.v1.operator.province.update'), ['store_fee_centavos' => 0])->assertForbidden();
 });
+
+it('stops a former operator from changing a province now licensed to someone else', function () {
+    $former = negrosOperator();
+    operatorOf(DemoSeeder::NEGROS_OCCIDENTAL); // Negros is licensed to a new operator; the old license expires
+
+    $this->withHeaders(bearer($former))->postJson(route('api.v1.operator.zones.store'), [
+        'name' => 'Old operator zone', 'center' => ['lat' => 10.68, 'lng' => 122.95], 'radius_km' => 3,
+    ])->assertForbidden();
+    $this->withHeaders(bearer($former))->getJson(route('api.v1.operator.zones.index'))->assertForbidden();
+});

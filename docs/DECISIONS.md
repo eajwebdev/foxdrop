@@ -205,3 +205,10 @@ Format: **what** — why — revisit when.
 64. **"Not registered" business and rider accounts get onboarding homes** instead of the mismatch screen: they are
     now `HomeDecision.Home` cases (`BusinessOnboarding`, `RiderOnboarding`). Admin accounts still get the mismatch
     screen.
+65. **An operator role counts only while its province's current license is theirs** (Phase 2 code review): when a
+    license expires and the province is licensed to someone else, the former operator keeps the role row (history)
+    but no longer reaches the province. Reviews, zones, rates and the store fee all need that license ACTIVE or in
+    GRACE; platform admins may review anywhere.
+66. **Phase 2 models have no factories yet** (Payment, OperatorApplication, DeliveryZone, DeliveryRateCard,
+    StoreDocument, RiderDocument, WebhookEvent): their tests create rows through the very Actions under test, which
+    is what the app does. Factories are added when a test needs such a row without its Action.

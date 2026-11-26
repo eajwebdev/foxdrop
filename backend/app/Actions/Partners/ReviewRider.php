@@ -9,6 +9,7 @@ use App\Enums\AppRole;
 use App\Models\Rider;
 use App\Models\RiderDocument;
 use App\Models\User;
+use App\Support\OperatorContext;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,6 +26,9 @@ final class ReviewRider
 
     public function __invoke(User $reviewer, Rider $rider, bool $approve, ?string $reason = null): Rider
     {
+        // An operator whose license expired is read-only (§5.1); admins may override anywhere.
+        OperatorContext::ensureCanReview($reviewer, $rider->province_id);
+
         return DB::transaction(function () use ($reviewer, $rider, $approve, $reason): Rider {
             $rider = Rider::query()->lockForUpdate()->findOrFail($rider->id);
             abort_unless($rider->status === Rider::DOCS_REVIEW, 409, 'This rider is not waiting for review.');

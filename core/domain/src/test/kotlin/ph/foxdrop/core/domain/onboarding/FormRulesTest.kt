@@ -137,4 +137,17 @@ class FormRulesTest {
         assertEquals(2, PhotoUpload(byteArrayOf(1, 2)).sizeBytes)
         assertTrue(PhotoUpload(byteArrayOf(1)).toString().contains("1 bytes"))
     }
+
+    @Test
+    fun `rate card limits match the server`() {
+        fun problemsFor(baseFare: Long = 4_000, baseKm: Double = 2.0, maxKm: Double = 15.0) =
+            RateCardRules.validate(baseFare, baseKm, 1_000, 4_000, maxKm, 8_000).keys
+
+        assertEquals(setOf(RateCardRules.Field.MaxKm), problemsFor(maxKm = 60.0))
+        assertEquals(setOf(RateCardRules.Field.MaxKm), problemsFor(maxKm = 0.5))
+        assertEquals(setOf(RateCardRules.Field.BaseKm), problemsFor(baseKm = 2.25))
+        assertEquals(setOf(RateCardRules.Field.BaseKm), problemsFor(baseKm = 25.0))
+        assertEquals(setOf(RateCardRules.Field.BaseFare), problemsFor(baseFare = 100_001))
+        assertTrue(problemsFor(baseKm = 2.5, maxKm = 49.9).isEmpty())
+    }
 }

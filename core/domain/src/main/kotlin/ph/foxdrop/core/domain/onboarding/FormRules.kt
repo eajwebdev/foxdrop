@@ -115,8 +115,14 @@ object RiderApplicationRules {
 object RateCardRules {
     enum class Field { BaseFare, BaseKm, RatePerKm, MinFee, MaxKm, RiderShare }
 
-    private const val MAX_KM = 100.0
+    // Same limits as the server (PublishRateCardRequest): amounts ≤ ₱1,000, base 0–20 km, max 1–50 km, 0.1 km steps.
+    private const val MAX_CENTAVOS = 100_000L
+    private const val MAX_BASE_KM = 20.0
+    private const val MIN_MAX_KM = 1.0
+    private const val MAX_MAX_KM = 50.0
     private const val MAX_BPS = 10_000
+    private const val KM_STEPS = 10.0
+    private const val ROUNDING_TOLERANCE = 1e-9
 
     fun validate(
         baseFare: Long?,
@@ -127,13 +133,31 @@ object RateCardRules {
         riderShareBps: Int?,
     ): Map<Field, Problem> =
         buildMap {
-            if (baseFare == null) put(Field.BaseFare, Problem.Invalid)
-            if (ratePerKm == null) put(Field.RatePerKm, Problem.Invalid)
-            if (minFee == null) put(Field.MinFee, Problem.Invalid)
-            if (baseKm == null || baseKm !in 0.0..MAX_KM) put(Field.BaseKm, Problem.OutOfRange)
-            if (maxKm == null || maxKm <= 0.0 || maxKm > MAX_KM) put(Field.MaxKm, Problem.OutOfRange)
+            amountProblem(baseFare)?.let { put(Field.BaseFare, it) }
+            amountProblem(ratePerKm)?.let { put(Field.RatePerKm, it) }
+            amountProblem(minFee)?.let { put(Field.MinFee, it) }
+            if (baseKm == null || baseKm !in 0.0..MAX_BASE_KM ||
+                !baseKm.isTenthOfKm()
+            ) {
+                put(Field.BaseKm, Problem.OutOfRange)
+            }
+            if (maxKm == null || maxKm !in MIN_MAX_KM..MAX_MAX_KM ||
+                !maxKm.isTenthOfKm()
+            ) {
+                put(Field.MaxKm, Problem.OutOfRange)
+            }
             if (riderShareBps == null || riderShareBps !in 0..MAX_BPS) put(Field.RiderShare, Problem.OutOfRange)
         }
+
+    private fun amountProblem(centavos: Long?): Problem? =
+        when {
+            centavos == null -> Problem.Invalid
+            centavos !in 0L..MAX_CENTAVOS -> Problem.OutOfRange
+            else -> null
+        }
+
+    private fun Double.isTenthOfKm(): Boolean =
+        kotlin.math.abs(this * KM_STEPS - kotlin.math.round(this * KM_STEPS)) < ROUNDING_TOLERANCE
 
     /** The card to send when [validate] found nothing (the effective date is set by the server). */
     @Suppress("LongParameterList")

@@ -48,7 +48,9 @@ final class SubmitRiderApplication
 
             if ($existing !== null) {
                 // Documents point at (rider, province): drop them before the rider may move to another province.
-                RiderDocument::query()->where('rider_id', $existing->id)->delete();
+                $replaced = RiderDocument::query()->where('rider_id', $existing->id);
+                $this->storeImage->deleteAfterCommit(array_values($replaced->get()->map(fn (RiderDocument $doc): string => $doc->storage_path)->all()));
+                $replaced->delete();
                 $existing->forceFill($attributes)->save();
                 $rider = $existing;
             } else {

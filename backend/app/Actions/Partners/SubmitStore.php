@@ -48,7 +48,9 @@ final class SubmitStore
 
             if ($rejected !== null) {
                 // Documents point at (store, province): drop them before the store may move to another province.
-                StoreDocument::query()->where('store_id', $rejected->id)->delete();
+                $replaced = StoreDocument::query()->where('store_id', $rejected->id);
+                $this->storeImage->deleteAfterCommit(array_values($replaced->get()->map(fn (StoreDocument $doc): string => $doc->storage_path)->all()));
+                $replaced->delete();
                 $rejected->forceFill($attributes)->save();
                 $store = $rejected;
             } else {

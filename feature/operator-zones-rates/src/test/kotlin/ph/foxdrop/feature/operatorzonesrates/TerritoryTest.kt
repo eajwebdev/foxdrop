@@ -20,6 +20,7 @@ import ph.foxdrop.core.common.result.DomainError
 import ph.foxdrop.core.designsystem.component.Loadable
 import ph.foxdrop.core.domain.onboarding.Problem
 import ph.foxdrop.core.domain.onboarding.RateCardRules
+import ph.foxdrop.core.domain.territory.RateCard
 import ph.foxdrop.core.location.LocationResult
 import ph.foxdrop.core.model.GeoPoint
 import ph.foxdrop.core.testing.MainDispatcherRule
@@ -166,6 +167,26 @@ class RateCardViewModelTest {
         assertEquals(Problem.OutOfRange, vm.state.value.problems[RateCardRules.Field.RiderShare])
         assertEquals(Problem.Invalid, vm.state.value.problems[RateCardRules.Field.BaseFare])
         assertTrue(territory.calls.none { it.startsWith("publish") })
+    }
+
+    @Test
+    fun `publishing keeps the surcharges the editor does not show`() = runTest(main.dispatcher) {
+        territory.card =
+            RateCard.Default.copy(
+                nightSurchargeCentavos = 2_000,
+                badWeatherSurchargeCentavos = 1_500,
+                extraStopCentavos = 500,
+            )
+        val vm = RateCardViewModel(territory)
+        runCurrent()
+        vm.onFieldChanged(RateField.RatePerKm, "12")
+        vm.publish()
+        runCurrent()
+
+        assertEquals(1_200L, territory.card.ratePerKmCentavos)
+        assertEquals(2_000L, territory.card.nightSurchargeCentavos)
+        assertEquals(1_500L, territory.card.badWeatherSurchargeCentavos)
+        assertEquals(500L, territory.card.extraStopCentavos)
     }
 
     @Test

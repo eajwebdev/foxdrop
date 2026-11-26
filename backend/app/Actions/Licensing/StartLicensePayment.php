@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\ProvinceLicense;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Starts paying the license fee (§9.4 steps 2 and 8): the first payment or a renewal. An open checkout is reused,
@@ -25,6 +26,7 @@ final class StartLicensePayment
             ->where('license_id', $license->id)
             ->where('status', Payment::PENDING)
             ->where('expires_at', '>', now())
+            ->whereNotNull('checkout_url')
             ->latest('created_at')
             ->first();
         if ($open !== null) {
@@ -42,7 +44,14 @@ final class StartLicensePayment
             'expires_at' => now()->addMinutes((int) config('foxdrop.payments.checkout_ttl_minutes')),
         ]);
 
-        $session = $this->provider->createCheckout($payment, 'FoxDrop province license (1 year)');
+        try {
+            $session = $this->provider->createCheckout($payment, 'FoxDrop province license (1 year)');
+        } catch (Throwable $e) {
+            // The gateway never opened a checkout: close this attempt so the next tap starts a fresh one.
+            $payment->forceFill(['status' => Payment::FAILED])->save();
+
+            throw $e;
+        }
         $payment->forceFill(['intent_id' => $session->intentId, 'checkout_url' => $session->checkoutUrl])->save();
 
         return $payment;

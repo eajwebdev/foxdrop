@@ -9,6 +9,7 @@ use App\Enums\AppRole;
 use App\Models\Store;
 use App\Models\StoreDocument;
 use App\Models\User;
+use App\Support\OperatorContext;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,6 +26,9 @@ final class ReviewStore
 
     public function __invoke(User $reviewer, Store $store, bool $approve, ?string $reason = null): Store
     {
+        // An operator whose license expired is read-only (§5.1); admins may override anywhere.
+        OperatorContext::ensureCanReview($reviewer, $store->province_id);
+
         return DB::transaction(function () use ($reviewer, $store, $approve, $reason): Store {
             $store = Store::query()->lockForUpdate()->findOrFail($store->id);
             abort_unless($store->status === Store::SUBMITTED, 409, 'This store is not waiting for review.');

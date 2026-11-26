@@ -101,7 +101,7 @@ class StoreOnboardingViewModel @Inject constructor(
                 is FoxResult.Failure -> _state.value = State.Failed(result.error)
 
                 is FoxResult.Success -> {
-                    val latest = result.value.lastOrNull()
+                    val latest = result.value.firstOrNull() // stores/mine lists the newest first
                     if (latest == null) openFormNow(previous = null) else _state.value = State.Status(latest)
                 }
             }

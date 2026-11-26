@@ -166,6 +166,20 @@ class StoreOnboardingViewModelTest {
     }
 
     @Test
+    fun `the newest application is the one shown`() = runTest(main.dispatcher) {
+        // stores/mine lists the newest store first
+        stores.stores =
+            mutableListOf(
+                SampleData.myStore(StoreStatus.Rejected, "Permit is expired").copy(id = "new", name = "Second Branch"),
+                SampleData.myStore(StoreStatus.Active).copy(id = "old"),
+            )
+        val vm = viewModel()
+        runCurrent()
+
+        assertEquals("new", (vm.state.value as State.Status).store.id)
+    }
+
+    @Test
     fun `load errors can be retried`() = runTest(main.dispatcher) {
         stores.error = DomainError.Network
         val vm = viewModel()

@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Actions\Auth\IssueApiToken;
 use App\Contracts\GoogleIdTokenVerifier;
+use App\Exceptions\GoogleSignInException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\GoogleSignInRequest;
 use App\Models\User;
 use App\Services\Auth\GoogleIdentity;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +21,12 @@ class GoogleAuthController extends Controller
     public function __invoke(GoogleSignInRequest $request, GoogleIdTokenVerifier $verifier, IssueApiToken $issueToken): JsonResponse
     {
         $identity = $verifier->verify($request->string('id_token')->toString(), $request->string('nonce')->toString());
-        $user = DB::transaction(fn (): User => $this->findOrCreate($identity));
+        try {
+            $user = DB::transaction(fn (): User => $this->findOrCreate($identity));
+        } catch (UniqueConstraintViolationException) {
+            // A parallel first sign-in (double tap, retry) created the account a moment ago; this pass finds it.
+            $user = DB::transaction(fn (): User => $this->findOrCreate($identity));
+        }
 
         return $issueToken($user, $request->string('device_name')->toString(), $user->wasRecentlyCreated ? 201 : 200);
     }
@@ -38,6 +45,9 @@ class GoogleAuthController extends Controller
 
         $byEmail = $identity->email === null ? null : User::query()->where('email', $identity->email)->lockForUpdate()->first();
         if ($byEmail !== null) {
+            if ($byEmail->google_sub !== null) {
+                throw GoogleSignInException::emailLinkedToAnotherGoogleAccount();
+            }
             if ($byEmail->email_verified_at === null) {
                 $byEmail->password = null;
                 $byEmail->tokens()->delete();

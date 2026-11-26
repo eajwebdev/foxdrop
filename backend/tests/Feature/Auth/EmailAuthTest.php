@@ -60,3 +60,9 @@ it('slows down password guessing', function () {
     $this->postJson(route('api.v1.auth.email.login'), ['email' => 'maria@example.com', 'password' => 'secret123', 'device_name' => 'Pixel'])
         ->assertTooManyRequests();
 });
+
+it('answers 422, not a crash, when a field is sent as a list', function () {
+    $this->postJson(route('api.v1.auth.email.login'), ['email' => ['a@b.ph'], 'password' => 'secret123', 'device_name' => 'Pixel'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
+});

@@ -31,10 +31,10 @@ internal class ApiRolesRemoteDataSource @Inject constructor(
     private val sessionStore: SessionStore,
 ) : RolesRemoteDataSource {
     override suspend fun myRoles(): FoxResult<List<RoleGrant>> {
-        if (sessionStore.load() == null) return FoxResult.Failure(DomainError.Unauthorized)
+        val session = sessionStore.load() ?: return FoxResult.Failure(DomainError.Unauthorized)
         return when (val me = api.call { http -> http.get("me").body<MeResponse>().data }) {
             is FoxResult.Success -> {
-                sessionStore.updateUser(me.value)
+                sessionStore.updateUser(session.token, me.value)
                 FoxResult.Success(me.value.roles.toGrants())
             }
 

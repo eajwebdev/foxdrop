@@ -20,6 +20,16 @@ final class GoogleSignInException extends RuntimeException
         return new self('Google sign-in is not set up on this server yet.', 503);
     }
 
+    public static function unavailable(): self
+    {
+        return new self('Google sign-in is unavailable right now. Please try again in a moment.', 503);
+    }
+
+    public static function emailLinkedToAnotherGoogleAccount(): self
+    {
+        return new self('This email is already linked to a different Google account. Sign in with that account, or with your phone number.', 409);
+    }
+
     public static function invalidToken(): self
     {
         return new self('We could not verify your Google account. Please try again.', 422);

@@ -145,6 +145,28 @@ begin
   return null;
 end;
 $$;
+-- An entry on a provincial wallet carries that wallet's province, so province-filtered ledger views never mix money
+-- between provinces. Entries on the global PLATFORM/SYSTEM wallets carry the province of the business behind them.
+create or replace function private.ledger_entry_province_matches_wallet()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  wallet_province uuid;
+begin
+  select w.province_id into wallet_province from public.wallets w where w.id = new.wallet_id;
+  if wallet_province is not null and new.province_id is distinct from wallet_province then
+    raise exception 'ledger entry province % does not match wallet province %', new.province_id, wallet_province
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+create trigger ledger_entries_province_matches_wallet
+  before insert on public.ledger_entries
+  for each row execute function private.ledger_entry_province_matches_wallet();
+
 create trigger ledger_entries_apply_balance
   after insert on public.ledger_entries
   for each row execute function private.ledger_entries_apply();

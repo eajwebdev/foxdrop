@@ -14,7 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Behind nginx/Cloudflare on the VPS the client IP (rate limits, audit) comes from X-Forwarded-For, trusted only
+        // from the proxies listed in TRUSTED_PROXIES (comma-separated IPs/CIDRs, or * when the app is reachable only
+        // through the proxy).
+        $proxies = env('TRUSTED_PROXIES');
+        if (is_string($proxies) && $proxies !== '') {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map(trim(...), explode(',', $proxies)));
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

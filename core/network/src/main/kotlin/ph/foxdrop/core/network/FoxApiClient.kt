@@ -56,12 +56,15 @@ class FoxApiClient @Inject constructor(
     suspend fun <T> call(block: suspend (HttpClient) -> T): FoxResult<T> =
         withContext(io) {
             if (!config.isConfigured) return@withContext FoxResult.Failure(DomainError.NotConfigured)
-            sessionStore.load()
+            val sentToken = sessionStore.load()?.token
             runCatchingApi {
                 try {
                     block(http)
                 } catch (e: ResponseException) {
-                    if (e.response.status == HttpStatusCode.Unauthorized) sessionStore.clear()
+                    // Only the session this request was sent with is rejected; a newer sign-in stays.
+                    if (e.response.status == HttpStatusCode.Unauthorized && sentToken != null) {
+                        sessionStore.clearIfToken(sentToken)
+                    }
                     throw e
                 }
             }

@@ -96,3 +96,17 @@ it('refuses a store-owned row that claims another province', function () {
 
     DB::table('products')->insert(['store_id' => DemoSeeder::storeId(1), 'province_id' => $ilo, 'name' => 'Smuggled', 'price_centavos' => 100]);
 })->throws(QueryException::class, 'products_store_fk');
+
+it('refuses a ledger entry that claims another province than its wallet', function () {
+    $ilo = (string) DB::table('provinces')->where('psgc_code', '0603000000')->value('id');
+    $wallet = DB::table('wallets')->where('province_id', $this->neg)->where('kind', 'RIDER_CASH')->value('id');
+    $txn = DB::table('ledger_txns')->insertGetId(['type' => 'TEST_POSTING', 'idempotency_key' => 'test-txn-province', 'province_id' => $ilo], 'id');
+
+    DB::table('ledger_entries')->insert(['txn_id' => $txn, 'wallet_id' => $wallet, 'amount_centavos' => 100, 'type' => 'TEST', 'province_id' => $ilo]);
+})->throws(QueryException::class, 'does not match wallet province');
+
+it('refuses a favourite that claims another province than its store', function () {
+    $ilo = (string) DB::table('provinces')->where('psgc_code', '0603000000')->value('id');
+
+    DB::table('favorites')->insert(['user_id' => DemoSeeder::userId(1), 'province_id' => $ilo, 'store_id' => DemoSeeder::storeId(1)]);
+})->throws(QueryException::class, 'favorites_store_fk');

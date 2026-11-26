@@ -54,22 +54,35 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * §17: rate limits on sign-in. Codes are limited per phone and per IP address so one attacker cannot spam a
-     * number or guess codes for many numbers.
+     * §17: rate limits on sign-in. The tight limits are per phone number / email, so nobody can spam one number or
+     * guess one account's password. Per-IP limits are loose on purpose: Philippine mobile networks put many
+     * subscribers behind one carrier IP (CGNAT), so they only stop bulk abuse from a single machine.
      */
     private function configureRateLimits(): void
     {
         RateLimiter::for('otp-send', fn (Request $request): array => [
-            Limit::perHour(5)->by('otp-send:phone:'.$request->input('phone')),
-            Limit::perHour(30)->by('otp-send:ip:'.$request->ip()),
+            Limit::perHour(5)->by('otp-send:phone:'.$this->stringInput($request, 'phone')),
+            Limit::perHour(600)->by('otp-send:ip:'.$request->ip()),
         ]);
         RateLimiter::for('otp-verify', fn (Request $request): array => [
-            Limit::perHour(20)->by('otp-verify:phone:'.$request->input('phone')),
-            Limit::perMinute(10)->by('otp-verify:ip:'.$request->ip()),
+            Limit::perHour(20)->by('otp-verify:phone:'.$this->stringInput($request, 'phone')),
+            Limit::perMinute(300)->by('otp-verify:ip:'.$request->ip()),
         ]);
         RateLimiter::for('sign-in', fn (Request $request): array => [
-            Limit::perMinute(10)->by('sign-in:'.mb_strtolower((string) $request->input('email')).'|'.$request->ip()),
-            Limit::perMinute(30)->by('sign-in:ip:'.$request->ip()),
+            Limit::perMinute(10)->by('sign-in:'.mb_strtolower($this->stringInput($request, 'email')).'|'.$request->ip()),
+            Limit::perHour(50)->by('sign-in:email:'.mb_strtolower($this->stringInput($request, 'email'))),
+            Limit::perMinute(300)->by('sign-in:ip:'.$request->ip()),
         ]);
+    }
+
+    /**
+     * A request field as a string; anything else (an array sent by a misbehaving client) counts as empty, so the
+     * limiter never crashes before validation can answer 422.
+     */
+    private function stringInput(Request $request, string $key): string
+    {
+        $value = $request->input($key);
+
+        return is_string($value) ? $value : '';
     }
 }

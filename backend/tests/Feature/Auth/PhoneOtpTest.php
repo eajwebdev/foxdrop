@@ -147,3 +147,16 @@ it('limits how many codes one number can request', function () {
 
     sendCode()->assertTooManyRequests();
 });
+
+it('answers 422, not a crash, when the phone is sent as a list', function () {
+    $this->postJson(route('api.v1.auth.otp.send'), ['phone' => ['+639171234567']])->assertUnprocessable();
+});
+
+it('lets many people behind one carrier IP sign in', function () {
+    $sms = fakeSms();
+    foreach (range(1, 40) as $n) {
+        sendCode(sprintf('+6391712%05d', $n))->assertAccepted();
+    }
+
+    expect($sms->sent)->toHaveCount(40);
+});

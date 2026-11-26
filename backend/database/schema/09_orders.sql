@@ -178,6 +178,7 @@ create table public.reviews (
   constraint reviews_order_fk
     foreign key (order_id, province_id) references public.orders (id, province_id) on delete cascade,
   constraint reviews_store_fk foreign key (store_id, province_id) references public.stores (id, province_id),
+  constraint reviews_rider_fk foreign key (rider_id, province_id) references public.riders (id, province_id),
   constraint reviews_rider_needs_rider check (rider_rating is null or rider_id is not null)
 );
 create index reviews_store_idx on public.reviews (store_id, created_at desc);

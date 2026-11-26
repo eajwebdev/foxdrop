@@ -73,6 +73,7 @@ create table public.products (
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  constraint products_id_province_key unique (id, province_id),
   constraint products_store_fk
     foreign key (store_id, province_id) references public.stores (id, province_id) on delete cascade,
   -- a product's category must belong to the same store
@@ -124,10 +125,15 @@ create table public.favorites (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users (id) on delete cascade,
   province_id uuid not null references public.provinces (id),
-  store_id uuid references public.stores (id) on delete cascade,
-  product_id uuid references public.products (id) on delete cascade,
+  store_id uuid,
+  product_id uuid,
   created_at timestamptz not null default now(),
   constraint favorites_one_target check (num_nonnulls(store_id, product_id) = 1),
+  -- the favourite carries its store's / product's province (null target = not checked)
+  constraint favorites_store_fk
+    foreign key (store_id, province_id) references public.stores (id, province_id) on delete cascade,
+  constraint favorites_product_fk
+    foreign key (product_id, province_id) references public.products (id, province_id) on delete cascade,
   constraint favorites_unique unique nulls not distinct (user_id, store_id, product_id)
 );
 create index favorites_user_idx on public.favorites (user_id);

@@ -42,12 +42,16 @@ private class InMemorySessionStore(initial: StoredSession? = null) : SessionStor
         _state.value = SessionState.Present(session)
     }
 
-    override suspend fun updateUser(user: ApiUser) {
-        load()?.let { save(it.copy(user = user)) }
+    override suspend fun updateUser(token: String, user: ApiUser) {
+        load()?.takeIf { it.token == token }?.let { save(it.copy(user = user)) }
     }
 
     override suspend fun clear() {
         _state.value = SessionState.Absent
+    }
+
+    override suspend fun clearIfToken(token: String) {
+        if (load()?.token == token) clear()
     }
 }
 
@@ -193,5 +197,32 @@ class ApiDataSourcesTest {
 
         assertEquals(FoxResult.Failure(DomainError.NotConfigured), result)
         assertTrue(requests.isEmpty())
+    }
+
+    @Test
+    fun `a late 401 for an old token does not sign out a newer session`() = runTest(dispatcher) {
+        val store = InMemorySessionStore(signedIn)
+        val newer = signedIn.copy(token = "3|newer-token")
+        val api = client(store) {
+            store.save(newer) // the user signed in again while this old request was in flight
+            json("""{"message":"Unauthenticated."}""", HttpStatusCode.Unauthorized)
+        }
+
+        ApiRolesRemoteDataSource(api, store).myRoles()
+
+        assertEquals("3|newer-token", store.load()?.token)
+    }
+
+    @Test
+    fun `roles fetched for a session that was signed out meanwhile are dropped`() = runTest(dispatcher) {
+        val store = InMemorySessionStore(signedIn)
+        val api = client(store) {
+            store.clear() // the user tapped Sign out while /me was loading
+            json("""{"data":$USER_JSON}""")
+        }
+
+        ApiRolesRemoteDataSource(api, store).myRoles()
+
+        assertNull(store.load())
     }
 }

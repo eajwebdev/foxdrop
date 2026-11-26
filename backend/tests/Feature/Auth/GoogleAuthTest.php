@@ -72,3 +72,11 @@ it('says Google sign-in is unavailable when no client ID is configured', functio
 
     signInWithGoogle()->assertServiceUnavailable();
 });
+
+it('refuses to move an email to a second Google account', function () {
+    $user = User::factory()->create(['email' => 'ana@gmail.com', 'email_verified_at' => now(), 'google_sub' => 'google-sub-1']);
+    fakeGoogle(new GoogleIdentity('google-sub-2', 'ana@gmail.com', 'Ana', null));
+
+    signInWithGoogle()->assertConflict();
+    expect($user->refresh()->google_sub)->toBe('google-sub-1');
+});

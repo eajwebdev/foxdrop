@@ -45,7 +45,8 @@ class PhoneOtpController extends Controller
             throw ValidationException::withMessages(['code' => 'That code is wrong or has expired.']);
         }
 
-        $user = User::query()->firstOrCreate(
+        // createOrFirst: a parallel verify of the same new number (retry, double tap) finds the row instead of failing.
+        $user = User::query()->createOrFirst(
             ['phone' => $phone],
             ['full_name' => $request->input('full_name'), 'phone_verified_at' => now()],
         );

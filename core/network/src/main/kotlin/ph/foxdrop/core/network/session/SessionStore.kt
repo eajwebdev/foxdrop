@@ -29,10 +29,16 @@ interface SessionStore {
 
     suspend fun save(session: StoredSession)
 
-    /** Replaces the cached user (fresh roles from `/me`) and keeps the token. No-op when signed out. */
-    suspend fun updateUser(user: ApiUser)
+    /**
+     * Replaces the cached user (fresh roles from `/me`), but only while the session that asked for them is still the
+     * stored one: a sign-out or a new sign-in in the meantime wins.
+     */
+    suspend fun updateUser(token: String, user: ApiUser)
 
     suspend fun clear()
+
+    /** Clears the session only if it still uses [token] (a stale request must not sign out a newer session). */
+    suspend fun clearIfToken(token: String)
 }
 
 /**
@@ -62,16 +68,31 @@ internal class EncryptedSessionStore @Inject constructor(private val secureStore
         }
     }
 
-    override suspend fun updateUser(user: ApiUser) {
-        val current = load() ?: return
-        save(current.copy(user = user))
+    override suspend fun updateUser(token: String, user: ApiUser) {
+        load()
+        mutex.withLock {
+            val current = (_state.value as? SessionState.Present)?.session ?: return
+            if (current.token != token) return
+            val updated = current.copy(user = user)
+            secureStore.write(KEY, json.encodeToString(StoredSession.serializer(), updated))
+            _state.value = SessionState.Present(updated)
+        }
     }
 
     override suspend fun clear() {
+        mutex.withLock { clearLocked() }
+    }
+
+    override suspend fun clearIfToken(token: String) {
+        load()
         mutex.withLock {
-            secureStore.remove(KEY)
-            _state.value = SessionState.Absent
+            if ((_state.value as? SessionState.Present)?.session?.token == token) clearLocked()
         }
+    }
+
+    private suspend fun clearLocked() {
+        secureStore.remove(KEY)
+        _state.value = SessionState.Absent
     }
 
     private suspend fun readStored(): StoredSession? {

@@ -3,6 +3,7 @@
 use App\Exceptions\GoogleSignInException;
 use App\Services\Auth\JwksGoogleIdTokenVerifier;
 use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 const CLIENT_ID = 'foxdrop-web.apps.googleusercontent.com';
@@ -97,3 +98,39 @@ it('rejects a token signed with someone else\'s key', function () {
 
     app(JwksGoogleIdTokenVerifier::class)->verify($forged, RAW_NONCE);
 })->throws(GoogleSignInException::class);
+
+it('accepts each Google token only once', function () {
+    $token = fakeGoogleKeys()([]);
+    app(JwksGoogleIdTokenVerifier::class)->verify($token, RAW_NONCE);
+
+    app(JwksGoogleIdTokenVerifier::class)->verify($token, RAW_NONCE);
+})->throws(GoogleSignInException::class);
+
+it('fetches Google\'s keys again when a token uses a key it has not seen', function () {
+    config(['foxdrop.google.client_ids' => [CLIENT_ID]]);
+    $jwks = function (string $kid, OpenSSLAsymmetricKey $key): array {
+        $details = openssl_pkey_get_details($key) ?: throw new RuntimeException('no key details');
+        $b64 = fn (string $bin): string => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+
+        return ['keys' => [['kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => $kid, 'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e'])]]];
+    };
+    [$oldKey] = newRsaKey();
+    [$newKey, $newPem] = newRsaKey();
+    // After the cached (old) key set fails, the verifier fetches once more and gets the rotated set.
+    Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response($jwks('rotated-key', $newKey))]);
+    Cache::put('google-id-token-jwks', $jwks('old-key', $oldKey), now()->addHour()); // what we cached before rotation
+    $token = JWT::encode([
+        'iss' => 'https://accounts.google.com', 'aud' => CLIENT_ID, 'sub' => '42', 'nonce' => hash('sha256', RAW_NONCE),
+        'iat' => time(), 'exp' => time() + 600,
+    ], $newPem, 'RS256', 'rotated-key');
+
+    expect(app(JwksGoogleIdTokenVerifier::class)->verify($token, RAW_NONCE)->subject)->toBe('42');
+});
+it('tells the app to retry later when Google\'s keys cannot be fetched', function () {
+    config(['foxdrop.google.client_ids' => [CLIENT_ID]]);
+    Http::fake(['https://www.googleapis.com/oauth2/v3/certs' => Http::response('down', 500)]);
+
+    $this->postJson(route('api.v1.auth.google'), ['id_token' => 'a.b.c', 'nonce' => str_repeat('n', 32), 'device_name' => 'Pixel'])
+        ->assertServiceUnavailable()
+        ->assertJsonPath('message', 'Google sign-in is unavailable right now. Please try again in a moment.');
+});

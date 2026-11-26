@@ -152,3 +152,12 @@ Format: **what** — why — revisit when.
 47. **The admin web lives inside `backend/`** (Inertia + React in `resources/js`, Phase W1), not in a separate
     `admin-web/` app. The old `admin_web` database role, `admin_api.*` SQL functions and `admin` schema rules no longer
     apply: admin actions are Laravel Actions with policies and audit-log rows.
+48. **Sign-in rate limits are tight per phone / email and loose per IP** (Phase 1b code review): Philippine carriers
+    put many subscribers behind one IP (CGNAT), so per-IP limits only stop bulk abuse. Behind the VPS proxy the
+    client IP comes from `X-Forwarded-For`, trusted only for `TRUSTED_PROXIES`.
+49. **Google sign-in hardening** (Phase 1b code review): an email already linked to one Google account is never moved
+    to another (409); each Google ID token is accepted once (its nonce is remembered until it expires); an unknown
+    signing key triggers one refetch of Google's keys; Google being unreachable answers 503, not "invalid".
+50. **The schema files were corrected in place** (ledger entries must carry their wallet's province; favourites and
+    reviews tie to their store / product / rider province). Allowed only because no database outside development
+    exists yet; from the first deploy on, schema files are forward-only.
